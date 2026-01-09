@@ -56,15 +56,15 @@ class MyRoom extends Room {
         });
     }
 
-onJoin(client, options) {
-    console.log("Player joined:", client.sessionId);
-    this.state.players.set(client.sessionId, new PlayerState());
-}
+    onJoin(client, options) {
+        console.log("Player joined:", client.sessionId);
+        this.state.players.set(client.sessionId, new PlayerState());
+    }
 
-onLeave(client, consented) {
-    console.log("Player left:", client.sessionId);
-    this.state.players.delete(client.sessionId);
-}
+    onLeave(client, consented) {
+        console.log("Player left:", client.sessionId);
+        this.state.players.delete(client.sessionId);
+    }
 
     onDispose() {
         console.log("Room disposed");
@@ -90,7 +90,12 @@ const gameServer = new Server({ server });
 // Definisci la room
 gameServer.define("my_room", MyRoom);
 
-// Avvio server
-server.listen(2567, () => {
-    console.log("Colyseus server listening on ws://localhost:2567");
+// Log per confermare che il server è pronto
+console.log("Colyseus rooms defined: my_room");
+
+// -------- AVVIO SERVER --------
+const PORT = process.env.PORT || 2567; // Render assegna la porta automaticamente
+server.listen(PORT, () => {
+    console.log(`Colyseus server listening on port ${PORT}`);
 });
+
