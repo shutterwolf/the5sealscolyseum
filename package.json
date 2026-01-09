@@ -1,18 +1,22 @@
 {
   "name": "server",
   "version": "1.0.0",
+  "description": "Colyseus server for The5SealsColyseum",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["colyseus", "game-server", "express"],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
     "colyseus": "^0.16.5",
-    "@colyseus/core": "^0.16.18",
-    "@colyseus/auth": "^0.16.5",
-    "@colyseus/ws-transport": "^0.16.5",
+    "@colyseus/core": "^0.16.24",
     "@colyseus/schema": "^3.0.76",
+    "@colyseus/redis-presence": "^0.16.0",
+    "@colyseus/redis-driver": "^0.16.0",
+    "@colyseus/uwebsockets-transport": "^0.16.0",
     "express": "^5.2.1"
   }
 }
