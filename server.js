@@ -33,13 +33,14 @@ class MyRoom extends Room {
 
         // Messaggi generici di test
         this.onMessage("hello", (client, message) => {
-            console.log("Received hello from", client.sessionId, ":", message);
+            console.log(`Received hello from ${client.sessionId}: ${message}`);
         });
 
         // Controlla se il personaggio esiste
         this.onMessage("checkCharacter", (client, data) => {
             const characters = loadCharacters();
             const char = characters[data.playerId];
+            console.log(`Check character for ${data.playerId}: exists=${!!char}`);
             client.send("characterExistence", {
                 exists: !!char,
                 character: char || null
@@ -57,12 +58,12 @@ class MyRoom extends Room {
     }
 
     onJoin(client, options) {
-        console.log("Player joined:", client.sessionId);
+        console.log(`Player joined: ${client.sessionId}, options: ${JSON.stringify(options)}`);
         this.state.players.set(client.sessionId, new PlayerState());
     }
 
     onLeave(client, consented) {
-        console.log("Player left:", client.sessionId);
+        console.log(`Player left: ${client.sessionId}, consented: ${consented}`);
         this.state.players.delete(client.sessionId);
     }
 
@@ -89,8 +90,6 @@ const gameServer = new Server({ server });
 
 // Definisci la room
 gameServer.define("my_room", MyRoom);
-
-// Log per confermare che il server è pronto
 console.log("Colyseus rooms defined: my_room");
 
 // -------- AVVIO SERVER --------
@@ -98,4 +97,11 @@ const PORT = process.env.PORT || 2567; // Render assegna la porta automaticament
 server.listen(PORT, () => {
     console.log(`Colyseus server listening on port ${PORT}`);
 });
+
+// -------- ROUTE DI TEST HTTP --------
+app.get("/", (req, res) => {
+    res.send("Colyseus server online ✅");
+});
+
+
 
