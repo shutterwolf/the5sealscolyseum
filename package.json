@@ -8,8 +8,8 @@
   },
   "type": "commonjs",
   "dependencies": {
-    "colyseus": "^0.16.5",
-    "@colyseus/schema": "^3.0.76",
+"colyseus": "^0.17.10",
+"@colyseus/schema": "^1.0.0",
     "express": "^5.2.1"
   }
 }
