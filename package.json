@@ -12,8 +12,15 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@colyseus/schema": "^3.0.76",
-    "colyseus": "^0.16.5",
-    "express": "^5.2.1"
-  }
+  "colyseus": "^0.16.5",
+  "@colyseus/schema": "^3.0.76",
+  "@colyseus/core": "^0.16.5",
+  "@colyseus/auth": "^0.16.5",
+  "@colyseus/redis-driver": "^0.16.5",
+  "@colyseus/redis-presence": "^0.16.5",
+  "@colyseus/ws-transport": "^0.16.5",
+  "@colyseus/uwebsockets-transport": "^0.16.5",
+  "express": "^5.2.1"
+}
+
 }
