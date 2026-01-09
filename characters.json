@@ -1,0 +1,146 @@
+{
+  "103948572938475029384": {
+    "user": "NizicaPlayer",
+    "email": "nizica@gmail.com",
+    "id": "103948572938475029384",
+
+    "lang": "en",
+    "name": "Nizica",
+    "race": "Human",
+    "sex": "F",
+    "clas": "Warrior",
+    "reputation": 0,
+
+    "strength": 5,
+    "courage": 5,
+    "fortune": 5,
+    "hp": 15,
+
+    "willing": 4,
+    "inspiration": 4,
+    "sensitivity": 4,
+    "mana": 12,
+
+    "venom": 0,
+    "illness": 0,
+
+    "wmap": 1,
+    "wxmap": 38,
+    "localMap": 0,
+
+    "food": 100,
+    "water": 100,
+    "level": 1,
+    "experience": 0,
+    "gold": 50,
+
+    "armor": 0,
+    "pmodel": "HumanF",
+    "texTure": "HumanF",
+    "clasTexture": "HumanF",
+
+    "hunting": 0,
+    "huntingAdv": 0,
+    "fishing": 1,
+    "fishingAdv": 0,
+    "orientate": 1,
+    "orientateAdv": 0,
+
+    "blades": 3,
+    "bladesAdv": 0,
+    "swordmanship": 1,
+    "swordAdv": 0,
+    "maces": 0,
+    "macesAdv": 0,
+    "hammers": 2,
+    "hammersAdv": 0,
+    "axes": 0,
+    "axesAdv": 0,
+    "poles": 0,
+    "polesAdv": 0,
+
+    "wArmour": 2,
+    "armorAdv": 0,
+    "aShield": 3,
+    "shieldAdv": 0,
+
+    "shooting": 3,
+    "shotAdv": 0,
+
+    "cooking": 1,
+    "cookAdv": 0,
+    "forging": 2,
+    "forgeAdv": 0,
+    "wilderness": 1,
+    "wildAdv": 0,
+    "herbs": 1,
+    "herbsAdv": 0,
+    "leather": 1,
+    "leatherAdv": 0,
+    "shadows": 1,
+    "shadowsAdv": 0,
+    "picklock": 1,
+    "plockAdv": 0,
+
+    "shanea": 0,
+    "lemanghan": 0,
+    "riannon": 0,
+    "holiness": 0,
+
+    "Mearth": 4,
+    "Mwater": 0,
+    "Mfire": 0,
+    "Mair": 0,
+    "Menergy": 0,
+
+    "wRange": 0,
+    "wDamage": 1,
+
+    "inventory": [
+      {
+        "lootID": 3,
+        "type": "BLADE",
+        "damageValue": 1,
+        "variable": 0,
+        "name": "Dagger",
+        "value": 20,
+        "resistence": 40,
+        "slot": 4,
+        "twohand": false,
+        "obj": "dagger"
+      },
+      {
+        "lootID": 1,
+        "type": "SHIELD",
+        "armourValue": 1,
+        "variable": 0,
+        "name": "Buckler",
+        "value": 30,
+        "resistence": 30,
+        "slot": 4,
+        "twohand": false,
+        "obj": "buckler"
+      }
+    ],
+
+    "equipped": [],
+
+    "ability": [
+      {
+        "lootID": 0,
+        "type": "ABILITY",
+        "Ttype": "shooting",
+        "name": "Precise shot",
+        "requiredLevel": 2,
+        "desc": "More time to shoot\nmore damage when hit.",
+        "value": 150,
+        "effect": "shooting",
+        "efvalue": 2,
+        "obj": "accuratehit"
+      }
+    ],
+
+    "spells": [],
+    "retrievedQuests": []
+  }
+}
