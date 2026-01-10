@@ -1,7 +1,7 @@
 // -------- IMPORTS --------
 const http = require("http");
 const express = require("express");
-const cors = require("cors");
+//const cors = require("cors");
 const { Server, Room } = require("colyseus");
 const { Schema, MapSchema, type } = require("@colyseus/schema");
 const fs = require("fs");
@@ -97,7 +97,7 @@ function saveCharacters(data) {
 const app = express();
 
 // --- CORS per permettere richieste da PlayCanvas ---
-app.use(cors()); // permette tutte le origini
+//app.use(cors()); // permette tutte le origini
 // oppure più restrittivo:
 // app.use(cors({ origin: "https://launch.playcanvas.com" }));
 
@@ -124,3 +124,4 @@ app.get("/ping", (req, res) => {
     res.setHeader("Content-Type", "text/plain");
     res.send("pong");
 });
+
