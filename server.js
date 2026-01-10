@@ -55,6 +55,9 @@ class MyRoom extends Room {
     onJoin(client, options) {
         console.log(`🟢 Player joined: ${client.sessionId}, options: ${JSON.stringify(options)}`);
         this.state.players.set(client.sessionId, new PlayerState());
+        if (options && options.playerId) {
+            this.state.players.get(client.sessionId).name = options.playerId; // o un mapping a playerData.name
+        }
     }
 
     onLeave(client, consented) {
@@ -85,3 +88,4 @@ app.get("/", (req,res)=>res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, ()=>console.log(`Colyseus server listening on port ${PORT}`));
+
