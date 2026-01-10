@@ -80,13 +80,8 @@ const gameServer = new Server({ server });
 // Room
 gameServer.define("my_room", MyRoom);
 
-// Ping semplice
-app.get("/ping", (req,res)=>{
-    console.log(`📡 Ping ricevuto da ${req.ip}`);
-    res.send("pong");
-});
+// Route test
+app.get("/", (req,res)=>res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, ()=>console.log(`Colyseus server listening on port ${PORT}`));
-
-app.get("/", (req,res)=>res.send("Colyseus server online ✅"));
