@@ -101,6 +101,11 @@ const gameServer = new Server({ server });
 gameServer.define("my_room", MyRoom);
 console.log("Colyseus rooms defined: my_room");
 
+// -------- ROUTE DI PING / WAKEUP --------
+app.get("/ping", (req, res) => {
+    res.send({ status: "ok", time: Date.now() });
+});
+
 // -------- AVVIO SERVER --------
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => {
