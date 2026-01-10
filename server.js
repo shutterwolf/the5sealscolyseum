@@ -31,12 +31,12 @@ class MyRoom extends Room {
         console.log("Room created!");
         this.setState(new MyRoomState());
 
-        // Messaggi generici di test
+        // --- listener esistente per test ---
         this.onMessage("hello", (client, message) => {
             console.log(`Received hello from ${client.sessionId}: ${message}`);
         });
 
-        // Controlla se il personaggio esiste
+        // --- listener checkCharacter già esistente ---
         this.onMessage("checkCharacter", (client, data) => {
             const characters = loadCharacters();
             const char = characters[data.playerId];
@@ -47,13 +47,22 @@ class MyRoom extends Room {
             });
         });
 
-        // Salva il personaggio
+        // --- listener saveCharacter già esistente ---
         this.onMessage("saveCharacter", (client, data) => {
             const characters = loadCharacters();
             characters[data.id] = data;
             saveCharacters(characters);
             console.log(`Character saved: ${data.name} (${data.id})`);
             client.send("characterSaved", { ok: true });
+        });
+
+        // --- NUOVO listener playerInfo ---
+        this.onMessage("playerInfo", (client, data) => {
+            // salva i dati base nello state della room
+            this.state.players.set(client.sessionId, new PlayerState());
+            this.state.players.get(client.sessionId).name = data.name;
+
+            console.log(`PlayerInfo ricevuto da ${client.sessionId}:`, data);
         });
     }
 
@@ -71,6 +80,7 @@ class MyRoom extends Room {
         console.log("Room disposed");
     }
 }
+
 
 // -------- FUNZIONI DI SALVATAGGIO / CARICAMENTO --------
 function loadCharacters() {
@@ -102,6 +112,7 @@ server.listen(PORT, () => {
 app.get("/", (req, res) => {
     res.send("Colyseus server online ✅");
 });
+
 
 
 
