@@ -1,6 +1,7 @@
 // -------- IMPORTS --------
 const http = require("http");
 const express = require("express");
+const cors = require("cors");
 const { Server, Room } = require("colyseus");
 const { Schema, MapSchema, type } = require("@colyseus/schema");
 const fs = require("fs");
@@ -94,17 +95,18 @@ function saveCharacters(data) {
 
 // -------- SERVER EXPRESS + COLYSEUS --------
 const app = express();
+
+// --- CORS per permettere richieste da PlayCanvas ---
+app.use(cors()); // permette tutte le origini
+// oppure più restrittivo:
+// app.use(cors({ origin: "https://launch.playcanvas.com" }));
+
 const server = http.createServer(app);
 const gameServer = new Server({ server });
 
 // Definisci la room
 gameServer.define("my_room", MyRoom);
 console.log("Colyseus rooms defined: my_room");
-
-// -------- ROUTE DI PING / WAKEUP --------
-app.get("/ping", (req, res) => {
-    res.send({ status: "ok", time: Date.now() });
-});
 
 // -------- AVVIO SERVER --------
 const PORT = process.env.PORT || 2567;
@@ -115,4 +117,10 @@ server.listen(PORT, () => {
 // -------- ROUTE DI TEST HTTP --------
 app.get("/", (req, res) => {
     res.send("Colyseus server online ✅");
+});
+
+// -------- ROUTE PER PING SVEGLIA SERVER --------
+app.get("/ping", (req, res) => {
+    res.setHeader("Content-Type", "text/plain");
+    res.send("pong");
 });
