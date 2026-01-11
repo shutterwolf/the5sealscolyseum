@@ -44,12 +44,23 @@ class MyRoom extends Room {
         });
 
         this.onMessage("saveCharacter", (client, data) => {
-            const characters = loadCharacters();
-            characters[data.id] = data;
-            saveCharacters(characters);
-            console.log(`Character saved: ${data.name} (${data.id})`);
-            client.send("characterSaved", { ok: true });
-        });
+    console.log("💾 saveCharacter ricevuto da", client.sessionId);
+
+    const characters = loadCharacters();
+
+    characters[data.playerId] = data.character;
+
+    saveCharacters(characters);
+
+    console.log(`✅ Character scritto su file per ${data.playerId}`);
+
+    // 🔁 risposta al client
+    client.send("characterSaved", {
+        ok: true,
+        playerId: data.playerId
+    });
+});
+
     }
 
     onJoin(client, options) {
@@ -88,4 +99,5 @@ app.get("/", (req,res)=>res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, ()=>console.log(`Colyseus server listening on port ${PORT}`));
+
 
