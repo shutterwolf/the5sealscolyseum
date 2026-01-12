@@ -79,12 +79,20 @@ class MyRoom extends Room {
 
 // --- Functions ---
 function loadCharacters() {
-    if (!fs.existsSync(CHAR_FILE)) return {};
-    return JSON.parse(fs.readFileSync(CHAR_FILE));
+    if (!fs.existsSync(CHAR_FILE)) {
+        console.log("⚠️ characters.json non trovato, ritorno {}");
+        return {};
+    }
+    const data = JSON.parse(fs.readFileSync(CHAR_FILE));
+    console.log("📥 characters.json letto:", data);
+    return data;
 }
+
 function saveCharacters(data) {
     fs.writeFileSync(CHAR_FILE, JSON.stringify(data, null, 2));
+    console.log("💾 characters.json salvato:", data);
 }
+
 
 // --- Server ---
 const app = express();
@@ -99,5 +107,6 @@ app.get("/", (req,res)=>res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, ()=>console.log(`Colyseus server listening on port ${PORT}`));
+
 
 
