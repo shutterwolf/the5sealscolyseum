@@ -19,7 +19,9 @@
     "@colyseus/uwebsockets-transport": "^0.16.0",
     "@colyseus/ws-transport": "^0.16.0",
     "@colyseus/auth": "^0.16.0",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "firebase-admin": "^12.0.0"
   }
 }
+
 
