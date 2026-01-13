@@ -1,11 +1,18 @@
+// server.js
 const http = require("http");
 const express = require("express");
 const { Server, Room } = require("colyseus");
 const { Schema, MapSchema, type } = require("@colyseus/schema");
-const fs = require("fs");
-const path = require("path");
+const admin = require("firebase-admin");
 
-const CHAR_FILE = path.join(__dirname, "characters.json");
+// --- Firestore Setup ---
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
+
+const db = admin.firestore();
 
 // --- State ---
 class PlayerState extends Schema {
@@ -30,45 +37,46 @@ class MyRoom extends Room {
         console.log("Room created!");
         this.setState(new MyRoomState());
 
+        // Aggiorna PlayerState con dati OAuth / player
         this.onMessage("playerInfo", (client, data) => {
-            console.log(`📨 playerInfo ricevuto da ${client.sessionId}:`, data);
-            this.state.players.set(client.sessionId, new PlayerState());
-            this.state.players.get(client.sessionId).name = data.name;
+            const player = this.state.players.get(client.sessionId);
+            if (!player) return;
+            player.name = data.name;
         });
 
-        this.onMessage("checkCharacter", (client, data) => {
-            const characters = loadCharacters();
-            const char = characters[data.playerId];
-            console.log(`📨 checkCharacter ricevuto da ${client.sessionId}: exists=${!!char}`);
-            client.send("characterExistence", { exists: !!char, character: char || null });
+        // Controlla se il character esiste su Firestore
+        this.onMessage("checkCharacter", async (client, data) => {
+            try {
+                const doc = await db.collection("characters").doc(data.playerId).get();
+                client.send("characterExistence", {
+                    exists: doc.exists,
+                    character: doc.exists ? doc.data() : null
+                });
+                console.log(`📨 checkCharacter ${data.playerId} exists=${doc.exists}`);
+            } catch (err) {
+                console.error("❌ Firestore checkCharacter error:", err);
+                client.send("characterExistence", { exists: false, character: null });
+            }
         });
 
-        this.onMessage("saveCharacter", (client, data) => {
-    console.log("💾 saveCharacter ricevuto da", client.sessionId);
-
-    const characters = loadCharacters();
-
-    characters[data.playerId] = data.character;
-
-    saveCharacters(characters);
-
-    console.log(`✅ Character scritto su file per ${data.playerId}`);
-
-    // 🔁 risposta al client
-    client.send("characterSaved", {
-        ok: true,
-        playerId: data.playerId
-    });
-});
-
+        // Salva o aggiorna il character su Firestore
+        this.onMessage("saveCharacter", async (client, data) => {
+            try {
+                await db.collection("characters").doc(data.playerId).set(data.character);
+                client.send("characterSaved", { ok: true, playerId: data.playerId });
+                console.log(`💾 Character salvato su Firestore: ${data.playerId}`);
+            } catch (err) {
+                console.error("❌ Firestore saveCharacter error:", err);
+                client.send("characterSaved", { ok: false, playerId: data.playerId });
+            }
+        });
     }
 
     onJoin(client, options) {
-        console.log(`🟢 Player joined: ${client.sessionId}, options: ${JSON.stringify(options)}`);
-        this.state.players.set(client.sessionId, new PlayerState());
-        if (options && options.playerId) {
-            this.state.players.get(client.sessionId).name = options.playerId; // o un mapping a playerData.name
-        }
+        console.log(`🟢 Player joined: ${client.sessionId}`);
+        const player = new PlayerState();
+        player.name = options?.playerId || "";
+        this.state.players.set(client.sessionId, player);
     }
 
     onLeave(client, consented) {
@@ -77,36 +85,17 @@ class MyRoom extends Room {
     }
 }
 
-// --- Functions ---
-function loadCharacters() {
-    if (!fs.existsSync(CHAR_FILE)) {
-        console.log("⚠️ characters.json non trovato, ritorno {}");
-        return {};
-    }
-    const data = JSON.parse(fs.readFileSync(CHAR_FILE));
-    console.log("📥 characters.json letto:", data);
-    return data;
-}
-
-function saveCharacters(data) {
-    fs.writeFileSync(CHAR_FILE, JSON.stringify(data, null, 2));
-    console.log("💾 characters.json salvato:", data);
-}
-
-
 // --- Server ---
 const app = express();
 const server = http.createServer(app);
 const gameServer = new Server({ server });
 
-// Room
+// Definizione Room
 gameServer.define("my_room", MyRoom);
 
 // Route test
-app.get("/", (req,res)=>res.send("Colyseus server online ✅"));
+app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
+// Avvio server
 const PORT = process.env.PORT || 2567;
-server.listen(PORT, ()=>console.log(`Colyseus server listening on port ${PORT}`));
-
-
-
+server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
