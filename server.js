@@ -44,6 +44,23 @@ class MyRoom extends Room {
             player.name = data.name;
         });
 
+        this.onMessage("deleteCharacter", async (client, data) => {
+    const playerId = data.playerId;
+
+    try {
+        // cancella il character dal Firestore
+        await db.collection("characters").doc(playerId).delete();
+        console.log(`✅ Character ${playerId} deleted from Firestore`);
+
+        // invia conferma al client
+        client.send("characterDeleted", { success: true, playerId });
+
+    } catch (err) {
+        console.error("❌ Error deleting character:", err);
+        client.send("characterDeleted", { success: false, playerId, error: err.message });
+    }
+});
+        
         // Controlla se il character esiste su Firestore
         this.onMessage("checkCharacter", async (client, data) => {
             try {
@@ -99,3 +116,4 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 // Avvio server
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
+
