@@ -121,19 +121,24 @@ class MyRoom extends Room {
     }
 
     onJoin(client, options) {
-        console.log(`🟢 Player joined: ${client.sessionId}`);
-        const player = new PlayerState();
-        player.name = options?.playerId || "";
-        this.state.players.set(client.sessionId, player);
+    console.log(`🟢 Player joined: ${client.sessionId}`);
 
-        // Se vuoi caricare dati da Firebase
-        db.collection("characters").doc(client.sessionId).get()
+    const playerId = options.playerId || client.sessionId;
+
+    const player = new PlayerState();
+    player.name = playerId;
+    this.state.players.set(client.sessionId, player);  // rimane sessionId per lo state
+
+    // CARICA DA FIRESTORE USANDO playerId
+    db.collection("characters").doc(playerId).get()
         .then(doc => {
-            if(doc.exists){
+            if (doc.exists) {
                 Object.assign(player, doc.data());
             }
-        }).catch(err => console.error(err));
+        })
+        .catch(err => console.error(err));
     }
+
 
     onLeave(client, consented) {
         console.log(`⚠️ Player left: ${client.sessionId}, consented: ${consented}`);
@@ -152,3 +157,4 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
+
