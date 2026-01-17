@@ -151,8 +151,6 @@ class MyRoom extends Room {
 
         const player = new PlayerState();
         player.id = playerId;
-        player.name = playerId;
-
         this.state.players.set(playerId, player);
     }
 
@@ -179,3 +177,4 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
+
