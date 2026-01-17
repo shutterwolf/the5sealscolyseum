@@ -45,14 +45,17 @@ class PlayerState extends Schema {
     constructor() {
         super();
         this.id = "";
+        this.user = "";
+        this.email = "";
         this.name = "";
         this.playerPos = new Vec3();
         this.rotation = new Quat();
         this.activeWeapon = "";
     }
 }
-
 type("string")(PlayerState.prototype, "id");
+type("string")(PlayerState.prototype, "user");
+type("string")(PlayerState.prototype, "email");
 type("string")(PlayerState.prototype, "name");
 type(Vec3)(PlayerState.prototype, "playerPos");
 type(Quat)(PlayerState.prototype, "rotation");
@@ -74,9 +77,7 @@ class MyRoom extends Room {
         this.sessionToPlayerId = new Map();
         this.setState(new MyRoomState());
 
-        // ------------------------------------------------
         // Player Input
-        // ------------------------------------------------
         this.onMessage("playerInput", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
@@ -96,9 +97,7 @@ class MyRoom extends Room {
             player.activeWeapon = data.activeWeapon;
         });
 
-        // ------------------------------------------------
-        // CRUD character (Firestore)
-        // ------------------------------------------------
+        // CRUD character
         this.onMessage("checkCharacter", async (client, data) => {
             try {
                 const doc = await db.collection("characters").doc(data.playerId).get();
@@ -122,9 +121,7 @@ class MyRoom extends Room {
             }
         });
 
-        // ------------------------------------------------
-        // playerInfo (solo nome nel state)
-        // ------------------------------------------------
+        // playerInfo
         this.onMessage("playerInfo", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
@@ -132,7 +129,10 @@ class MyRoom extends Room {
             const player = this.state.players.get(playerId);
             if (!player) return;
 
-            if (data.name) player.name = data.name;
+            player.name = data.name || player.name;
+            player.user = data.user || player.user;
+            player.email = data.email || player.email;
+            player.id = data.id || player.id;
         });
     }
 
@@ -147,13 +147,11 @@ class MyRoom extends Room {
 
         console.log(`🟢 Player joined: ${client.sessionId} (playerId: ${playerId})`);
 
-        // sessionId → playerId
         this.sessionToPlayerId.set(client.sessionId, playerId);
 
-        // create state
         const player = new PlayerState();
         player.id = playerId;
-        player.name = playerId; // placeholder, poi aggiornato con playerInfo
+        player.name = playerId;
 
         this.state.players.set(playerId, player);
     }
@@ -181,7 +179,3 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
-
-
-
-
