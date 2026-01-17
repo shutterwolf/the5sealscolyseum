@@ -69,6 +69,7 @@ type({ map: PlayerState })(MyRoomState.prototype, "players");
 class MyRoom extends Room {
     onCreate(options) {
         console.log("Room created!");
+        this.sessionToPlayerId = new Map();
         this.setState(new MyRoomState());
 
         // Ricezione info base del player
@@ -121,14 +122,25 @@ class MyRoom extends Room {
     }
 
     onJoin(client, options) {
-    console.log(`🟢 Player joined: ${client.sessionId}`);
+    const playerId = options.playerId;
 
-    const playerId = options.playerId || client.sessionId;
+    if (!playerId) {
+        console.error("No playerId provided!");
+        client.leave();
+        return;
+    }
 
+    console.log(`🟢 Player joined: ${client.sessionId} (playerId: ${playerId})`);
+
+    // Mappa sessionId → playerId
+    this.sessionToPlayerId.set(client.sessionId, playerId);
+
+    // Crea lo state per quel playerId
     const player = new PlayerState();
     player.name = playerId;
-    this.state.players.set(client.sessionId, player);
+    this.state.players.set(playerId, player);
 
+    // Carica da Firestore usando playerId
     db.collection("characters").doc(playerId).get()
         .then(doc => {
             if (doc.exists) {
@@ -138,10 +150,18 @@ class MyRoom extends Room {
         .catch(err => console.error(err));
     }
 
+
     onLeave(client, consented) {
-        console.log(`⚠️ Player left: ${client.sessionId}, consented: ${consented}`);
-        this.state.players.delete(client.sessionId);
+    const playerId = this.sessionToPlayerId.get(client.sessionId);
+
+    console.log(`⚠️ Player left: ${client.sessionId} (playerId: ${playerId})`);
+
+    if (playerId) {
+        this.state.players.delete(playerId);
+        this.sessionToPlayerId.delete(client.sessionId);
     }
+    }
+
 }
 
 // --- Server ---
@@ -155,5 +175,6 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
+
 
 
