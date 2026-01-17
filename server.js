@@ -44,15 +44,16 @@ type("number")(Quat.prototype, "w");
 class PlayerState extends Schema {
     constructor() {
         super();
-        this.id = "";
-        this.user = "";
-        this.email = "";
-        this.name = "";
+        this.id = "";            // googleId
+        this.user = "";          // nome utente (opzionale)
+        this.email = "";         // email (opzionale)
+        this.name = "";          // nome personaggio
         this.playerPos = new Vec3();
         this.rotation = new Quat();
         this.activeWeapon = "";
     }
 }
+
 type("string")(PlayerState.prototype, "id");
 type("string")(PlayerState.prototype, "user");
 type("string")(PlayerState.prototype, "email");
@@ -121,7 +122,7 @@ class MyRoom extends Room {
             }
         });
 
-        // playerInfo
+        // playerInfo (solo per aggiornare dati in room)
         this.onMessage("playerInfo", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
@@ -149,9 +150,20 @@ class MyRoom extends Room {
 
         this.sessionToPlayerId.set(client.sessionId, playerId);
 
+        // create state
         const player = new PlayerState();
         player.id = playerId;
+
         this.state.players.set(playerId, player);
+
+        // load from firestore
+        db.collection("characters").doc(playerId).get()
+            .then(doc => {
+                if (doc.exists) {
+                    Object.assign(player, doc.data());
+                }
+            })
+            .catch(err => console.error(err));
     }
 
     onLeave(client, consented) {
@@ -177,4 +189,3 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
-
