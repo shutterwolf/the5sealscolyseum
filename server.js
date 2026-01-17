@@ -44,7 +44,7 @@ type("number")(Quat.prototype, "w");
 class PlayerState extends Schema {
     constructor() {
         super();
-        this.name = "";
+        this.id = "";
         this.playerPos = new Vec3();
         this.rotation = new Quat();
         this.activeWeapon = "";
@@ -130,6 +130,9 @@ class MyRoom extends Room {
             if (!player) return;
 
             player.name = data.name;
+            player.user  = data.user;
+            player.email = data.email;
+            player.id    = data.id;
         });
     }
 
@@ -149,7 +152,9 @@ class MyRoom extends Room {
 
         // create state
         const player = new PlayerState();
-        player.name = playerId;
+        player.name = data.name;
+        player.id = playerId;
+        player.user = data.user;
         this.state.players.set(playerId, player);
 
         // load from firestore
@@ -185,6 +190,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
+
 
 
 
