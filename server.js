@@ -5,7 +5,7 @@ const { Server, Room } = require("colyseus");
 const { Schema, MapSchema, type } = require("@colyseus/schema");
 const admin = require("firebase-admin");
 
-// --- Firestore Setup (solo per CRUD character se vuoi) ---
+// --- Firestore Setup ---
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 admin.initializeApp({
@@ -14,7 +14,7 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-// --- Schema Colyseus ---
+// --- Schema ---
 class Vec3 extends Schema {
     constructor(x=0, y=0, z=0) {
         super();
@@ -41,7 +41,6 @@ type("number")(Quat.prototype, "y");
 type("number")(Quat.prototype, "z");
 type("number")(Quat.prototype, "w");
 
-// --- PlayerState ---
 class PlayerState extends Schema {
     constructor() {
         super();
@@ -56,7 +55,6 @@ type(Vec3)(PlayerState.prototype, "playerPos");
 type(Quat)(PlayerState.prototype, "rotation");
 type("string")(PlayerState.prototype, "activeWeapon");
 
-// --- RoomState ---
 class MyRoomState extends Schema {
     constructor() {
         super();
@@ -67,33 +65,37 @@ type({ map: PlayerState })(MyRoomState.prototype, "players");
 
 // --- Room ---
 class MyRoom extends Room {
+
     onCreate(options) {
         console.log("Room created!");
         this.sessionToPlayerId = new Map();
         this.setState(new MyRoomState());
 
-        // Ricezione info base del player
+        // ------------------------------------------------
+        // Player Input
+        // ------------------------------------------------
         this.onMessage("playerInput", (client, data) => {
-    const playerId = this.sessionToPlayerId.get(client.sessionId);
-    if (!playerId) return;
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            if (!playerId) return;
 
-    const player = this.state.players.get(playerId);
-    if (!player) return;
+            const player = this.state.players.get(playerId);
+            if (!player) return;
 
-    player.playerPos.x = data.playerPos.x;
-    player.playerPos.y = data.playerPos.y;
-    player.playerPos.z = data.playerPos.z;
+            player.playerPos.x = data.playerPos.x;
+            player.playerPos.y = data.playerPos.y;
+            player.playerPos.z = data.playerPos.z;
 
-    player.rotation.x = data.rotation.x;
-    player.rotation.y = data.rotation.y;
-    player.rotation.z = data.rotation.z;
-    player.rotation.w = data.rotation.w;
+            player.rotation.x = data.rotation.x;
+            player.rotation.y = data.rotation.y;
+            player.rotation.z = data.rotation.z;
+            player.rotation.w = data.rotation.w;
 
-    player.activeWeapon = data.activeWeapon;
-});
+            player.activeWeapon = data.activeWeapon;
+        });
 
-
-        // CRUD character (solo se vuoi salvare su Firebase)
+        // ------------------------------------------------
+        // CRUD character
+        // ------------------------------------------------
         this.onMessage("checkCharacter", async (client, data) => {
             try {
                 const doc = await db.collection("characters").doc(data.playerId).get();
@@ -116,49 +118,60 @@ class MyRoom extends Room {
                 client.send("characterSaved", { ok: false, playerId: data.playerId });
             }
         });
+
+        // ------------------------------------------------
+        // INFO base player (mancava nel tuo file)
+        // ------------------------------------------------
+        this.onMessage("playerInfo", (client, data) => {
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            if (!playerId) return;
+
+            const player = this.state.players.get(playerId);
+            if (!player) return;
+
+            player.name = data.name;
+        });
     }
 
     onJoin(client, options) {
-    const playerId = options.playerId;
+        const playerId = options.playerId;
 
-    if (!playerId) {
-        console.error("No playerId provided!");
-        client.leave();
-        return;
+        if (!playerId) {
+            console.error("No playerId provided!");
+            client.leave();
+            return;
+        }
+
+        console.log(`🟢 Player joined: ${client.sessionId} (playerId: ${playerId})`);
+
+        // sessionId → playerId
+        this.sessionToPlayerId.set(client.sessionId, playerId);
+
+        // create state
+        const player = new PlayerState();
+        player.name = playerId;
+        this.state.players.set(playerId, player);
+
+        // load from firestore
+        db.collection("characters").doc(playerId).get()
+            .then(doc => {
+                if (doc.exists) {
+                    Object.assign(player, doc.data());
+                }
+            })
+            .catch(err => console.error(err));
     }
-
-    console.log(`🟢 Player joined: ${client.sessionId} (playerId: ${playerId})`);
-
-    // Mappa sessionId → playerId
-    this.sessionToPlayerId.set(client.sessionId, playerId);
-
-    // Crea lo state per quel playerId
-    const player = new PlayerState();
-    player.name = playerId;
-    this.state.players.set(playerId, player);
-
-    // Carica da Firestore usando playerId
-    db.collection("characters").doc(playerId).get()
-        .then(doc => {
-            if (doc.exists) {
-                Object.assign(player, doc.data());
-            }
-        })
-        .catch(err => console.error(err));
-    }
-
 
     onLeave(client, consented) {
-    const playerId = this.sessionToPlayerId.get(client.sessionId);
+        const playerId = this.sessionToPlayerId.get(client.sessionId);
 
-    console.log(`⚠️ Player left: ${client.sessionId} (playerId: ${playerId})`);
+        console.log(`⚠️ Player left: ${client.sessionId} (playerId: ${playerId})`);
 
-    if (playerId) {
-        this.state.players.delete(playerId);
-        this.sessionToPlayerId.delete(client.sessionId);
+        if (playerId) {
+            this.state.players.delete(playerId);
+            this.sessionToPlayerId.delete(client.sessionId);
+        }
     }
-    }
-
 }
 
 // --- Server ---
@@ -172,7 +185,6 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
-
 
 
 
