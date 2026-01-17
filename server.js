@@ -16,7 +16,7 @@ const db = admin.firestore();
 
 // --- Schema ---
 class Vec3 extends Schema {
-    constructor(x=0, y=0, z=0) {
+    constructor(x = 0, y = 0, z = 0) {
         super();
         this.x = x;
         this.y = y;
@@ -28,7 +28,7 @@ type("number")(Vec3.prototype, "y");
 type("number")(Vec3.prototype, "z");
 
 class Quat extends Schema {
-    constructor(x=0, y=0, z=0, w=1) {
+    constructor(x = 0, y = 0, z = 0, w = 1) {
         super();
         this.x = x;
         this.y = y;
@@ -45,11 +45,14 @@ class PlayerState extends Schema {
     constructor() {
         super();
         this.id = "";
+        this.name = "";
         this.playerPos = new Vec3();
         this.rotation = new Quat();
         this.activeWeapon = "";
     }
 }
+
+type("string")(PlayerState.prototype, "id");
 type("string")(PlayerState.prototype, "name");
 type(Vec3)(PlayerState.prototype, "playerPos");
 type(Quat)(PlayerState.prototype, "rotation");
@@ -94,7 +97,7 @@ class MyRoom extends Room {
         });
 
         // ------------------------------------------------
-        // CRUD character
+        // CRUD character (Firestore)
         // ------------------------------------------------
         this.onMessage("checkCharacter", async (client, data) => {
             try {
@@ -120,7 +123,7 @@ class MyRoom extends Room {
         });
 
         // ------------------------------------------------
-        // INFO base player (mancava nel tuo file)
+        // playerInfo (solo nome nel state)
         // ------------------------------------------------
         this.onMessage("playerInfo", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -129,10 +132,7 @@ class MyRoom extends Room {
             const player = this.state.players.get(playerId);
             if (!player) return;
 
-            player.name = data.name;
-            player.user  = data.user;
-            player.email = data.email;
-            player.id    = data.id;
+            if (data.name) player.name = data.name;
         });
     }
 
@@ -152,19 +152,10 @@ class MyRoom extends Room {
 
         // create state
         const player = new PlayerState();
-        player.name = data.name;
         player.id = playerId;
-        player.user = data.user;
-        this.state.players.set(playerId, player);
+        player.name = playerId; // placeholder, poi aggiornato con playerInfo
 
-        // load from firestore
-        db.collection("characters").doc(playerId).get()
-            .then(doc => {
-                if (doc.exists) {
-                    Object.assign(player, doc.data());
-                }
-            })
-            .catch(err => console.error(err));
+        this.state.players.set(playerId, player);
     }
 
     onLeave(client, consented) {
