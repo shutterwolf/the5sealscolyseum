@@ -73,28 +73,25 @@ class MyRoom extends Room {
         this.setState(new MyRoomState());
 
         // Ricezione info base del player
-        this.onMessage("playerInfo", (client, data) => {
-            const player = this.state.players.get(client.sessionId);
-            if (!player) return;
-            player.name = data.name;
-        });
-
-        // Input posizione / rotazione / arma
         this.onMessage("playerInput", (client, data) => {
-            const player = this.state.players.get(client.sessionId);
-            if (!player) return;
+    const playerId = this.sessionToPlayerId.get(client.sessionId);
+    if (!playerId) return;
 
-            player.playerPos.x = data.playerPos.x;
-            player.playerPos.y = data.playerPos.y;
-            player.playerPos.z = data.playerPos.z;
+    const player = this.state.players.get(playerId);
+    if (!player) return;
 
-            player.rotation.x = data.rotation.x;
-            player.rotation.y = data.rotation.y;
-            player.rotation.z = data.rotation.z;
-            player.rotation.w = data.rotation.w;
+    player.playerPos.x = data.playerPos.x;
+    player.playerPos.y = data.playerPos.y;
+    player.playerPos.z = data.playerPos.z;
 
-            player.activeWeapon = data.activeWeapon;
-        });
+    player.rotation.x = data.rotation.x;
+    player.rotation.y = data.rotation.y;
+    player.rotation.z = data.rotation.z;
+    player.rotation.w = data.rotation.w;
+
+    player.activeWeapon = data.activeWeapon;
+});
+
 
         // CRUD character (solo se vuoi salvare su Firebase)
         this.onMessage("checkCharacter", async (client, data) => {
@@ -175,6 +172,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
+
 
 
 
