@@ -44,10 +44,12 @@ type("number")(Quat.prototype, "w");
 class PlayerState extends Schema {
     constructor() {
         super();
-        this.id = "";            // googleId
-        this.user = "";          // nome utente (opzionale)
-        this.email = "";         // email (opzionale)
-        this.name = "";          // nome personaggio
+        this.id = "";
+        this.user = "";
+        this.email = "";
+        this.name = "";
+        this.race = "Human";
+        this.sex = "M";
         this.playerPos = new Vec3();
         this.rotation = new Quat();
         this.activeWeapon = "";
@@ -189,3 +191,4 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
+
