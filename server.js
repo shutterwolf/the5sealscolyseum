@@ -72,6 +72,27 @@ class MyRoomState extends Schema {
 }
 type({ map: PlayerState })(MyRoomState.prototype, "players");
 
+function isValidNumber(v) {
+    return typeof v === "number" && Number.isFinite(v);
+}
+
+function sanitizeVec3(v) {
+    return {
+        x: isValidNumber(v?.x) ? v.x : 0,
+        y: isValidNumber(v?.y) ? v.y : 0,
+        z: isValidNumber(v?.z) ? v.z : 0,
+    };
+}
+
+function sanitizeQuat(q) {
+    return {
+        x: isValidNumber(q?.x) ? q.x : 0,
+        y: isValidNumber(q?.y) ? q.y : 0,
+        z: isValidNumber(q?.z) ? q.z : 0,
+        w: isValidNumber(q?.w) ? q.w : 1,
+    };
+}
+
 // --- Room ---
 class MyRoom extends Room {
 
@@ -82,23 +103,28 @@ class MyRoom extends Room {
 
         // Player Input
         this.onMessage("playerInput", (client, data) => {
-            const playerId = this.sessionToPlayerId.get(client.sessionId);
-            if (!playerId) return;
+    const playerId = this.sessionToPlayerId.get(client.sessionId);
+    if (!playerId) return;
 
-            const player = this.state.players.get(playerId);
-            if (!player) return;
+    const player = this.state.players.get(playerId);
+    if (!player) return;
 
-            player.playerPos.x = data.playerPos.x;
-            player.playerPos.y = data.playerPos.y;
-            player.playerPos.z = data.playerPos.z;
+    // **VALIDAZIONE**
+    const pos = sanitizeVec3(data.playerPos);
+    const rot = sanitizeQuat(data.rotation);
 
-            player.rotation.x = data.rotation.x;
-            player.rotation.y = data.rotation.y;
-            player.rotation.z = data.rotation.z;
-            player.rotation.w = data.rotation.w;
+    player.playerPos.x = pos.x;
+    player.playerPos.y = pos.y;
+    player.playerPos.z = pos.z;
 
-            player.activeWeapon = data.activeWeapon;
-        });
+    player.rotation.x = rot.x;
+    player.rotation.y = rot.y;
+    player.rotation.z = rot.z;
+    player.rotation.w = rot.w;
+
+    player.activeWeapon = data.activeWeapon || "";
+});
+
 
         // CRUD character
         this.onMessage("checkCharacter", async (client, data) => {
@@ -215,6 +241,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
+
 
 
 
