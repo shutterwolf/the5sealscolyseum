@@ -140,42 +140,57 @@ class MyRoom extends Room {
     }
 
     onJoin(client, options) {
-        const playerId = options.playerId;
+    const playerId = options.playerId;
 
-        if (!playerId) {
-            console.error("No playerId provided!");
-            client.leave();
-            return;
-        }
-
-        console.log(`🟢 Player joined: ${client.sessionId} (playerId: ${playerId})`);
-
-        this.sessionToPlayerId.set(client.sessionId, playerId);
-
-        // create state
-        const player = new PlayerState();
-        player.id = playerId;
-
-        this.state.players.set(playerId, player);
-
-        // load from firestore
-        db.collection("characters").doc(playerId).get()
-    .then(doc => {
-        if (doc.exists) {
-            const data = doc.data();
-
-            // rimuovi id dal documento prima di assegnarlo allo state
-            delete data.id;
-
-            Object.assign(player, data);
-
-            // assicurati che l'id del player sia sempre quello del client
-            player.id = playerId;
-        }
-    })
-    .catch(err => console.error(err));
-
+    if (!playerId) {
+        console.error("No playerId provided!");
+        client.leave();
+        return;
     }
+
+    console.log(`🟢 Player joined: ${client.sessionId} (playerId: ${playerId})`);
+
+    this.sessionToPlayerId.set(client.sessionId, playerId);
+
+    // create state
+    const player = new PlayerState();
+    player.id = playerId;
+
+    this.state.players.set(playerId, player);
+
+    // load from firestore
+    db.collection("characters").doc(playerId).get()
+        .then(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+
+                // -----------------------
+                // FIX 0.16 (no Object.assign)
+                // -----------------------
+                player.user = data.user || player.user;
+                player.email = data.email || player.email;
+                player.name = data.name || player.name;
+                player.race = data.race || player.race;
+                player.sex = data.sex || player.sex;
+                player.activeWeapon = data.activeWeapon || player.activeWeapon;
+
+                // schema-safe assign
+                player.playerPos.x = data.playerPos?.x ?? player.playerPos.x;
+                player.playerPos.y = data.playerPos?.y ?? player.playerPos.y;
+                player.playerPos.z = data.playerPos?.z ?? player.playerPos.z;
+
+                player.rotation.x = data.rotation?.x ?? player.rotation.x;
+                player.rotation.y = data.rotation?.y ?? player.rotation.y;
+                player.rotation.z = data.rotation?.z ?? player.rotation.z;
+                player.rotation.w = data.rotation?.w ?? player.rotation.w;
+
+                // ensure id always correct
+                player.id = playerId;
+            }
+        })
+        .catch(err => console.error(err));
+}
+
 
     onLeave(client, consented) {
         const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -200,5 +215,6 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
+
 
 
