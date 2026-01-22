@@ -160,12 +160,21 @@ class MyRoom extends Room {
 
         // load from firestore
         db.collection("characters").doc(playerId).get()
-            .then(doc => {
-                if (doc.exists) {
-                    Object.assign(player, doc.data());
-                }
-            })
-            .catch(err => console.error(err));
+    .then(doc => {
+        if (doc.exists) {
+            const data = doc.data();
+
+            // rimuovi id dal documento prima di assegnarlo allo state
+            delete data.id;
+
+            Object.assign(player, data);
+
+            // assicurati che l'id del player sia sempre quello del client
+            player.id = playerId;
+        }
+    })
+    .catch(err => console.error(err));
+
     }
 
     onLeave(client, consented) {
@@ -191,4 +200,5 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
+
 
