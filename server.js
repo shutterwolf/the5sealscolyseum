@@ -230,9 +230,20 @@ class MyRoom extends Room {
 }
 
 // --- Server ---
+// --- Server ---
 const app = express();
 const server = http.createServer(app);
-const gameServer = new Server({ server });
+
+// 🔥 Aggiungi questa riga qui sotto
+const { WebSocketTransport } = require("@colyseus/ws-transport");
+
+const gameServer = new Server({
+    server,
+    transport: new WebSocketTransport({
+        pingInterval: 20000,   // ping ogni 20 secondi
+        pingMaxRetries: 5      // dopo 5 ping senza risposta, disconnette
+    })
+});
 
 gameServer.define("my_room", MyRoom);
 
@@ -240,6 +251,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
+
 
 
 
