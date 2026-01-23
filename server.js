@@ -221,8 +221,7 @@ class MyRoom extends Room {
     onLeave(client, consented) {
         const playerId = this.sessionToPlayerId.get(client.sessionId);
 
-        console.log(`⚠️ Player left: ${client.sessionId} (playerId: ${playerId})`);
-
+        console.log(`⚠️ Player left: ${client.sessionId} (playerId: ${playerId}) consented=${consented}`);
         if (playerId) {
             this.state.players.delete(playerId);
             this.sessionToPlayerId.delete(client.sessionId);
@@ -241,6 +240,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 const PORT = process.env.PORT || 2567;
 server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
+
 
 
 
