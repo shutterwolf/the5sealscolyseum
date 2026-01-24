@@ -103,28 +103,27 @@ class MyRoom extends Room {
 
         // Player Input
         this.onMessage("playerInput", (client, data) => {
-    const playerId = this.sessionToPlayerId.get(client.sessionId);
-    if (!playerId) return;
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            if (!playerId) return;
 
-    const player = this.state.players.get(playerId);
-    if (!player) return;
+            const player = this.state.players.get(playerId);
+            if (!player) return;
 
-    // **VALIDAZIONE**
-    const pos = sanitizeVec3(data.playerPos);
-    const rot = sanitizeQuat(data.rotation);
+            // **VALIDAZIONE**
+            const pos = sanitizeVec3(data.playerPos);
+            const rot = sanitizeQuat(data.rotation);
 
-    player.playerPos.x = pos.x;
-    player.playerPos.y = pos.y;
-    player.playerPos.z = pos.z;
+            player.playerPos.x = pos.x;
+            player.playerPos.y = pos.y;
+            player.playerPos.z = pos.z;
 
-    player.rotation.x = rot.x;
-    player.rotation.y = rot.y;
-    player.rotation.z = rot.z;
-    player.rotation.w = rot.w;
+            player.rotation.x = rot.x;
+            player.rotation.y = rot.y;
+            player.rotation.z = rot.z;
+            player.rotation.w = rot.w;
 
-    player.activeWeapon = data.activeWeapon || "";
-});
-
+            player.activeWeapon = data.activeWeapon || "";
+        });
 
         // CRUD character
         this.onMessage("checkCharacter", async (client, data) => {
@@ -166,57 +165,56 @@ class MyRoom extends Room {
     }
 
     onJoin(client, options) {
-    const playerId = options.playerId;
+        const playerId = options.playerId;
 
-    if (!playerId) {
-        console.error("No playerId provided!");
-        client.leave();
-        return;
+        if (!playerId) {
+            console.error("No playerId provided!");
+            client.leave();
+            return;
+        }
+
+        console.log(`🟢 Player joined: ${client.sessionId} (playerId: ${playerId})`);
+
+        this.sessionToPlayerId.set(client.sessionId, playerId);
+
+        // create state
+        const player = new PlayerState();
+        player.id = playerId;
+
+        this.state.players.set(playerId, player);
+
+        // load from firestore
+        db.collection("characters").doc(playerId).get()
+            .then(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+
+                    // -----------------------
+                    // FIX 0.16 (no Object.assign)
+                    // -----------------------
+                    player.user = data.user || player.user;
+                    player.email = data.email || player.email;
+                    player.name = data.name || player.name;
+                    player.race = data.race || player.race;
+                    player.sex = data.sex || player.sex;
+                    player.activeWeapon = data.activeWeapon || player.activeWeapon;
+
+                    // schema-safe assign
+                    player.playerPos.x = data.playerPos?.x ?? player.playerPos.x;
+                    player.playerPos.y = data.playerPos?.y ?? player.playerPos.y;
+                    player.playerPos.z = data.playerPos?.z ?? player.playerPos.z;
+
+                    player.rotation.x = data.rotation?.x ?? player.rotation.x;
+                    player.rotation.y = data.rotation?.y ?? player.rotation.y;
+                    player.rotation.z = data.rotation?.z ?? player.rotation.z;
+                    player.rotation.w = data.rotation?.w ?? player.rotation.w;
+
+                    // ensure id always correct
+                    player.id = playerId;
+                }
+            })
+            .catch(err => console.error(err));
     }
-
-    console.log(`🟢 Player joined: ${client.sessionId} (playerId: ${playerId})`);
-
-    this.sessionToPlayerId.set(client.sessionId, playerId);
-
-    // create state
-    const player = new PlayerState();
-    player.id = playerId;
-
-    this.state.players.set(playerId, player);
-
-    // load from firestore
-    db.collection("characters").doc(playerId).get()
-        .then(doc => {
-            if (doc.exists) {
-                const data = doc.data();
-
-                // -----------------------
-                // FIX 0.16 (no Object.assign)
-                // -----------------------
-                player.user = data.user || player.user;
-                player.email = data.email || player.email;
-                player.name = data.name || player.name;
-                player.race = data.race || player.race;
-                player.sex = data.sex || player.sex;
-                player.activeWeapon = data.activeWeapon || player.activeWeapon;
-
-                // schema-safe assign
-                player.playerPos.x = data.playerPos?.x ?? player.playerPos.x;
-                player.playerPos.y = data.playerPos?.y ?? player.playerPos.y;
-                player.playerPos.z = data.playerPos?.z ?? player.playerPos.z;
-
-                player.rotation.x = data.rotation?.x ?? player.rotation.x;
-                player.rotation.y = data.rotation?.y ?? player.rotation.y;
-                player.rotation.z = data.rotation?.z ?? player.rotation.z;
-                player.rotation.w = data.rotation?.w ?? player.rotation.w;
-
-                // ensure id always correct
-                player.id = playerId;
-            }
-        })
-        .catch(err => console.error(err));
-}
-
 
     onLeave(client, consented) {
         const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -230,18 +228,16 @@ class MyRoom extends Room {
 }
 
 // --- Server ---
-// --- Server ---
 const app = express();
 const server = http.createServer(app);
 
-// 🔥 Aggiungi questa riga qui sotto
 const { WebSocketTransport } = require("@colyseus/ws-transport");
 
 const gameServer = new Server({
-    server,
     transport: new WebSocketTransport({
-        pingInterval: 20000,   // ping ogni 20 secondi
-        pingMaxRetries: 5      // dopo 5 ping senza risposta, disconnette
+        server: server,
+        pingInterval: 20000,
+        pingMaxRetries: 5
     })
 });
 
@@ -249,3 +245,6 @@ gameServer.define("my_room", MyRoom);
 
 app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
+server.listen(process.env.PORT || 10000, () => {
+    console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
+});
