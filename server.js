@@ -249,11 +249,3 @@ gameServer.define("my_room", MyRoom);
 
 app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
-const PORT = process.env.PORT || 2567;
-server.listen(PORT, () => console.log(`Colyseus server listening on port ${PORT}`));
-
-
-
-
-
-
