@@ -166,15 +166,15 @@ class MyRoom extends Room {
 
     onJoin(client, options) {
         const playerId = options.playerId;
-
+        
         if (!playerId) {
             console.error("No playerId provided!");
             client.leave();
             return;
         }
-
+        
         console.log(`🟢 Player joined: ${client.sessionId} (playerId: ${playerId})`);
-
+        console.log(`Join: ${client.sessionId} in ${this.roomId}`);
         this.sessionToPlayerId.set(client.sessionId, playerId);
 
         // create state
@@ -248,4 +248,5 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
