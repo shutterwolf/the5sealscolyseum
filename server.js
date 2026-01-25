@@ -95,7 +95,7 @@ function sanitizeQuat(q) {
 
 // --- Room ---
 class MyRoom extends Room {
-
+     maxClients = 20;
     onCreate(options) {
         console.log("Room created!");
         this.sessionToPlayerId = new Map();
@@ -248,3 +248,4 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
