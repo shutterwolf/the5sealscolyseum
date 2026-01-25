@@ -53,6 +53,8 @@ class PlayerState extends Schema {
         this.playerPos = new Vec3();
         this.rotation = new Quat();
         this.activeWeapon = "";
+        this.anim = "idle";
+        this.speed = 1;
     }
 }
 
@@ -63,6 +65,8 @@ type("string")(PlayerState.prototype, "name");
 type(Vec3)(PlayerState.prototype, "playerPos");
 type(Quat)(PlayerState.prototype, "rotation");
 type("string")(PlayerState.prototype, "activeWeapon");
+type("string")(PlayerState.prototype, "anim");
+type("number")(PlayerState.prototype, "speed");
 
 class MyRoomState extends Schema {
     constructor() {
@@ -124,6 +128,24 @@ class MyRoom extends Room {
 
             player.activeWeapon = data.activeWeapon || "";
         });
+
+        // 🔥 Animazione player (walk / run / idle)
+        this.onMessage("anim", (client, data) => {
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            if (!playerId) return;
+
+            const player = this.state.players.get(playerId);
+            if (!player) return;
+
+            if (typeof data.anim === "string") {
+                player.anim = data.anim;
+            }
+
+            if (typeof data.speed === "number") {
+                player.speed = data.speed;
+            }
+        });
+
 
         // CRUD character
         this.onMessage("checkCharacter", async (client, data) => {
@@ -248,5 +270,6 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
