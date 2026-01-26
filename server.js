@@ -50,7 +50,7 @@ class PlayerState extends Schema {
         this.name = "";
         this.race = "Human";
         this.sex = "M";
-        this.texture = "";
+        this.texTure = "";
         this.playerPos = new Vec3();
         this.rotation = new Quat();
         this.activeWeapon = "";
@@ -63,7 +63,7 @@ type("string")(PlayerState.prototype, "id");
 type("string")(PlayerState.prototype, "user");
 type("string")(PlayerState.prototype, "email");
 type("string")(PlayerState.prototype, "name");
-type("string")(PlayerState.prototype, "texture");
+type("string")(PlayerState.prototype, "texTure");
 type(Vec3)(PlayerState.prototype, "playerPos");
 type(Quat)(PlayerState.prototype, "rotation");
 type("string")(PlayerState.prototype, "activeWeapon");
@@ -127,7 +127,7 @@ class MyRoom extends Room {
             player.rotation.y = rot.y;
             player.rotation.z = rot.z;
             player.rotation.w = rot.w;
-
+            player.texTure = data.texTure
             player.activeWeapon = data.activeWeapon || "";
         });
 
@@ -221,7 +221,7 @@ class MyRoom extends Room {
                     player.name = data.name || player.name;
                     player.race = data.race || player.race;
                     player.sex = data.sex || player.sex;
-                    player.texture = data.texture || player.texture;
+                    player.texTure = data.texTure || player.texTure;
                     player.activeWeapon = data.activeWeapon || player.activeWeapon;
 
                     // schema-safe assign
@@ -273,6 +273,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
