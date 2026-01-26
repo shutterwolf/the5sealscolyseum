@@ -63,6 +63,7 @@ type("string")(PlayerState.prototype, "id");
 type("string")(PlayerState.prototype, "user");
 type("string")(PlayerState.prototype, "email");
 type("string")(PlayerState.prototype, "name");
+type("string")(PlayerState.prototype, "texture");
 type(Vec3)(PlayerState.prototype, "playerPos");
 type(Quat)(PlayerState.prototype, "rotation");
 type("string")(PlayerState.prototype, "activeWeapon");
@@ -271,6 +272,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
