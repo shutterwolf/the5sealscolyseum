@@ -50,10 +50,11 @@ class PlayerState extends Schema {
         this.name = "";
         this.race = "Human";
         this.sex = "M";
+        this.texture = "";
         this.playerPos = new Vec3();
         this.rotation = new Quat();
         this.activeWeapon = "";
-        this.anim = "idle";
+        this.anim = "stand1";
         this.speed = 1;
     }
 }
@@ -270,6 +271,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
