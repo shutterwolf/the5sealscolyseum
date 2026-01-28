@@ -221,6 +221,8 @@ class MyRoom extends Room {
                     player.name = data.name || player.name;
                     player.race = data.race || player.race;
                     player.sex = data.sex || player.sex;
+                    player.anim = data.anim || player.anim;
+                    player.speed = data.speed || player.speed;
                     player.texTure = data.texTure || player.texTure;
                     player.activeWeapon = data.activeWeapon || player.activeWeapon;
 
@@ -273,6 +275,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
