@@ -130,7 +130,14 @@ class MyRoom extends Room {
             player.rotation.z = rot.z;
             player.rotation.w = rot.w;
             player.texTure = data.texTure
-            player.activeWeapon = data.activeWeapon || "";
+            player.activeWeapon = data.activeWeapon || ""
+            if (typeof data.anim === "string") {
+                player.anim = data.anim;
+            }
+
+            if (typeof data.speed === "number") {
+                player.speed = data.speed;
+            };
         });
 
         // 🔥 Animazione player (walk / run / idle)
@@ -277,6 +284,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
