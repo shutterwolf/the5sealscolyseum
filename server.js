@@ -63,6 +63,8 @@ type("string")(PlayerState.prototype, "id");
 type("string")(PlayerState.prototype, "user");
 type("string")(PlayerState.prototype, "email");
 type("string")(PlayerState.prototype, "name");
+type("string")(PlayerState.prototype, "race");
+type("string")(PlayerState.prototype, "sex");
 type("string")(PlayerState.prototype, "texTure");
 type(Vec3)(PlayerState.prototype, "playerPos");
 type(Quat)(PlayerState.prototype, "rotation");
@@ -275,6 +277,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
