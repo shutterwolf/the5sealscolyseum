@@ -247,6 +247,12 @@ class MyRoom extends Room {
 
                     // ensure id always correct
                     player.id = playerId;
+
+                    if (data.equipped) {
+                        client.send("loadEquipped", {
+                        equipped: data.equipped
+                        });
+                    }
                 }
             })
             .catch(err => console.error(err));
@@ -284,6 +290,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
