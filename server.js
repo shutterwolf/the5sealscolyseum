@@ -177,7 +177,7 @@ class MyRoom extends Room {
                 await db.collection("characters").doc(data.playerId).set(data.character);
                 client.send("characterSaved", { ok: true, playerId: data.playerId });
             } catch (err) {
-                console.error(err);
+                console.error("❌ FIRESTORE SAVE ERROR:", err);  // <--- qui vedi il motivo del fallimento
                 client.send("characterSaved", { ok: false, playerId: data.playerId });
             }
         });
@@ -284,6 +284,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
