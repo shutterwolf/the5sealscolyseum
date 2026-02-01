@@ -42,12 +42,12 @@ type("number")(Quat.prototype, "z");
 type("number")(Quat.prototype, "w");
 
 class Equipped extends Schema {
-    @type("string") HELM: string = "";
-    @type("string") WEAPON1: string = "";
-    @type("string") WEAPON2: string = "";
-    @type("string") SHIELD1: string = "";
-    @type("string") SHIELD2: string = "";
-    @type("string") ARMOR: string = "";
+    type("string") HELM: string = "";
+    type("string") WEAPON1: string = "";
+    type("string") WEAPON2: string = "";
+    type("string") SHIELD1: string = "";
+    type("string") SHIELD2: string = "";
+    type("string") ARMOR: string = "";
     // aggiungi altri slot se servono
 }
 
@@ -82,8 +82,8 @@ type(Quat)(PlayerState.prototype, "rotation");
 type("string")(PlayerState.prototype, "activeWeapon");
 type("string")(PlayerState.prototype, "anim");
 type("number")(PlayerState.prototype, "speed");
-@type("number") localMap: number = 0;       // ID della mappa
-@type(Equipped) equipped: Equipped = new Equipped();
+type("number") localMap: number = 0;       // ID della mappa
+type(Equipped) equipped: Equipped = new Equipped();
 
 class MyRoomState extends Schema {
     constructor() {
@@ -319,6 +319,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
