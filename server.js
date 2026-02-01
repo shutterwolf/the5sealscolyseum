@@ -41,6 +41,16 @@ type("number")(Quat.prototype, "y");
 type("number")(Quat.prototype, "z");
 type("number")(Quat.prototype, "w");
 
+class Equipped extends Schema {
+    @type("string") HELM: string = "";
+    @type("string") WEAPON1: string = "";
+    @type("string") WEAPON2: string = "";
+    @type("string") SHIELD1: string = "";
+    @type("string") SHIELD2: string = "";
+    @type("string") ARMOR: string = "";
+    // aggiungi altri slot se servono
+}
+
 class PlayerState extends Schema {
     constructor() {
         super();
@@ -56,6 +66,7 @@ class PlayerState extends Schema {
         this.activeWeapon = "";
         this.anim = "stand1";
         this.speed = 1;
+        this.localMap=0;
     }
 }
 
@@ -71,6 +82,8 @@ type(Quat)(PlayerState.prototype, "rotation");
 type("string")(PlayerState.prototype, "activeWeapon");
 type("string")(PlayerState.prototype, "anim");
 type("number")(PlayerState.prototype, "speed");
+@type("number") localMap: number = 0;       // ID della mappa
+@type(Equipped) equipped: Equipped = new Equipped();
 
 class MyRoomState extends Schema {
     constructor() {
@@ -129,6 +142,7 @@ class MyRoom extends Room {
             player.rotation.y = rot.y;
             player.rotation.z = rot.z;
             player.rotation.w = rot.w;
+            player.localMap = data.localMap
             player.texTure = data.texTure
             player.activeWeapon = data.activeWeapon || ""
             if (typeof data.anim === "string") {
@@ -249,7 +263,7 @@ class MyRoom extends Room {
                     player.speed = data.speed || player.speed;
                     player.texTure = data.texTure || player.texTure;
                     player.activeWeapon = data.activeWeapon || player.activeWeapon;
-
+                    player.localMap = data.localMap || player.localMap;
                     // schema-safe assign
                     player.playerPos.x = data.playerPos?.x ?? player.playerPos.x;
                     player.playerPos.y = data.playerPos?.y ?? player.playerPos.y;
@@ -305,6 +319,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
