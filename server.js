@@ -182,6 +182,21 @@ class MyRoom extends Room {
             }
         });
 
+        this.onMessage("deleteCharacter", (client, message) => {
+            const charId = message.id;
+
+            // esempio: characters è il tuo database in memoria o collegato a DB
+            if (this.state.characters[charId]) {
+                delete this.state.characters[charId];
+                console.log("Character deleted:", charId);
+
+                // opzionale: conferma al client
+                client.send("characterDeleted", { id: charId, success: true });
+            } else {
+                client.send("characterDeleted", { id: charId, success: false });
+            }
+        });
+        
         // playerInfo (solo per aggiornare dati in room)
         this.onMessage("playerInfo", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -290,6 +305,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
