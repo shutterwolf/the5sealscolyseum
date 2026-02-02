@@ -278,7 +278,9 @@ class MyRoom extends Room {
                     player.speed = data.speed || player.speed;
                     player.texTure = data.texTure || player.texTure;
                     player.activeWeapon = data.activeWeapon || player.activeWeapon;
-                    player.localMap = data.localMap || player.localMap;
+                    player.localMap = typeof data.localMap === "number" ? data.localMap : 0;
+                    player.depth = typeof data.depth === "number" ? data.depth : 0;
+                    player.dungeonId = typeof data.dungeonId === "string" ? data.dungeonId : ""
                     // schema-safe assign
                     player.playerPos.x = data.playerPos?.x ?? player.playerPos.x;
                     player.playerPos.y = data.playerPos?.y ?? player.playerPos.y;
@@ -338,6 +340,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
