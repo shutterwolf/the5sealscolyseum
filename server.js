@@ -91,7 +91,7 @@ type(Quat)(PlayerState.prototype, "rotation");
 type("string")(PlayerState.prototype, "activeWeapon");
 type("string")(PlayerState.prototype, "anim");
 type("number")(PlayerState.prototype, "speed");
-type("number")(PlayerState.prototype, "localMap";       // ID della mappa
+type("number")(PlayerState.prototype, "localMap"); // ID della mappa
 type(Equipped)(PlayerState.prototype, "equipped");
 
 class MyRoomState extends Schema {
@@ -330,6 +330,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
