@@ -44,14 +44,15 @@ type("number")(Quat.prototype, "w");
 class Equipped extends Schema {
     constructor() {
         super();
-        this.HELM = null;
-        this.ARMOUR = null;
-        this.WEAPON = null;
-        this.WEAPON2 = null;
-        this.SHIELD = null;
-        this.SHIELD2 = null;
+        this.HELM = "";
+        this.ARMOUR = "";
+        this.WEAPON = "";
+        this.WEAPON2 = "";
+        this.SHIELD = "";
+        this.SHIELD2 = "";
     }
 }
+
 type("string")(Equipped.prototype, "HELM");
 type("string")(Equipped.prototype, "ARMOUR");
 type("string")(Equipped.prototype, "WEAPON");
@@ -288,8 +289,10 @@ class MyRoom extends Room {
 
                     if (data.equipped) {
                         Object.keys(player.equipped).forEach(slot => {
-                            if (data.equipped[slot]) {
-                                player.equipped[slot] = data.equipped[slot];
+                            if (data.equipped[slot]?.obj) {
+                                player.equipped[slot] = data.equipped[slot].obj;
+                            } else {
+                                player.equipped[slot] = ""; // slot vuoto
                             }
                         });
                     }
@@ -330,6 +333,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
