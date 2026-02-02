@@ -42,14 +42,22 @@ type("number")(Quat.prototype, "z");
 type("number")(Quat.prototype, "w");
 
 class Equipped extends Schema {
-    type("string") HELM: string = "";
-    type("string") WEAPON1: string = "";
-    type("string") WEAPON2: string = "";
-    type("string") SHIELD1: string = "";
-    type("string") SHIELD2: string = "";
-    type("string") ARMOR: string = "";
-    // aggiungi altri slot se servono
+    constructor() {
+        super();
+        this.HELM = null;
+        this.ARMOUR = null;
+        this.WEAPON = null;
+        this.WEAPON2 = null;
+        this.SHIELD = null;
+        this.SHIELD2 = null;
+    }
 }
+type("string")(Equipped.prototype, "HELM");
+type("string")(Equipped.prototype, "ARMOUR");
+type("string")(Equipped.prototype, "WEAPON");
+type("string")(Equipped.prototype, "WEAPON2");
+type("string")(Equipped.prototype, "SHIELD");
+type("string")(Equipped.prototype, "SHIELD2");
 
 class PlayerState extends Schema {
     constructor() {
@@ -67,6 +75,7 @@ class PlayerState extends Schema {
         this.anim = "stand1";
         this.speed = 1;
         this.localMap=0;
+        this.equipped=new Equipped();
     }
 }
 
@@ -82,8 +91,8 @@ type(Quat)(PlayerState.prototype, "rotation");
 type("string")(PlayerState.prototype, "activeWeapon");
 type("string")(PlayerState.prototype, "anim");
 type("number")(PlayerState.prototype, "speed");
-type("number") localMap: number = 0;       // ID della mappa
-type(Equipped) equipped: Equipped = new Equipped();
+type("number")(PlayerState.prototype, "localMap";       // ID della mappa
+type(Equipped)(PlayerState.prototype, "equipped");
 
 class MyRoomState extends Schema {
     constructor() {
@@ -278,8 +287,10 @@ class MyRoom extends Room {
                     player.id = playerId;
 
                     if (data.equipped) {
-                        client.send("loadEquipped", {
-                        equipped: data.equipped
+                        Object.keys(player.equipped).forEach(slot => {
+                            if (data.equipped[slot]) {
+                                player.equipped[slot] = data.equipped[slot];
+                            }
                         });
                     }
                 }
@@ -319,6 +330,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
