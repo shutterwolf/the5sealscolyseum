@@ -76,6 +76,8 @@ class PlayerState extends Schema {
         this.anim = "stand1";
         this.speed = 1;
         this.localMap=0;
+        this.depth=0;
+        this.dungeonId=null;
         this.equipped=new Equipped();
     }
 }
@@ -93,6 +95,8 @@ type("string")(PlayerState.prototype, "activeWeapon");
 type("string")(PlayerState.prototype, "anim");
 type("number")(PlayerState.prototype, "speed");
 type("number")(PlayerState.prototype, "localMap"); // ID della mappa
+type("number")(PlayerState.prototype, "depth");
+type("string")(PlayerState.prototype, "dungeonId");
 type(Equipped)(PlayerState.prototype, "equipped");
 
 class MyRoomState extends Schema {
@@ -152,13 +156,14 @@ class MyRoom extends Room {
             player.rotation.y = rot.y;
             player.rotation.z = rot.z;
             player.rotation.w = rot.w;
-            player.localMap = data.localMap
             player.texTure = data.texTure
             player.activeWeapon = data.activeWeapon || ""
+            if (typeof data.localMap === "number") player.localMap = data.localMap;
+            if (typeof data.depth === "number") player.depth = data.depth;
+            if (typeof data.dungeonId === "string") player.dungeonId = data.dungeonId;
             if (typeof data.anim === "string") {
                 player.anim = data.anim;
             }
-
             if (typeof data.speed === "number") {
                 player.speed = data.speed;
             };
@@ -333,6 +338,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
