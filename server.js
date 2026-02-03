@@ -44,21 +44,23 @@ type("number")(Quat.prototype, "w");
 class Equipped extends Schema {
     constructor() {
         super();
-        this.HELM = "";
-        this.ARMOUR = "";
-        this.WEAPON = "";
-        this.WEAPON2 = "";
-        this.SHIELD = "";
-        this.SHIELD2 = "";
+        this.HELM = null;
+        this.ARMOUR = null;
+        this.WEAPON = null;
+        this.WEAPON2 = null;
+        this.SHIELD = null;
+        this.SHIELD2 = null;
+        this.ITEM = null;
     }
 }
 
-type("string")(Equipped.prototype, "HELM");
-type("string")(Equipped.prototype, "ARMOUR");
-type("string")(Equipped.prototype, "WEAPON");
-type("string")(Equipped.prototype, "WEAPON2");
-type("string")(Equipped.prototype, "SHIELD");
-type("string")(Equipped.prototype, "SHIELD2");
+type("any")(Equipped.prototype, "HELM");
+type("any")(Equipped.prototype, "ARMOUR");
+type("any")(Equipped.prototype, "WEAPON");
+type("any")(Equipped.prototype, "WEAPON2");
+type("any")(Equipped.prototype, "SHIELD");
+type("any")(Equipped.prototype, "SHIELD2");
+type("any")(Equipped.prototype, "ITEM");
 
 class PlayerState extends Schema {
     constructor() {
@@ -341,6 +343,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
