@@ -54,13 +54,13 @@ class Equipped extends Schema {
     }
 }
 
-type("any")(Equipped.prototype, "HELM");
-type("any")(Equipped.prototype, "ARMOUR");
-type("any")(Equipped.prototype, "WEAPON");
-type("any")(Equipped.prototype, "WEAPON2");
-type("any")(Equipped.prototype, "SHIELD");
-type("any")(Equipped.prototype, "SHIELD2");
-type("any")(Equipped.prototype, "ITEM");
+type("number")(Equipped.prototype, "HELM");
+type("number")(Equipped.prototype, "ARMOUR");
+type("number")(Equipped.prototype, "WEAPON");
+type("number")(Equipped.prototype, "WEAPON2");
+type("number")(Equipped.prototype, "SHIELD");
+type("number")(Equipped.prototype, "SHIELD2");
+type("number")(Equipped.prototype, "ITEM");
 
 class PlayerState extends Schema {
     constructor() {
@@ -345,6 +345,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
