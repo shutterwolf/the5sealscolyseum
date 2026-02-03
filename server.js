@@ -252,14 +252,18 @@ class MyRoom extends Room {
             return;
         }
         
-        console.log(`🟢 Player joined: ${client.sessionId} (playerId: ${playerId})`);
-        console.log(`Join: ${client.sessionId} in ${this.roomId}`);
+        //console.log(`🟢 Player joined: ${client.sessionId} (playerId: ${playerId})`);
+        //console.log(`Join: ${client.sessionId} in ${this.roomId}`);
         this.sessionToPlayerId.set(client.sessionId, playerId);
 
         // create state
         const player = new PlayerState();
         player.id = playerId;
-
+        // 🔥 inizializza equipped SEMPRE
+        Object.keys(player.equipped).forEach(slot => {
+            player.equipped[slot] = 0;
+        });
+        
         this.state.players.set(playerId, player);
 
         // load from firestore
@@ -299,11 +303,9 @@ class MyRoom extends Room {
                     if (data.equipped) {
                         Object.keys(player.equipped).forEach(slot => {
                             const item = data.equipped[slot];
-                            if (item && typeof item === "object") {
-                                player.equipped[slot] = { ...item };
-                            } else {
-                                player.equipped[slot] = 0; // o {} se preferisci
-                            }
+                            player.equipped[slot] = item && typeof item === "object"
+                            ? { ...item }
+                            : 0;
                         });
                     }
                 }
@@ -343,6 +345,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
