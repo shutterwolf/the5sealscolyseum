@@ -296,10 +296,11 @@ class MyRoom extends Room {
 
                     if (data.equipped) {
                         Object.keys(player.equipped).forEach(slot => {
-                            if (data.equipped[slot]) {
-                                player.equipped[slot] = { ...data.equipped[slot] };
+                            const item = data.equipped[slot];
+                            if (item && typeof item === "object") {
+                                player.equipped[slot] = { ...item };
                             } else {
-                                player.equipped[slot] = null; // o {} se preferisci
+                                player.equipped[slot] = 0; // o {} se preferisci
                             }
                         });
                     }
@@ -340,6 +341,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
