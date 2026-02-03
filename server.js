@@ -299,13 +299,17 @@ class MyRoom extends Room {
 
                     // ensure id always correct
                     player.id = playerId;
+                    // log for weapons
+                    console.log("📥 Firestore RAW DATA", playerId, JSON.stringify(data, null, 2));
+                    console.log("📥 Firestore equipped", playerId, data.equipped);
+                    console.log("🧠 BEFORE state.equipped", playerId, player.equipped);
                     // Aggiorna equipped lato room
                     if (data.equipped) {
                         Object.keys(data.equipped).forEach(slot => {
                             player.equipped[slot] = data.equipped[slot] || 0;
                         });
                     }
-
+                    console.log("🧠 AFTER state.equipped", playerId, player.equipped);
                     client.send("fullEquip", { equipped: data.equipped });
                 }
             })
@@ -344,6 +348,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
