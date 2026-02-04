@@ -41,26 +41,41 @@ type("number")(Quat.prototype, "y");
 type("number")(Quat.prototype, "z");
 type("number")(Quat.prototype, "w");
 
-class Equipped extends Schema {
+class EquippedItem extends Schema {
     constructor() {
         super();
-        this.HELM = null;
-        this.ARMOUR = null;
-        this.WEAPON = null;
-        this.WEAPON2 = null;
-        this.SHIELD = null;
-        this.SHIELD2 = null;
-        this.ITEM = null;
+        this.itemId = 0;
+        this.armourValue=1;
+        this.damageValue=0;
+        this.obj="",
+        this.slot=0,
+        this.special="",
+        this.twohand=false,
+        this.type="",
+        this.value=0
     }
 }
 
-type("number")(Equipped.prototype, "HELM");
-type("number")(Equipped.prototype, "ARMOUR");
-type("number")(Equipped.prototype, "WEAPON");
-type("number")(Equipped.prototype, "WEAPON2");
-type("number")(Equipped.prototype, "SHIELD");
-type("number")(Equipped.prototype, "SHIELD2");
-type("number")(Equipped.prototype, "ITEM");
+type("number")(EquippedItem.prototype, "itemId");
+type("number")(EquippedItem.prototype, "armourValue");
+type("number")(EquippedItem.prototype, "damageValue");
+type("string")(EquippedItem.prototype, "obj");
+type("number")(EquippedItem.prototype, "slot");
+type("string")(EquippedItem.prototype, "special");
+type("boolean")(EquippedItem.prototype, "twohand");
+type("string")(EquippedItem.prototype, "type");
+type("number")(EquippedItem.prototype, "value");
+
+
+class Equipped extends Schema {
+    constructor() {
+        super();
+        this.slots = new MapSchema();
+    }
+}
+
+type({ map: EquippedItem })(Equipped.prototype, "slots");
+
 
 class PlayerState extends Schema {
     constructor() {
@@ -138,6 +153,19 @@ class MyRoom extends Room {
         this.sessionToPlayerId = new Map();
         this.setState(new MyRoomState());
 
+        this.onMessage("equipItem", (client, data) => {
+            const player = this.state.players.get(this.sessionToPlayerId.get(client.sessionId));
+            if (!player) return;
+
+            let item = player.equipped.slots.get(data.slot);
+            if (!item) {
+                item = new EquippedItem();
+                player.equipped.slots.set(data.slot, item);
+            }
+            item.itemId = data.itemId;
+            item.durability = 100;
+        });
+        
         // Player Input
         this.onMessage("playerInput", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -260,11 +288,34 @@ class MyRoom extends Room {
         const player = new PlayerState();
         player.id = playerId;
         // 🔥 inizializza equipped SEMPRE
-        Object.keys(player.equipped).forEach(slot => {
-            player.equipped[slot] = 0;
+        const DEFAULT_SLOTS = [
+            "HELM",
+            "ARMOUR",
+            "WEAPON",
+            "WEAPON2",
+            "SHIELD",
+            "SHIELD2",
+            "ITEM"
+        ];
+
+        DEFAULT_SLOTS.forEach(slot => {
+        const item = new EquippedItem();
+        item.itemId = 0;
+        item.durability = 0;
+        player.equipped.slots.set(slot, item);
         });
+
         
         this.state.players.set(playerId, player);
+
+        // Iterare su tutti gli slot
+        player.equipped.slots.forEach((item, slot) => {
+            console.log(slot, item.itemId, item.durability);
+        });
+
+        // Accedere a uno slot specifico
+        const weapon = player.equipped.slots.get("WEAPON");
+        console.log(weapon.itemId, weapon.durability);
 
         // load from firestore
         db.collection("characters").doc(playerId).get()
@@ -305,8 +356,11 @@ class MyRoom extends Room {
                     console.log("🧠 BEFORE state.equipped", playerId, player.equipped);
                     // Aggiorna equipped lato room
                     if (data.equipped) {
-                        Object.keys(data.equipped).forEach(slot => {
-                            player.equipped[slot] = data.equipped[slot] || 0;
+                        Object.entries(data.equipped).forEach(([slot, raw]) => {
+                        const item = new EquippedItem();
+                        item.itemId = raw.itemId ?? 0;
+                        item.durability = raw.durability ?? 0;
+                        player.equipped.slots.set(slot, item);
                         });
                     }
                     console.log("🧠 AFTER state.equipped", playerId, player.equipped);
@@ -348,6 +402,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
