@@ -354,11 +354,12 @@ class MyRoom extends Room {
                     console.log("🧠 BEFORE state.equipped", playerId, player.equipped);
                     // Aggiorna equipped lato room
                     if (data.equipped) {
-                        Object.entries(data.equipped).forEach(([slot, raw]) => {
-                        const item = new EquippedItem();
-                        player.equipped.slots.set(slot, item);
-                        });
-                    }
+                Object.entries(data.equipped).forEach(([slot, raw]) => {
+                    const item = new EquippedItem();
+                    Object.assign(item, raw); // copia tutti i campi dal DB
+                    player.equipped.slots.set(slot, item);
+                });
+            }
                     console.log("🧠 AFTER state.equipped", playerId, player.equipped);
                     client.send("fullEquip", { equipped: data.equipped });
                 }
@@ -398,6 +399,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
