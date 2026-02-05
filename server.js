@@ -291,102 +291,95 @@ item.twohand = data.twohand ?? item.twohand;
         const player = new PlayerState();
         player.id = playerId;
         // 🔥 inizializza equipped SEMPRE
-        const DEFAULT_SLOTS = [
-            "HELM",
-            "ARMOUR",
-            "WEAPON",
-            "WEAPON2",
-            "SHIELD",
-            "SHIELD2",
-            "ITEM"
-        ];
+        // inizializza equipped SEMPRE
+const DEFAULT_SLOTS = ["HELM", "ARMOUR", "WEAPON", "WEAPON2", "SHIELD", "SHIELD2", "ITEM"];
+DEFAULT_SLOTS.forEach(slot => {
+    const item = new EquippedItem();
+    player.equipped.slots.set(slot, item);
+});
 
-        DEFAULT_SLOTS.forEach(slot => {
-        const item = new EquippedItem();
-        player.equipped.slots.set(slot, item);
-        });
-        
-        console.log("🧩 [INIT] Equipped slots AFTER default init:");
-        player.equipped.slots.forEach((item, slot) => {
-        console.log(
+// Log dei slot
+console.log("🧩 [INIT] Equipped slots AFTER default init:");
+player.equipped.slots.forEach((item, slot) => {
+    console.log(
         "  slot:", slot,
         "| itemId:", item.itemId,
         "| obj:", item.obj,
         "| type:", item.type,
         "| twohand:", item.twohand
-        );
-        });
-        
-        this.state.players.set(playerId, player);
+    );
+});
 
-        // Iterare su tutti gli slot
-        player.equipped.slots.forEach((item, slot) => {
-            console.log(slot, item.itemId, item.durability);
-        });
+// Aggiungi player allo state
+this.state.players.set(playerId, player);
 
-        // Accedere a uno slot specifico
-        const weapon = player.equipped.slots.get("WEAPON");
-        console.log(weapon.itemId, weapon.durability);
+// Iterare su tutti gli slot
+player.equipped.slots.forEach((item, slot) => {
+    console.log(slot, item.itemId, item.durability);
+});
 
-        // load from firestore
-        db.collection("characters").doc(playerId).get()
-            .then(doc => {
-                if (doc.exists) {
-                    const data = doc.data();
+// Accedere a uno slot specifico
+const weapon = player.equipped.slots.get("WEAPON");
+console.log(weapon.itemId, weapon.durability);
 
-                    // -----------------------
-                    // FIX 0.16 (no Object.assign)
-                    // -----------------------
-                    player.user = data.user || player.user;
-                    player.email = data.email || player.email;
-                    player.name = data.name || player.name;
-                    player.race = data.race || player.race;
-                    player.sex = data.sex || player.sex;
-                    player.anim = data.anim || player.anim;
-                    player.speed = data.speed || player.speed;
-                    player.texTure = data.texTure || player.texTure;
-                    player.activeWeapon = data.activeWeapon || player.activeWeapon;
-                    player.localMap = typeof data.localMap === "number" ? data.localMap : 0;
-                    player.depth = typeof data.depth === "number" ? data.depth : 0;
-                    player.dungeonId = typeof data.dungeonId === "string" ? data.dungeonId : ""
-                    // schema-safe assign
-                    player.playerPos.x = data.playerPos?.x ?? player.playerPos.x;
-                    player.playerPos.y = data.playerPos?.y ?? player.playerPos.y;
-                    player.playerPos.z = data.playerPos?.z ?? player.playerPos.z;
+// Load from Firestore
+db.collection("characters").doc(playerId).get()
+    .then(doc => {
+        if (doc.exists) {
+            const data = doc.data();
 
-                    player.rotation.x = data.rotation?.x ?? player.rotation.x;
-                    player.rotation.y = data.rotation?.y ?? player.rotation.y;
-                    player.rotation.z = data.rotation?.z ?? player.rotation.z;
-                    player.rotation.w = data.rotation?.w ?? player.rotation.w;
+            player.user = data.user || player.user;
+            player.email = data.email || player.email;
+            player.name = data.name || player.name;
+            player.race = data.race || player.race;
+            player.sex = data.sex || player.sex;
+            player.anim = data.anim || player.anim;
+            player.speed = data.speed || player.speed;
+            player.texTure = data.texTure || player.texTure;
+            player.activeWeapon = data.activeWeapon || player.activeWeapon;
+            player.localMap = typeof data.localMap === "number" ? data.localMap : 0;
+            player.depth = typeof data.depth === "number" ? data.depth : 0;
+            player.dungeonId = typeof data.dungeonId === "string" ? data.dungeonId : "";
 
-                    // ensure id always correct
-                    player.id = playerId;
-                    // log for weapons
-                    console.log("📥 Firestore RAW DATA", playerId, JSON.stringify(data, null, 2));
-                    console.log("📥 Firestore equipped", playerId, data.equipped);
-                    console.log("🧠 BEFORE state.equipped", playerId, JSON.stringify(player.equipped, null, 2));
-                    if (data.equipped) {
-                        Object.entries(data.equipped).forEach(([slot, raw]) => {
-                            const item = new EquippedItem();
-                            Object.assign(item, raw); // copia tutti i campi dal DB
-                            console.log(`Slot ${slot} updated:`, item);
-                            player.equipped.slots.set(slot, item);
-                        });
-                        console.log("🧠 AFTER state.equipped", playerId, JSON.stringify(player.equipped, null, 2));
-                    }
+            player.playerPos.x = data.playerPos?.x ?? player.playerPos.x;
+            player.playerPos.y = data.playerPos?.y ?? player.playerPos.y;
+            player.playerPos.z = data.playerPos?.z ?? player.playerPos.z;
 
-                    player.equipped.slots.forEach((item, slot) => {
-                        console.log(
-                            "  slot:", slot,
-                            "| itemId:", item.itemId,
-                            "| obj:", item.obj,
-                            "| type:", item.type,
-                            "| twohand:", item.twohand,
-                            "| durability:", item.durability
-                        );
-                    });
+            player.rotation.x = data.rotation?.x ?? player.rotation.x;
+            player.rotation.y = data.rotation?.y ?? player.rotation.y;
+            player.rotation.z = data.rotation?.z ?? player.rotation.z;
+            player.rotation.w = data.rotation?.w ?? player.rotation.w;
+
+            // aggiorna equipped
+            if (data.equipped) {
+                Object.entries(data.equipped).forEach(([slot, raw]) => {
+                    const item = new EquippedItem();
+                    Object.assign(item, raw);
+                    player.equipped.slots.set(slot, item);
                 });
-            
+            }
+
+            // invia equipped al client
+            const equippedData = {};
+            player.equipped.slots.forEach((item, slot) => {
+                equippedData[slot] = {
+                    itemId: item.itemId,
+                    armourValue: item.armourValue,
+                    damageValue: item.damageValue,
+                    durability: item.durability,
+                    obj: item.obj,
+                    slot: item.slot,
+                    special: item.special,
+                    twohand: item.twohand,
+                    type: item.type,
+                    value: item.value
+                };
+            });
+
+            client.send("fullEquip", { equipped: equippedData });
+        }
+    })
+    .catch(err => console.error(err));
 
                     console.log("🧠 AFTER state.equipped", playerId, player.equipped);
                     // creare un oggetto plain JSON dai dati Schema
@@ -445,40 +438,6 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
