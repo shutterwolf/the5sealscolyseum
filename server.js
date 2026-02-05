@@ -162,6 +162,9 @@ class MyRoom extends Room {
             let item = player.equipped.slots.get(data.slot);
             if (!item) {
                 item = new EquippedItem();
+                player.obj=item.obj;
+                player.type=item.type;
+                plater.towhan=item.twohand;
                 player.equipped.slots.set(data.slot, item);
             }
         });
@@ -186,8 +189,8 @@ class MyRoom extends Room {
             player.rotation.y = rot.y;
             player.rotation.z = rot.z;
             player.rotation.w = rot.w;
-            player.texTure = data.texTure
-            player.activeWeapon = data.activeWeapon || ""
+            player.texTure = data.texTure;
+            player.activeWeapon = data.activeWeapon || "";
             if (typeof data.localMap === "number") player.localMap = data.localMap;
             if (typeof data.depth === "number") player.depth = data.depth;
             if (typeof data.dungeonId === "string") player.dungeonId = data.dungeonId;
@@ -399,6 +402,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
