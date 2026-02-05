@@ -162,11 +162,11 @@ class MyRoom extends Room {
             let item = player.equipped.slots.get(data.slot);
             if (!item) {
                 item = new EquippedItem();
-                player.obj=item.obj;
-                player.type=item.type;
-                plater.towhan=item.twohand;
                 player.equipped.slots.set(data.slot, item);
             }
+            item.obj = data.obj ?? item.obj;
+item.type = data.type ?? item.type;
+item.twohand = data.twohand ?? item.twohand;
         });
         
         // Player Input
@@ -402,6 +402,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
