@@ -364,25 +364,17 @@ item.twohand = data.twohand ?? item.twohand;
                     // log for weapons
                     console.log("📥 Firestore RAW DATA", playerId, JSON.stringify(data, null, 2));
                     console.log("📥 Firestore equipped", playerId, data.equipped);
-                    console.log("🧠 BEFORE state.equipped", playerId, player.equipped);
-                    // Aggiorna equipped lato room
-                    if (data.equipped) {
-    console.log("🧠 [APPLY] Applying Firestore equipped to state...");
+                    console.log("🧠 BEFORE state.equipped", playerId, JSON.stringify(player.equipped, null, 2));
+if (data.equipped) {
     Object.entries(data.equipped).forEach(([slot, raw]) => {
-        console.log("  ▶ APPLY slot:", slot, raw);
-
         const item = new EquippedItem();
-        Object.assign(item, raw);
+        Object.assign(item, raw); // copia tutti i campi dal DB
+        console.log(`Slot ${slot} updated:`, item);
+        player.equipped.slots.set(slot, item);
+    });
+}
+console.log("🧠 AFTER state.equipped", playerId, JSON.stringify(player.equipped, null, 2));
 
-        console.log("    ↳ New EquippedItem:", {
-            itemId: item.itemId,
-            obj: item.obj,
-            type: item.type,
-            twohand: item.twohand,
-            durability: item.durability
-        });
-
-        console.log("🧠 [FINAL STATE] state.equipped.slots:");
 player.equipped.slots.forEach((item, slot) => {
     console.log(
         "  slot:", slot,
@@ -436,6 +428,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
