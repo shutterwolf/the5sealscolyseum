@@ -47,6 +47,7 @@ class EquippedItem extends Schema {
         this.itemId = 0;
         this.armourValue=1;
         this.damageValue=0;
+        this.durability=0;
         this.obj="",
         this.slot=0,
         this.special="",
@@ -59,6 +60,7 @@ class EquippedItem extends Schema {
 type("number")(EquippedItem.prototype, "itemId");
 type("number")(EquippedItem.prototype, "armourValue");
 type("number")(EquippedItem.prototype, "damageValue");
+type("number")(EquippedItem.prototype, "durability");
 type("string")(EquippedItem.prototype, "obj");
 type("number")(EquippedItem.prototype, "slot");
 type("string")(EquippedItem.prototype, "special");
@@ -162,8 +164,6 @@ class MyRoom extends Room {
                 item = new EquippedItem();
                 player.equipped.slots.set(data.slot, item);
             }
-            item.itemId = data.itemId;
-            item.durability = 100;
         });
         
         // Player Input
@@ -300,8 +300,6 @@ class MyRoom extends Room {
 
         DEFAULT_SLOTS.forEach(slot => {
         const item = new EquippedItem();
-        item.itemId = 0;
-        item.durability = 0;
         player.equipped.slots.set(slot, item);
         });
 
@@ -358,8 +356,6 @@ class MyRoom extends Room {
                     if (data.equipped) {
                         Object.entries(data.equipped).forEach(([slot, raw]) => {
                         const item = new EquippedItem();
-                        item.itemId = raw.itemId ?? 0;
-                        item.durability = raw.durability ?? 0;
                         player.equipped.slots.set(slot, item);
                         });
                     }
@@ -402,6 +398,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
