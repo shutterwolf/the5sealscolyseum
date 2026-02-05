@@ -372,8 +372,9 @@ if (data.equipped) {
         console.log(`Slot ${slot} updated:`, item);
         player.equipped.slots.set(slot, item);
     });
+    console.log("🧠 AFTER state.equipped", playerId, JSON.stringify(player.equipped, null, 2));
 }
-console.log("🧠 AFTER state.equipped", playerId, JSON.stringify(player.equipped, null, 2));
+
 
 player.equipped.slots.forEach((item, slot) => {
     console.log(
@@ -390,7 +391,25 @@ player.equipped.slots.forEach((item, slot) => {
 }
 
                     console.log("🧠 AFTER state.equipped", playerId, player.equipped);
-                    client.send("fullEquip", { equipped: data.equipped });
+                    // creare un oggetto plain JSON dai dati Schema
+const equippedData = {};
+player.equipped.slots.forEach((item, slot) => {
+    equippedData[slot] = {
+        itemId: item.itemId,
+        armourValue: item.armourValue,
+        damageValue: item.damageValue,
+        durability: item.durability,
+        obj: item.obj,
+        slot: item.slot,
+        special: item.special,
+        twohand: item.twohand,
+        type: item.type,
+        value: item.value
+    };
+});
+
+client.send("fullEquip", { equipped: equippedData });
+
                 }
             })
             .catch(err => console.error(err));
@@ -428,6 +447,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
