@@ -48,12 +48,12 @@ class EquippedItem extends Schema {
         this.armourValue=1;
         this.damageValue=0;
         this.durability=0;
-        this.obj="",
-        this.slot=0,
-        this.special="",
-        this.twohand=false,
-        this.type="",
-        this.value=0
+        this.obj="";
+        this.slot=0;
+        this.special="";
+        this.twohand=false;
+        this.type="";
+        this.value=0;
     }
 }
 
@@ -199,7 +199,7 @@ item.twohand = data.twohand ?? item.twohand;
             }
             if (typeof data.speed === "number") {
                 player.speed = data.speed;
-            };
+            }
         });
 
         // 🔥 Animazione player (walk / run / idle)
@@ -365,30 +365,28 @@ item.twohand = data.twohand ?? item.twohand;
                     console.log("📥 Firestore RAW DATA", playerId, JSON.stringify(data, null, 2));
                     console.log("📥 Firestore equipped", playerId, data.equipped);
                     console.log("🧠 BEFORE state.equipped", playerId, JSON.stringify(player.equipped, null, 2));
-if (data.equipped) {
-    Object.entries(data.equipped).forEach(([slot, raw]) => {
-        const item = new EquippedItem();
-        Object.assign(item, raw); // copia tutti i campi dal DB
-        console.log(`Slot ${slot} updated:`, item);
-        player.equipped.slots.set(slot, item);
-    });
-    console.log("🧠 AFTER state.equipped", playerId, JSON.stringify(player.equipped, null, 2));
-}
+                    if (data.equipped) {
+                        Object.entries(data.equipped).forEach(([slot, raw]) => {
+                            const item = new EquippedItem();
+                            Object.assign(item, raw); // copia tutti i campi dal DB
+                            console.log(`Slot ${slot} updated:`, item);
+                            player.equipped.slots.set(slot, item);
+                        });
+                        console.log("🧠 AFTER state.equipped", playerId, JSON.stringify(player.equipped, null, 2));
+                    }
 
-
-player.equipped.slots.forEach((item, slot) => {
-    console.log(
-        "  slot:", slot,
-        "| itemId:", item.itemId,
-        "| obj:", item.obj,
-        "| type:", item.type,
-        "| twohand:", item.twohand,
-        "| durability:", item.durability
-    );
-});
-
-    });
-}
+                    player.equipped.slots.forEach((item, slot) => {
+                        console.log(
+                            "  slot:", slot,
+                            "| itemId:", item.itemId,
+                            "| obj:", item.obj,
+                            "| type:", item.type,
+                            "| twohand:", item.twohand,
+                            "| durability:", item.durability
+                        );
+                    });
+                });
+            
 
                     console.log("🧠 AFTER state.equipped", playerId, player.equipped);
                     // creare un oggetto plain JSON dai dati Schema
@@ -408,7 +406,7 @@ player.equipped.slots.forEach((item, slot) => {
     };
 });
 
-client.send("fullEquip", { equipped: equippedData });
+        client.send("fullEquip", { equipped: equippedData });
 
                 }
             })
@@ -447,6 +445,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
