@@ -305,7 +305,17 @@ item.twohand = data.twohand ?? item.twohand;
         const item = new EquippedItem();
         player.equipped.slots.set(slot, item);
         });
-
+        
+        console.log("🧩 [INIT] Equipped slots AFTER default init:");
+        player.equipped.slots.forEach((item, slot) => {
+        console.log(
+        "  slot:", slot,
+        "| itemId:", item.itemId,
+        "| obj:", item.obj,
+        "| type:", item.type,
+        "| twohand:", item.twohand
+        );
+        });
         
         this.state.players.set(playerId, player);
 
@@ -357,12 +367,36 @@ item.twohand = data.twohand ?? item.twohand;
                     console.log("🧠 BEFORE state.equipped", playerId, player.equipped);
                     // Aggiorna equipped lato room
                     if (data.equipped) {
-                Object.entries(data.equipped).forEach(([slot, raw]) => {
-                    const item = new EquippedItem();
-                    Object.assign(item, raw); // copia tutti i campi dal DB
-                    player.equipped.slots.set(slot, item);
-                });
-            }
+    console.log("🧠 [APPLY] Applying Firestore equipped to state...");
+    Object.entries(data.equipped).forEach(([slot, raw]) => {
+        console.log("  ▶ APPLY slot:", slot, raw);
+
+        const item = new EquippedItem();
+        Object.assign(item, raw);
+
+        console.log("    ↳ New EquippedItem:", {
+            itemId: item.itemId,
+            obj: item.obj,
+            type: item.type,
+            twohand: item.twohand,
+            durability: item.durability
+        });
+
+        console.log("🧠 [FINAL STATE] state.equipped.slots:");
+player.equipped.slots.forEach((item, slot) => {
+    console.log(
+        "  slot:", slot,
+        "| itemId:", item.itemId,
+        "| obj:", item.obj,
+        "| type:", item.type,
+        "| twohand:", item.twohand,
+        "| durability:", item.durability
+    );
+});
+
+    });
+}
+
                     console.log("🧠 AFTER state.equipped", playerId, player.equipped);
                     client.send("fullEquip", { equipped: data.equipped });
                 }
@@ -402,6 +436,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
