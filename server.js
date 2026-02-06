@@ -45,15 +45,15 @@ class EquippedItem extends Schema {
     constructor() {
         super();
         this.itemId = 0;
-        this.armourValue=1;
-        this.damageValue=0;
-        this.durability=0;
-        this.obj="";
-        this.slot=0;
-        this.special="";
-        this.twohand=false;
-        this.type="";
-        this.value=0;
+        this.armourValue = 1;
+        this.damageValue = 0;
+        this.durability = 0;
+        this.obj = "";
+        this.slot = "";
+        this.special = "";
+        this.twohand = false;
+        this.type = "";
+        this.value = 0;
     }
 }
 
@@ -62,12 +62,11 @@ type("number")(EquippedItem.prototype, "armourValue");
 type("number")(EquippedItem.prototype, "damageValue");
 type("number")(EquippedItem.prototype, "durability");
 type("string")(EquippedItem.prototype, "obj");
-type("number")(EquippedItem.prototype, "slot");
+type("string")(EquippedItem.prototype, "slot");
 type("string")(EquippedItem.prototype, "special");
 type("boolean")(EquippedItem.prototype, "twohand");
 type("string")(EquippedItem.prototype, "type");
 type("number")(EquippedItem.prototype, "value");
-
 
 class Equipped extends Schema {
     constructor() {
@@ -75,9 +74,7 @@ class Equipped extends Schema {
         this.slots = new MapSchema();
     }
 }
-
 type({ map: EquippedItem })(Equipped.prototype, "slots");
-
 
 class PlayerState extends Schema {
     constructor() {
@@ -94,10 +91,10 @@ class PlayerState extends Schema {
         this.activeWeapon = "";
         this.anim = "stand1";
         this.speed = 1;
-        this.localMap=0;
-        this.depth=0;
-        this.dungeonId=null;
-        this.equipped=new Equipped();
+        this.localMap = 0;
+        this.depth = 0;
+        this.dungeonId = "";
+        this.equipped = new Equipped();
     }
 }
 
@@ -113,7 +110,7 @@ type(Quat)(PlayerState.prototype, "rotation");
 type("string")(PlayerState.prototype, "activeWeapon");
 type("string")(PlayerState.prototype, "anim");
 type("number")(PlayerState.prototype, "speed");
-type("number")(PlayerState.prototype, "localMap"); // ID della mappa
+type("number")(PlayerState.prototype, "localMap");
 type("number")(PlayerState.prototype, "depth");
 type("string")(PlayerState.prototype, "dungeonId");
 type(Equipped)(PlayerState.prototype, "equipped");
@@ -126,273 +123,105 @@ class MyRoomState extends Schema {
 }
 type({ map: PlayerState })(MyRoomState.prototype, "players");
 
-function isValidNumber(v) {
-    return typeof v === "number" && Number.isFinite(v);
-}
-
-function sanitizeVec3(v) {
-    return {
-        x: isValidNumber(v?.x) ? v.x : 0,
-        y: isValidNumber(v?.y) ? v.y : 0,
-        z: isValidNumber(v?.z) ? v.z : 0,
-    };
-}
-
-function sanitizeQuat(q) {
-    return {
-        x: isValidNumber(q?.x) ? q.x : 0,
-        y: isValidNumber(q?.y) ? q.y : 0,
-        z: isValidNumber(q?.z) ? q.z : 0,
-        w: isValidNumber(q?.w) ? q.w : 1,
-    };
-}
-
 // --- Room ---
 class MyRoom extends Room {
-     maxClients = 20;
-    onCreate(options) {
-        console.log("Room created!");
+    maxClients = 20;
+
+    onCreate() {
+        console.log("Room created");
         this.sessionToPlayerId = new Map();
         this.setState(new MyRoomState());
 
         this.onMessage("equipItem", (client, data) => {
-            const player = this.state.players.get(this.sessionToPlayerId.get(client.sessionId));
-            if (!player) return;
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            const player = this.state.players.get(playerId);
+            if (!player || typeof data.slot !== "string") return;
 
             let item = player.equipped.slots.get(data.slot);
             if (!item) {
                 item = new EquippedItem();
+                item.slot = data.slot;
                 player.equipped.slots.set(data.slot, item);
             }
+
             item.obj = data.obj ?? item.obj;
-item.type = data.type ?? item.type;
-item.twohand = data.twohand ?? item.twohand;
-        });
-        
-        // Player Input
-        this.onMessage("playerInput", (client, data) => {
-            const playerId = this.sessionToPlayerId.get(client.sessionId);
-            if (!playerId) return;
-
-            const player = this.state.players.get(playerId);
-            if (!player) return;
-
-            // **VALIDAZIONE**
-            const pos = sanitizeVec3(data.playerPos);
-            const rot = sanitizeQuat(data.rotation);
-
-            player.playerPos.x = pos.x;
-            player.playerPos.y = pos.y;
-            player.playerPos.z = pos.z;
-
-            player.rotation.x = rot.x;
-            player.rotation.y = rot.y;
-            player.rotation.z = rot.z;
-            player.rotation.w = rot.w;
-            player.texTure = data.texTure;
-            player.activeWeapon = data.activeWeapon || "";
-            if (typeof data.localMap === "number") player.localMap = data.localMap;
-            if (typeof data.depth === "number") player.depth = data.depth;
-            if (typeof data.dungeonId === "string") player.dungeonId = data.dungeonId;
-            if (typeof data.anim === "string") {
-                player.anim = data.anim;
-            }
-            if (typeof data.speed === "number") {
-                player.speed = data.speed;
-            }
-        });
-
-        // 🔥 Animazione player (walk / run / idle)
-        this.onMessage("anim", (client, data) => {
-            const playerId = this.sessionToPlayerId.get(client.sessionId);
-            if (!playerId) return;
-
-            const player = this.state.players.get(playerId);
-            if (!player) return;
-
-            if (typeof data.anim === "string") {
-                player.anim = data.anim;
-            }
-
-            if (typeof data.speed === "number") {
-                player.speed = data.speed;
-            }
-        });
-
-
-        // CRUD character
-        this.onMessage("checkCharacter", async (client, data) => {
-            try {
-                const doc = await db.collection("characters").doc(data.playerId).get();
-                client.send("characterExistence", {
-                    exists: doc.exists,
-                    character: doc.exists ? doc.data() : null
-                });
-            } catch (err) {
-                console.error(err);
-                client.send("characterExistence", { exists: false, character: null });
-            }
-        });
-
-        this.onMessage("saveCharacter", async (client, data) => {
-            try {
-                await db.collection("characters").doc(data.playerId).set(data.character);
-                client.send("characterSaved", { ok: true, playerId: data.playerId });
-            } catch (err) {
-                console.error("❌ FIRESTORE SAVE ERROR:", err);  // <--- qui vedi il motivo del fallimento
-                client.send("characterSaved", { ok: false, playerId: data.playerId });
-            }
-        });
-
-        this.onMessage("deleteCharacter", (client, message) => {
-            const charId = message.id;
-
-            // esempio: characters è il tuo database in memoria o collegato a DB
-            if (this.state.characters[charId]) {
-                delete this.state.characters[charId];
-                console.log("Character deleted:", charId);
-
-                // opzionale: conferma al client
-                client.send("characterDeleted", { id: charId, success: true });
-            } else {
-                client.send("characterDeleted", { id: charId, success: false });
-            }
-        });
-        
-        // playerInfo (solo per aggiornare dati in room)
-        this.onMessage("playerInfo", (client, data) => {
-            const playerId = this.sessionToPlayerId.get(client.sessionId);
-            if (!playerId) return;
-
-            const player = this.state.players.get(playerId);
-            if (!player) return;
-
-            player.name = data.name || player.name;
-            player.user = data.user || player.user;
-            player.email = data.email || player.email;
-            player.id = data.id || player.id;
+            item.type = data.type ?? item.type;
+            item.twohand = !!data.twohand;
         });
     }
 
-    onJoin(client, options) {
+    async onJoin(client, options) {
         const playerId = options.playerId;
-        
         if (!playerId) {
-            console.error("No playerId provided!");
             client.leave();
             return;
         }
-        
-        //console.log(`🟢 Player joined: ${client.sessionId} (playerId: ${playerId})`);
-        //console.log(`Join: ${client.sessionId} in ${this.roomId}`);
+
         this.sessionToPlayerId.set(client.sessionId, playerId);
 
-        // create state
         const player = new PlayerState();
         player.id = playerId;
-        // 🔥 inizializza equipped SEMPRE
-        // inizializza equipped SEMPRE
-const DEFAULT_SLOTS = ["HELM", "ARMOUR", "WEAPON", "WEAPON2", "SHIELD", "SHIELD2", "ITEM"];
-DEFAULT_SLOTS.forEach(slot => {
-    const item = new EquippedItem();
-    player.equipped.slots.set(slot, item);
-});
 
-// Log dei slot
-console.log("🧩 [INIT] Equipped slots AFTER default init:");
-player.equipped.slots.forEach((item, slot) => {
-    console.log(
-        "  slot:", slot,
-        "| itemId:", item.itemId,
-        "| obj:", item.obj,
-        "| type:", item.type,
-        "| twohand:", item.twohand
-    );
-});
+        const DEFAULT_SLOTS = ["HELM", "ARMOUR", "WEAPON", "WEAPON2", "SHIELD", "SHIELD2", "ITEM"];
+        DEFAULT_SLOTS.forEach(slot => {
+            const item = new EquippedItem();
+            item.slot = slot;
+            player.equipped.slots.set(slot, item);
+        });
 
-// Aggiungi player allo state
-this.state.players.set(playerId, player);
+        this.state.players.set(playerId, player);
 
-// Iterare su tutti gli slot
-player.equipped.slots.forEach((item, slot) => {
-    console.log(slot, item.itemId, item.durability);
-});
+        try {
+            const doc = await db.collection("characters").doc(playerId).get();
+            if (doc.exists) {
+                const data = doc.data();
 
-// Accedere a uno slot specifico
-const weapon = player.equipped.slots.get("WEAPON");
-console.log(weapon.itemId, weapon.durability);
+                Object.assign(player, {
+                    user: data.user ?? player.user,
+                    email: data.email ?? player.email,
+                    name: data.name ?? player.name,
+                    race: data.race ?? player.race,
+                    sex: data.sex ?? player.sex,
+                    anim: data.anim ?? player.anim,
+                    speed: data.speed ?? player.speed,
+                    texTure: data.texTure ?? player.texTure,
+                    activeWeapon: data.activeWeapon ?? player.activeWeapon,
+                    localMap: data.localMap ?? 0,
+                    depth: data.depth ?? 0,
+                    dungeonId: data.dungeonId ?? ""
+                });
 
-// Load from Firestore
-db.collection("characters").doc(playerId).get()
-    .then(doc => {
-        if (!doc.exists) return;
+                if (data.playerPos) Object.assign(player.playerPos, data.playerPos);
+                if (data.rotation) Object.assign(player.rotation, data.rotation);
 
-        const data = doc.data();
-
-        player.user = data.user || player.user;
-        player.email = data.email || player.email;
-        player.name = data.name || player.name;
-        player.race = data.race || player.race;
-        player.sex = data.sex || player.sex;
-        player.anim = data.anim || player.anim;
-        player.speed = data.speed || player.speed;
-        player.texTure = data.texTure || player.texTure;
-        player.activeWeapon = data.activeWeapon || player.activeWeapon;
-        player.localMap = typeof data.localMap === "number" ? data.localMap : 0;
-        player.depth = typeof data.depth === "number" ? data.depth : 0;
-        player.dungeonId = typeof data.dungeonId === "string" ? data.dungeonId : "";
-
-        // posizione
-        player.playerPos.x = data.playerPos?.x ?? player.playerPos.x;
-        player.playerPos.y = data.playerPos?.y ?? player.playerPos.y;
-        player.playerPos.z = data.playerPos?.z ?? player.playerPos.z;
-
-        // rotazione
-        player.rotation.x = data.rotation?.x ?? player.rotation.x;
-        player.rotation.y = data.rotation?.y ?? player.rotation.y;
-        player.rotation.z = data.rotation?.z ?? player.rotation.z;
-        player.rotation.w = data.rotation?.w ?? player.rotation.w;
-
-        // equipped
-        if (data.equipped) {
-            Object.entries(data.equipped).forEach(([slot, raw]) => {
-                const item = new EquippedItem();
-                Object.assign(item, raw);
-                player.equipped.slots.set(slot, item);
-            });
+                if (data.equipped) {
+                    Object.entries(data.equipped).forEach(([slot, raw]) => {
+                        const item = new EquippedItem();
+                        Object.assign(item, raw);
+                        item.slot = slot;
+                        player.equipped.slots.set(slot, item);
+                    });
+                }
+            }
+        } catch (err) {
+            console.error("Firestore load error:", err);
         }
 
-        // invio al client (UNA SOLA VOLTA)
         const equippedData = {};
         player.equipped.slots.forEach((item, slot) => {
-            equippedData[slot] = {
-                itemId: item.itemId,
-                armourValue: item.armourValue,
-                damageValue: item.damageValue,
-                durability: item.durability,
-                obj: item.obj,
-                slot: item.slot,
-                special: item.special,
-                twohand: item.twohand,
-                type: item.type,
-                value: item.value
-            };
+            equippedData[slot] = { ...item };
         });
 
         client.send("fullEquip", { equipped: equippedData });
-    })
-    .catch(err => {
-        console.error("🔥 Firestore load error:", err);
-    });
+    }
 
-    onLeave(client, consented) {
+    onLeave(client) {
         const playerId = this.sessionToPlayerId.get(client.sessionId);
-
-        console.log(`⚠️ Player left: ${client.sessionId} (playerId: ${playerId}) consented=${consented}`);
         if (playerId) {
             this.state.players.delete(playerId);
             this.sessionToPlayerId.delete(client.sessionId);
         }
+        console.log("Player left:", playerId);
     }
 }
 
@@ -403,11 +232,7 @@ const server = http.createServer(app);
 const { WebSocketTransport } = require("@colyseus/ws-transport");
 
 const gameServer = new Server({
-    transport: new WebSocketTransport({
-        server: server,
-        pingInterval: 20000,
-        pingMaxRetries: 5
-    })
+    transport: new WebSocketTransport({ server })
 });
 
 gameServer.define("my_room", MyRoom);
@@ -415,10 +240,5 @@ gameServer.define("my_room", MyRoom);
 app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 
 server.listen(process.env.PORT || 10000, () => {
-    console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
+    console.log("Server listening");
 });
-
-
-
-
-
