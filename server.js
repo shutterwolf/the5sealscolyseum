@@ -325,85 +325,65 @@ console.log(weapon.itemId, weapon.durability);
 // Load from Firestore
 db.collection("characters").doc(playerId).get()
     .then(doc => {
-        if (doc.exists) {
-            const data = doc.data();
+        if (!doc.exists) return;
 
-            player.user = data.user || player.user;
-            player.email = data.email || player.email;
-            player.name = data.name || player.name;
-            player.race = data.race || player.race;
-            player.sex = data.sex || player.sex;
-            player.anim = data.anim || player.anim;
-            player.speed = data.speed || player.speed;
-            player.texTure = data.texTure || player.texTure;
-            player.activeWeapon = data.activeWeapon || player.activeWeapon;
-            player.localMap = typeof data.localMap === "number" ? data.localMap : 0;
-            player.depth = typeof data.depth === "number" ? data.depth : 0;
-            player.dungeonId = typeof data.dungeonId === "string" ? data.dungeonId : "";
+        const data = doc.data();
 
-            player.playerPos.x = data.playerPos?.x ?? player.playerPos.x;
-            player.playerPos.y = data.playerPos?.y ?? player.playerPos.y;
-            player.playerPos.z = data.playerPos?.z ?? player.playerPos.z;
+        player.user = data.user || player.user;
+        player.email = data.email || player.email;
+        player.name = data.name || player.name;
+        player.race = data.race || player.race;
+        player.sex = data.sex || player.sex;
+        player.anim = data.anim || player.anim;
+        player.speed = data.speed || player.speed;
+        player.texTure = data.texTure || player.texTure;
+        player.activeWeapon = data.activeWeapon || player.activeWeapon;
+        player.localMap = typeof data.localMap === "number" ? data.localMap : 0;
+        player.depth = typeof data.depth === "number" ? data.depth : 0;
+        player.dungeonId = typeof data.dungeonId === "string" ? data.dungeonId : "";
 
-            player.rotation.x = data.rotation?.x ?? player.rotation.x;
-            player.rotation.y = data.rotation?.y ?? player.rotation.y;
-            player.rotation.z = data.rotation?.z ?? player.rotation.z;
-            player.rotation.w = data.rotation?.w ?? player.rotation.w;
+        // posizione
+        player.playerPos.x = data.playerPos?.x ?? player.playerPos.x;
+        player.playerPos.y = data.playerPos?.y ?? player.playerPos.y;
+        player.playerPos.z = data.playerPos?.z ?? player.playerPos.z;
 
-            // aggiorna equipped
-            if (data.equipped) {
-                Object.entries(data.equipped).forEach(([slot, raw]) => {
-                    const item = new EquippedItem();
-                    Object.assign(item, raw);
-                    player.equipped.slots.set(slot, item);
-                });
-            }
+        // rotazione
+        player.rotation.x = data.rotation?.x ?? player.rotation.x;
+        player.rotation.y = data.rotation?.y ?? player.rotation.y;
+        player.rotation.z = data.rotation?.z ?? player.rotation.z;
+        player.rotation.w = data.rotation?.w ?? player.rotation.w;
 
-            // invia equipped al client
-            const equippedData = {};
-            player.equipped.slots.forEach((item, slot) => {
-                equippedData[slot] = {
-                    itemId: item.itemId,
-                    armourValue: item.armourValue,
-                    damageValue: item.damageValue,
-                    durability: item.durability,
-                    obj: item.obj,
-                    slot: item.slot,
-                    special: item.special,
-                    twohand: item.twohand,
-                    type: item.type,
-                    value: item.value
-                };
+        // equipped
+        if (data.equipped) {
+            Object.entries(data.equipped).forEach(([slot, raw]) => {
+                const item = new EquippedItem();
+                Object.assign(item, raw);
+                player.equipped.slots.set(slot, item);
             });
-
-            client.send("fullEquip", { equipped: equippedData });
         }
-    })
-    .catch(err => console.error(err));
 
-                    console.log("🧠 AFTER state.equipped", playerId, player.equipped);
-                    // creare un oggetto plain JSON dai dati Schema
-const equippedData = {};
-player.equipped.slots.forEach((item, slot) => {
-    equippedData[slot] = {
-        itemId: item.itemId,
-        armourValue: item.armourValue,
-        damageValue: item.damageValue,
-        durability: item.durability,
-        obj: item.obj,
-        slot: item.slot,
-        special: item.special,
-        twohand: item.twohand,
-        type: item.type,
-        value: item.value
-    };
-});
+        // invio al client (UNA SOLA VOLTA)
+        const equippedData = {};
+        player.equipped.slots.forEach((item, slot) => {
+            equippedData[slot] = {
+                itemId: item.itemId,
+                armourValue: item.armourValue,
+                damageValue: item.damageValue,
+                durability: item.durability,
+                obj: item.obj,
+                slot: item.slot,
+                special: item.special,
+                twohand: item.twohand,
+                type: item.type,
+                value: item.value
+            };
+        });
 
         client.send("fullEquip", { equipped: equippedData });
-
-        })
-            .catch(err => console.error(err));
-    }
+    })
+    .catch(err => {
+        console.error("🔥 Firestore load error:", err);
+    });
 
     onLeave(client, consented) {
         const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -437,6 +417,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
