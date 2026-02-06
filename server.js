@@ -401,8 +401,7 @@ player.equipped.slots.forEach((item, slot) => {
 
         client.send("fullEquip", { equipped: equippedData });
 
-                }
-            })
+        })
             .catch(err => console.error(err));
     }
 
@@ -438,6 +437,7 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log(`Colyseus server listening on port ${process.env.PORT || 10000}`);
 });
+
 
 
 
