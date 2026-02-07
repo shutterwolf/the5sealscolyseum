@@ -217,16 +217,29 @@ class MyRoom extends Room {
         });
 
         // --- deleteCharacter ---
-        this.onMessage("deleteCharacter", (client, message) => {
+        this.onMessage("deleteCharacter", async (client, message) => {
             const charId = message.id;
-            if (this.state.players.has(charId)) {
-                this.state.players.delete(charId);
-                client.send("characterDeleted", { id: charId, success: true });
-            } else {
-                client.send("characterDeleted", { id: charId, success: false });
+            let success = false;
+        
+            try {
+                // Cancella dal DB Firestore
+                await db.collection("characters").doc(charId).delete();
+                success = true;
+        
+                // Cancella anche dallo stato della stanza
+                if (this.state.players.has(charId)) {
+                    this.state.players.delete(charId);
+                }
+        
+                console.log(`❌ Character ${charId} deleted successfully`);
+            } catch (err) {
+                console.error(`❌ Error deleting character ${charId}:`, err);
             }
+        
+            // Conferma al client
+            client.send("characterDeleted", { id: charId, success });
         });
-
+        
         // --- playerInfo ---
         this.onMessage("playerInfo", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -343,3 +356,4 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log("Server listening");
 });
+
