@@ -348,7 +348,7 @@ class MyRoom extends Room {
                         const item = new EquippedItem();
 
                         // Copia solo i campi validi
-                        item.itemId = raw.itemId ?? 0;
+                        item.lootID = raw.lootID ?? 0;
                         item.armourValue = raw.armourValue ?? 1;
                         item.damageValue = raw.damageValue ?? 0;
                         item.durability = raw.durability ?? 0;
@@ -406,5 +406,6 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log("Server listening");
 });
+
 
 
