@@ -41,6 +41,19 @@ type("number")(Quat.prototype, "y");
 type("number")(Quat.prototype, "z");
 type("number")(Quat.prototype, "w");
 
+class WorldState extends Schema {
+    constructor() {
+        super();
+        this.timeOfDay = 8;        // 08:00
+        this.isDay = true;
+        this.weather = "sunny";    // sunny | rain | snow
+    }
+}
+
+type("number")(WorldState.prototype, "timeOfDay");
+type("boolean")(WorldState.prototype, "isDay");
+type("string")(WorldState.prototype, "weather");
+
 class EquippedItem extends Schema {
     constructor() {
         super();
@@ -119,9 +132,11 @@ class MyRoomState extends Schema {
     constructor() {
         super();
         this.players = new MapSchema();
+        this.world = new WorldState();
     }
 }
 type({ map: PlayerState })(MyRoomState.prototype, "players");
+type(WorldState)(MyRoomState.prototype, "world");
 
 // --- Room ---
 class MyRoom extends Room {
@@ -131,7 +146,10 @@ class MyRoom extends Room {
         console.log("Room created");
         this.sessionToPlayerId = new Map();
         this.setState(new MyRoomState());
-
+        this.dayDuration = 30 * 60 * 1000;    // 30 min
+        this.nightDuration = 15 * 60 * 1000;  // 15 min
+        this.weatherInterval = 10 * 60 * 1000;
+        this.lastWeatherChange = Date.now();
         // --- equipItem ---
         this.onMessage("equipItem", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -149,6 +167,38 @@ class MyRoom extends Room {
             item.type = data.type ?? item.type;
             item.twohand = !!data.twohand;
         });
+        
+        this.clock.setInterval(() => {
+            const world = this.state.world;
+        
+            const speed = world.isDay
+                ? 16 / this.dayDuration
+                : 8 / this.nightDuration;
+        
+            world.timeOfDay += speed * 1000;
+        
+            if (world.timeOfDay >= 24) world.timeOfDay -= 24;
+        
+            const nowDay = world.timeOfDay >= 6 && world.timeOfDay < 22;
+        
+            if (nowDay !== world.isDay) {
+                world.isDay = nowDay;
+            }
+        
+            // WEATHER (ogni 10 min)
+            if (Date.now() - this.lastWeatherChange > this.weatherInterval) {
+                this.lastWeatherChange = Date.now();
+        
+                const roll = Math.random();
+                if (roll < 0.6) return; // niente cambio
+        
+                if (roll < 0.85) {
+                    world.weather = Math.random() > 0.5 ? "rain" : "fog";
+                } else {
+                    world.weather = "snow";
+                }
+            }
+        }, 1000);
 
         // --- playerInput ---
         this.onMessage("playerInput", (client, data) => {
@@ -356,4 +406,5 @@ app.get("/", (req, res) => res.send("Colyseus server online ✅"));
 server.listen(process.env.PORT || 10000, () => {
     console.log("Server listening");
 });
+
 
