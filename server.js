@@ -392,7 +392,7 @@ class MyRoom extends Room {
 const { WebSocketTransport } = require("@colyseus/ws-transport");
 const app = express();
 const httpServer = http.createServer(app);
-
+const { ChatRoom } = require("./ChatRoom");
 const gameServer = new Server({
     transport: new WebSocketTransport({ server: httpServer })
 });
@@ -418,5 +418,6 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
