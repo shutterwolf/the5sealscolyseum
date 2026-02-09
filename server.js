@@ -389,3 +389,23 @@ class MyRoom extends Room {
     }
 }
 
+const { WebSocketTransport } = require("@colyseus/ws-transport");
+const app = express();
+const httpServer = http.createServer(app);
+
+const gameServer = new Server({
+    transport: new WebSocketTransport({ server: httpServer })
+});
+
+// definisci la tua room
+gameServer.define("my_room", MyRoom);
+gameServer.define("chat_room", ChatRoom);
+// route di test
+app.get("/", (req, res) => res.send("Server Colyseus online ✅"));
+
+// avvia il server
+const PORT = process.env.PORT || 10000;
+httpServer.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
+});
+
