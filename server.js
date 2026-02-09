@@ -128,15 +128,31 @@ type("number")(PlayerState.prototype, "depth");
 type("string")(PlayerState.prototype, "dungeonId");
 type(Equipped)(PlayerState.prototype, "equipped");
 
+class ChatMessage extends Schema {
+    constructor(id = "", name = "Anon", text = "", timestamp = Date.now()) {
+        super();
+        this.id = id;
+        this.name = name;
+        this.text = text;
+        this.timestamp = timestamp;
+    }
+}
+type("string")(ChatMessage.prototype, "id");
+type("string")(ChatMessage.prototype, "name");
+type("string")(ChatMessage.prototype, "text");
+type("number")(ChatMessage.prototype, "timestamp");
+
 class MyRoomState extends Schema {
     constructor() {
         super();
         this.players = new MapSchema();
         this.world = new WorldState();
+        this.chat = new ArraySchema();
     }
 }
 type({ map: PlayerState })(MyRoomState.prototype, "players");
 type(WorldState)(MyRoomState.prototype, "world");
+type([ChatMessage])(MyRoomState.prototype, "chat");
 
 // --- Room ---
 class MyRoom extends Room {
@@ -301,6 +317,26 @@ class MyRoom extends Room {
             player.email = data.email ?? player.email;
             player.id = data.id ?? player.id;
         });
+
+        // --- CHAT ---
+        this.onMessage("sendMessage", (client, message) => {
+            if (typeof message !== "string" || message.trim() === "") return;
+        
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            if (!playerId) return;
+        
+            const player = this.state.players.get(playerId);
+            const name = player?.name || "Anon";
+        
+            const msg = new ChatMessage(playerId, name, message.trim(), Date.now());
+        
+            // memorizza max 50
+            this.state.chat.push(msg);
+            if (this.state.chat.length > 50) this.state.chat.shift();
+        
+            // broadcast a tutti
+            this.broadcast("chatMessage", msg);
+        });
     }
 
     async onJoin(client, options) {
@@ -377,6 +413,14 @@ class MyRoom extends Room {
         });
 
         client.send("fullEquip", { equipped: equippedData });
+
+        // invia messaggi chat già presenti
+        client.send("chatInit", this.state.chat.map(msg => ({
+            id: msg.id,
+            name: msg.name,
+            text: msg.text,
+            timestamp: msg.timestamp
+        })));
     }
 
     onLeave(client) {
@@ -418,6 +462,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
