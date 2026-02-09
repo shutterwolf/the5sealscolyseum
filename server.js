@@ -2,7 +2,7 @@
 const http = require("http");
 const express = require("express");
 const { Server, Room } = require("colyseus");
-const { Schema, MapSchema, type } = require("@colyseus/schema");
+const { Schema, MapSchema, ArraySchema, type } = require("@colyseus/schema");
 const admin = require("firebase-admin");
 
 // --- Firestore Setup ---
@@ -462,6 +462,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
