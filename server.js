@@ -407,5 +407,40 @@ server.listen(process.env.PORT || 10000, () => {
     console.log("Server listening");
 });
 
+exports.ChatRoom = class ChatRoom extends colyseus.Room {
+  onCreate(options) {
+    console.log("ChatRoom creata");
+
+    this.messages = []; // messaggi in memoria
+
+    // Quando un client invia un messaggio
+    this.onMessage("send", (client, message) => {
+      const msgObj = {
+        id: client.sessionId,
+        text: message,
+        timestamp: Date.now()
+      };
+
+      this.messages.push(msgObj);
+      if (this.messages.length > 50) this.messages.shift(); // max 50 messaggi
+
+      // Broadcast a tutti
+      this.broadcast("message", msgObj);
+    });
+  }
+
+  onJoin(client, options) {
+    console.log(client.sessionId, "entrato");
+    client.send("init", this.messages); // invia chat corrente
+  }
+
+  onLeave(client, consented) {
+    console.log(client.sessionId, "uscito");
+  }
+
+  onDispose() {
+    console.log("ChatRoom chiusa");
+  }
+};
 
 
