@@ -396,7 +396,17 @@ const httpServer = http.createServer(app);
 const gameServer = new Server({
     transport: new WebSocketTransport({ server: httpServer })
 });
-
+class ChatRoom extends Room {
+    onCreate() {
+        console.log("ChatRoom created");
+        this.onMessage("message", (client, text) => {
+            this.broadcast("message", {
+                id: client.sessionId,
+                text
+            });
+        });
+    }
+}
 // definisci la tua room
 gameServer.define("my_room", MyRoom);
 gameServer.define("chat_room", ChatRoom);
@@ -408,4 +418,5 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
