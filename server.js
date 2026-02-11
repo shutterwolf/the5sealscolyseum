@@ -4,7 +4,7 @@ const express = require("express");
 const { Server, Room } = require("colyseus");
 const { Schema, MapSchema, ArraySchema, type } = require("@colyseus/schema");
 const admin = require("firebase-admin");
-import cors from "cors";
+const cors = require("cors");;
 
 // --- Firestore Setup ---
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -12,15 +12,6 @@ const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
-
-app.use(cors({
-  origin: [
-    "https://launch.playcanvas.com",
-    "https://playcanvas.com",
-    "http://localhost:3000"
-  ],
-  credentials: true
-}));
 
 const db = admin.firestore();
 
@@ -445,6 +436,14 @@ class MyRoom extends Room {
 
 const { WebSocketTransport } = require("@colyseus/ws-transport");
 const app = express();
+app.use(cors({
+  origin: [
+    "https://launch.playcanvas.com",
+    "https://playcanvas.com",
+    "http://localhost:3000"
+  ],
+  credentials: true
+}));
 const httpServer = http.createServer(app);
 //const { ChatRoom } = require("./ChatRoom");
 const gameServer = new Server({
@@ -472,6 +471,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
