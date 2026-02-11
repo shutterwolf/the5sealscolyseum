@@ -4,6 +4,7 @@ const express = require("express");
 const { Server, Room } = require("colyseus");
 const { Schema, MapSchema, ArraySchema, type } = require("@colyseus/schema");
 const admin = require("firebase-admin");
+import cors from "cors";
 
 // --- Firestore Setup ---
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
@@ -11,6 +12,15 @@ const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
+
+app.use(cors({
+  origin: [
+    "https://launch.playcanvas.com",
+    "https://playcanvas.com",
+    "http://localhost:3000"
+  ],
+  credentials: true
+}));
 
 const db = admin.firestore();
 
@@ -462,6 +472,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
