@@ -1,12 +1,36 @@
 // server.js
 const http = require("http");
 const express = require("express");
+const cors = require("cors");
 const { Server, Room } = require("colyseus");
+const { WebSocketTransport } = require("@colyseus/ws-transport");
 const { Schema, MapSchema, ArraySchema, type } = require("@colyseus/schema");
 const admin = require("firebase-admin");
-const cors = require("cors");;
 
-// --- Firestore Setup ---
+// =============================
+// EXPRESS + HTTP
+// =============================
+const app = express();
+
+app.use(cors({
+    origin: true, // accetta automaticamente qualsiasi origin (PlayCanvas safe)
+    credentials: true
+}));
+
+const httpServer = http.createServer(app);
+
+// =============================
+// COLYSEUS SERVER
+// =============================
+const gameServer = new Server({
+    transport: new WebSocketTransport({
+        server: httpServer
+    })
+});
+
+// =============================
+// FIRESTORE SETUP
+// =============================
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 admin.initializeApp({
@@ -433,33 +457,6 @@ class MyRoom extends Room {
         console.log("Player left:", playerId);
     }
 }
-
-const { WebSocketTransport } = require("@colyseus/ws-transport");
-const app = express();
-app.use(cors({
-  origin: [
-    "https://launch.playcanvas.com",
-    "https://playcanvas.com",
-    "http://localhost:3000"
-  ],
-  credentials: true
-}));
-const httpServer = http.createServer(app);
-//const { ChatRoom } = require("./ChatRoom");
-const gameServer = new Server({
-    transport: new WebSocketTransport({ server: httpServer })
-});
-/*class ChatRoom extends Room {
-    onCreate() {
-        console.log("ChatRoom created");
-        this.onMessage("message", (client, text) => {
-            this.broadcast("message", {
-                id: client.sessionId,
-                text
-            });
-        });
-    }
-}*/
 // definisci la tua room
 gameServer.define("my_room", MyRoom);
 //gameServer.define("chat_room", ChatRoom);
@@ -471,6 +468,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
