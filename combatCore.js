@@ -218,4 +218,4 @@ class CombatCore {
 
 }
 
-module.exports = CombatCoreRealtime;
+module.exports = CombatCore;
