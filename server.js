@@ -243,40 +243,21 @@ class MyRoom extends Room {
         }, 1000);
 
         this.onMessage("startCombat", (client, data) => {
-            const attackerId = this.sessionToPlayerId.get(client.sessionId);
-            const targetId = data.targetId;
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            if (!playerId) return;
         
-            if (!attackerId || !targetId) return;
-            if (!this.state.players.has(targetId)) return;
+            // aggiungi tutti gli attori coinvolti
+            // setta target automatici
+            this.combat.addActor(playerId, { hp: 20, combat: 6, defence: 5, strength: 4, wDamage: 2 });
+            
+            // esempio: target più vicino
+            const targetId = this.findNearestEnemy(playerId);
+            this.combat.setTarget(playerId, targetId);
         
-            // Aggiungi entrambi al combat se non presenti
-            if (!this.combat.actors.has(attackerId)) {
-                this.combat.addActor(attackerId, {
-                    hp: 20,
-                    combat: 6,
-                    defence: 5,
-                    strength: 4,
-                    wDamage: 2
-                });
-            }
-        
-            if (!this.combat.actors.has(targetId)) {
-                this.combat.addActor(targetId, {
-                    hp: 20,
-                    combat: 6,
-                    defence: 5,
-                    strength: 4,
-                    wDamage: 2
-                });
-            }
-        
-            this.combat.setTarget(attackerId, targetId);
-            this.combat.setTarget(targetId, attackerId);
-        
-            if (!this.combat.inProgress) {
-                this.combat.startCombat();
-            }
+            // avvia il combat se non in corso
+            if (!this.combat.inProgress) this.combat.startCombat();
         });
+
         
         // --- playerInput ---
         this.onMessage("playerInput", (client, data) => {
@@ -505,6 +486,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
