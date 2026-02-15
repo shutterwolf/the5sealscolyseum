@@ -1,7 +1,7 @@
 // CombatCoreRealtime.js
 const { Schema, type } = require("@colyseus/schema");
 
-class CombatCoreRealtime {
+class CombatCore {
 
     constructor(room) {
         this.room = room;
