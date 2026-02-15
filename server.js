@@ -242,22 +242,24 @@ class MyRoom extends Room {
             }
         }, 1000);
 
+        // client segnala fine animazione
+        this.onMessage("turnFinished", (client, data) => {
+            const actorId = data.actorId;
+            this.combat.onActorAnimationFinished(actorId);
+        });
+        
         this.onMessage("startCombat", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
-            if (!playerId) return;
-        
-            // aggiungi tutti gli attori coinvolti
-            // setta target automatici
+            const targetId = data.targetId;
+            if (!playerId || !targetId) return;
+
             this.combat.addActor(playerId, { hp: 20, combat: 6, defence: 5, strength: 4, wDamage: 2 });
-            
-            // esempio: target più vicino
-            const targetId = this.findNearestEnemy(playerId);
+            this.combat.addActor(targetId, { hp: 20, combat: 6, defence: 5, strength: 4, wDamage: 2 });
             this.combat.setTarget(playerId, targetId);
-        
-            // avvia il combat se non in corso
+            this.combat.setTarget(targetId, playerId);
+
             if (!this.combat.inProgress) this.combat.startCombat();
         });
-
         
         // --- playerInput ---
         this.onMessage("playerInput", (client, data) => {
@@ -486,6 +488,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
