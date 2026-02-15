@@ -1,199 +1,225 @@
+// server/combat/CombatCore.js
 class CombatCore {
-
     constructor(room) {
-        this.room = room;               // riferimento alla Room Colyseus
-        this.cutoff = 0.8;
-
+        this.room = room;          // riferimento alla room Colyseus
+        this.actors = [];          // lista degli attori in combat
         this.inProgress = false;
-        this.round = 1;
-        this.currentIndex = 0;
-        this.turnOrder = [];
-        this.actors = new Map();        // id -> actor data
-        // actor data: { hp, combat, defence, strength, wDamage, targetId }
+        this.activeTurn = 1;
+        this.currentActorIndex = 0;
+    }
+
+    log(msg) {
+        console.log('[COMBAT]', msg);
+        // opzionale: invia log ai client
+        // this.room.broadcast("combatLog", msg);
     }
 
     /* =========================
        ACTOR MANAGEMENT
     ========================= */
     addActor(id, stats) {
-        if (this.actors.has(id)) return;
+        // id = playerId o enemyId
+        if (!id) return;
 
-        this.actors.set(id, {
-            hp: stats.hp || 10,
-            combat: stats.combat || 5,
-            defence: stats.defence || 5,
-            strength: stats.strength || 3,
-            wDamage: stats.wDamage || 2,
-            targetId: null
-        });
+        // Evita duplicati
+        if (this.actors.find(a => a.id === id)) return;
+
+        const actor = {
+            id,
+            stats: Object.assign({}, stats),
+            target: null,
+            inCombat: true
+        };
+
+        this.actors.push(actor);
+        this.log(`ADD ACTOR: ${id}`);
+        return actor;
     }
 
-    removeActor(id) {
-        this.actors.delete(id);
-        this.turnOrder = this.turnOrder.filter(x => x !== id);
+    removeActor(actor) {
+        const idx = this.actors.indexOf(actor);
+        if (idx !== -1) this.actors.splice(idx, 1);
 
-        if (this.currentIndex >= this.turnOrder.length) {
-            this.currentIndex = 0;
-        }
+        actor.inCombat = false;
 
-        if (this.actors.size < 2) {
+        this.log(`REMOVE ACTOR: ${actor.id}`);
+
+        // Aggiorna i target degli altri
+        this.actors.forEach(a => {
+            if (a.target === actor) {
+                a.target = this.actors.find(x => x !== a) || null;
+            }
+        });
+
+        // Fine combattimento se meno di 2 attori
+        if (this.actors.length < 2) {
             this.endCombat();
         }
-    }
-
-    setTarget(attackerId, targetId) {
-        const actor = this.actors.get(attackerId);
-        if (!actor) return;
-        actor.targetId = targetId;
     }
 
     /* =========================
-       COMBAT FLOW
+       INITIATIVE
     ========================= */
-    startCombat() {
-        if (this.actors.size < 2) return;
+    _initiativeScore(actor, firstRound = false) {
+        const table = {
+            BLADE: { first: 1, combat: 4 },
+            SWORD: { first: 2, combat: 3 },
+            MACE: { first: 3, combat: 2 },
+            HAMMER: { first: 2, combat: 2 },
+            POLE: { first: 4, combat: 1 },
+            NATURAL_FAST: { first: 3, combat: 3 },
+            NATURAL_MEDIUM: { first: 2, combat: 2 },
+            NATURAL_HEAVY: { first: 1, combat: 1 },
+            NATURAL_BITE: { first: 3, combat: 3 }
+        };
 
-        this.inProgress = true;
-        this.round = 1;
-        this.currentIndex = 0;
+        const type = actor.stats.attackType || "NATURAL_MEDIUM";
+        const skill = actor.stats.combat || 0;
+        const data = table[type] || table.NATURAL_MEDIUM;
 
-        this.rollInitiative();
-
-        this.room.broadcast("combatStart", { turnOrder: this.turnOrder });
-    }
-
-    attack(attackerId, targetId) {
-        if (!this.inProgress) return;
-        if (this.turnOrder[this.currentIndex] !== attackerId) return;
-
-        const attacker = this.actors.get(attackerId);
-        const target = this.actors.get(targetId);
-
-        if (!attacker || !target) return;
-
-        attacker.targetId = targetId;
-
-        if (!this.isInRange(attackerId, targetId)) {
-            this.removeActor(attackerId);
-            this.room.broadcast("disengage", { id: attackerId });
-            return;
-        }
-
-        const damage = this.resolveHit(attacker, target);
-
-        if (damage > 0) target.hp -= damage;
-
-        if (target.hp <= 0) {
-            this.removeActor(targetId);
-            this.room.broadcast("actorDied", { id: targetId });
-        }
-
-        this.room.broadcast("damage", {
-            attackerId,
-            targetId,
-            damage
-        });
-
-        this.endTurn();
-    }
-
-    endTurn() {
-        this.checkDistances();
-
-        if (this.actors.size < 2) {
-            this.endCombat();
-            return;
-        }
-
-        this.currentIndex++;
-        if (this.currentIndex >= this.turnOrder.length) {
-            this.currentIndex = 0;
-            this.round++;
-            this.rollInitiative();
-        }
-
-        this.room.broadcast("nextTurn", {
-            currentActor: this.turnOrder[this.currentIndex]
-        });
+        return firstRound ? data.first + skill : data.combat + skill;
     }
 
     rollInitiative() {
-        const scored = [];
-        for (let [id, actor] of this.actors.entries()) {
-            const score = actor.combat - Math.floor(Math.random() * 12) + 1;
-            scored.push({ id, score });
-        }
-        scored.sort((a, b) => b.score - a.score);
-        this.turnOrder = scored.map(s => s.id);
-    }
+        const diceSides = 12;
+        const firstRound = this.activeTurn === 1;
 
-    getCurrentActorId() {
-        return this.turnOrder[this.currentIndex];
-    }
-
-    /* =========================
-       DISTANCE CHECK
-    ========================= */
-    checkDistances() {
-        const toRemove = [];
-
-        for (let [id, actor] of this.actors.entries()) {
-            if (!actor.targetId) continue;
-            if (!this.isInRange(id, actor.targetId)) {
-                toRemove.push(id);
-            }
-        }
-
-        toRemove.forEach(id => {
-            this.removeActor(id);
-            this.room.broadcast("disengage", { id });
+        const scored = this.actors.map(actor => {
+            const score = this._initiativeScore(actor, firstRound) - Math.floor(Math.random() * diceSides) + 1;
+            return { actor, score };
         });
-    }
 
-    isInRange(idA, idB) {
-        const playerA = this.room.state.players.get(idA);
-        const playerB = this.room.state.players.get(idB);
+        scored.sort((a, b) => b.score - a.score);
+        this.actors = scored.map(s => s.actor);
 
-        if (!playerA || !playerB) return false;
-
-        const dx = playerA.playerPos.x - playerB.playerPos.x;
-        const dy = playerA.playerPos.y - playerB.playerPos.y;
-        const dz = playerA.playerPos.z - playerB.playerPos.z;
-
-        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        return dist <= this.cutoff;
+        this.log(`ROUND ${this.activeTurn} ORDER: ${this.actors.map(a => a.id).join(", ")}`);
     }
 
     /* =========================
-       DAMAGE RESOLUTION
+       START / END COMBAT
     ========================= */
-    resolveHit(attacker, target) {
+    startCombat() {
+        if (this.actors.length < 2) return;
+
+        this.inProgress = true;
+        this.currentActorIndex = 0;
+
+        // assegna target automatico: ogni attore attacca il primo disponibile diverso da sé
+        this.actors.forEach(actor => {
+            if (!actor.target) {
+                actor.target = this.actors.find(a => a !== actor) || null;
+            }
+        });
+
+        this.rollInitiative();
+        this.log(`COMBAT START - ROUND ${this.activeTurn}`);
+        this.nextActor();
+    }
+
+    endCombat() {
+        this.log("COMBAT ENDED");
+        this.actors.forEach(a => a.inCombat = false);
+        this.actors = [];
+        this.inProgress = false;
+        this.activeTurn = 1;
+        this.currentActorIndex = 0;
+    }
+
+    /* =========================
+       TURN FLOW
+    ========================= */
+    nextActor() {
+        if (!this.inProgress || this.actors.length < 2) {
+            this.endCombat();
+            return;
+        }
+
+        if (this.currentActorIndex >= this.actors.length) {
+            this.activeTurn++;
+            this.currentActorIndex = 0;
+            if (this.activeTurn > 1) this.rollInitiative();
+        }
+
+        const attacker = this.actors[this.currentActorIndex];
+        const defender = attacker.target;
+
+        if (!defender) {
+            this.currentActorIndex++;
+            return this.nextActor();
+        }
+
+        this.log(`ATTACK TURN: ${attacker.id} -> ${defender.id}`);
+        this.resolveHit(attacker, defender);
+    }
+
+    /* =========================
+       ATTACK RESOLUTION
+    ========================= */
+    resolveHit(attacker, defender) {
+        // Semplice calcolo danno random
+        const att = attacker.stats.combat || 0;
+        const def = defender.stats.defence || 0;
+
         const diceAt = Math.floor(Math.random() * 10);
         const diceDef = Math.floor(Math.random() * 10);
-        const combat = (attacker.combat + diceAt) - (target.defence + diceDef);
-        if (combat <= 0) return 0;
+
+        let combat = att + diceAt - (def + diceDef);
+        if (combat <= 0) combat = 0;
 
         let wound = 0;
-        const rolls = Math.min(attacker.wDamage, combat);
+        const wDamage = attacker.stats.wDamage || 1;
+        const rolls = Math.min(wDamage, combat);
+
         for (let i = 0; i < rolls; i++) {
             wound += 1 + Math.floor(Math.random() * 4);
         }
-        if (attacker.strength > attacker.wDamage) {
-            wound += Math.min(attacker.strength - attacker.wDamage, combat);
+
+        if (attacker.stats.strength > wDamage) {
+            wound += Math.min(attacker.stats.strength - wDamage, combat);
         }
-        return wound;
+
+        // riduci salute del defender
+        defender.stats.hp -= wound;
+        this.log(`${defender.id} takes ${wound} damage, HP left: ${defender.stats.hp}`);
+
+        // check morte
+        if (defender.stats.hp <= 0) {
+            this.log(`${defender.id} is defeated`);
+            this.removeActor(defender);
+        }
+
+        // passa al prossimo attore
+        this.currentActorIndex++;
+        this.nextActor();
     }
 
     /* =========================
-       END COMBAT
+       DISENGAGE / DISTANCE CHECK
     ========================= */
-    endCombat() {
-        this.inProgress = false;
-        this.turnOrder = [];
-        this.currentIndex = 0;
-        this.room.broadcast("combatEnd");
-    }
+    checkDistance(actorPositions) {
+        // actorPositions = { id: { x, y, z } }
+        const cutoff = 0.8;
+        const toRemove = [];
 
+        for (const actor of this.actors) {
+            if (!actor.target) continue;
+            const aPos = actorPositions[actor.id];
+            const tPos = actorPositions[actor.target.id];
+            if (!aPos || !tPos) continue;
+
+            const dx = aPos.x - tPos.x;
+            const dy = aPos.y - tPos.y;
+            const dz = aPos.z - tPos.z;
+            const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+            if (dist > cutoff) {
+                this.log(`${actor.id} disengaged (distance)`);
+                toRemove.push(actor);
+            }
+        }
+
+        toRemove.forEach(actor => this.removeActor(actor));
+    }
 }
 
 module.exports = CombatCore;
