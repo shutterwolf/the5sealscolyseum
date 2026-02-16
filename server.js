@@ -167,9 +167,13 @@ class EnemyState {
     moveTowards(target, deltaTime) {
         const dir = target.clone().sub(this.pos);
         const dist = dir.length();
-        if (dist < 0.01) return;
+        if (dist < 0.01) {
+            this.velocity = new Vec3(0, 0, 0);
+            return;
+        }
         dir.normalize();
-        this.pos.add(dir.scale(this.enemySpeed * deltaTime));
+        this.velocity = dir.clone().scale(this.enemySpeed);
+        this.pos.add(this.velocity.clone().scale(deltaTime));
         this.rot.y = Math.atan2(dir.x, dir.z);
     }
 
@@ -617,6 +621,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
