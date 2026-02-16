@@ -132,6 +132,7 @@ class PlayerState extends Schema {
         this.localMap = 0;
         this.depth = 0;
         this.dungeonId = "";
+        this.hp=0;
         this.equipped = new Equipped();
     }
 }
@@ -151,6 +152,7 @@ type("number")(PlayerState.prototype, "speed");
 type("number")(PlayerState.prototype, "localMap");
 type("number")(PlayerState.prototype, "depth");
 type("string")(PlayerState.prototype, "dungeonId");
+type("number")(PlayerState.prototype, "hp");
 type(Equipped)(PlayerState.prototype, "equipped");
 
 class ChatMessage extends Schema {
@@ -488,6 +490,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
