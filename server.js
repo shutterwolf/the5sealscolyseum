@@ -133,6 +133,7 @@ class PlayerState extends Schema {
         this.depth = 0;
         this.dungeonId = "";
         this.hp=0;
+        this.inCombat = 0;
         this.equipped = new Equipped();
     }
 }
@@ -153,6 +154,7 @@ type("number")(PlayerState.prototype, "localMap");
 type("number")(PlayerState.prototype, "depth");
 type("string")(PlayerState.prototype, "dungeonId");
 type("number")(PlayerState.prototype, "hp");
+type("number")(PlayerState.prototype, "inCombat");
 type(Equipped)(PlayerState.prototype, "equipped");
 
 class ChatMessage extends Schema {
@@ -249,20 +251,46 @@ class MyRoom extends Room {
         // client segnala fine animazione
         this.onMessage("turnFinished", (client, data) => {
             const actorId = data.actorId;
-            this.combat.onActorAnimationFinished(actorId);
+            const player = this.state.players.get(actorId);
+        
+            if (!player || player.inCombat === 0) return;
+        
+            const combat = this.activeCombats.get(player.inCombat);
+            if (!combat) return;
+        
+            combat.onActorAnimationFinished(actorId);
         });
         
         this.onMessage("startCombat", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             const targetId = data.targetId;
+        
             if (!playerId || !targetId) return;
-
-            this.combat.addActor(playerId, { hp: 20, combat: 6, defence: 5, strength: 4, wDamage: 2 });
-            this.combat.addActor(targetId, { hp: 20, combat: 6, defence: 5, strength: 4, wDamage: 2 });
-            this.combat.setTarget(playerId, targetId);
-            this.combat.setTarget(targetId, playerId);
-
-            if (!this.combat.inProgress) this.combat.startCombat();
+        
+            const player = this.state.players.get(playerId);
+            const target = this.state.players.get(targetId);
+        
+            if (!player || !target) return;
+        
+            // già in combat?
+            if (player.inCombat > 0 || target.inCombat > 0) return;
+        
+            const combatId = this.nextCombatId++;
+        
+            const combat = new CombatCore(this, combatId);
+        
+            this.activeCombats.set(combatId, combat);
+        
+            player.inCombat = combatId;
+            target.inCombat = combatId;
+        
+            combat.addActor(playerId, { hp: 20, combat: 6, defence: 5, strength: 4, wDamage: 2 });
+            combat.addActor(targetId, { hp: 20, combat: 6, defence: 5, strength: 4, wDamage: 2 });
+        
+            combat.setTarget(playerId, targetId);
+            combat.setTarget(targetId, playerId);
+        
+            combat.startCombat();
         });
         
         // --- playerInput ---
@@ -492,6 +520,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
