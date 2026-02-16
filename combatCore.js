@@ -102,6 +102,7 @@ class CombatCore {
         if (!this.isInRange(actorId, actor.targetId)) {
             // fuori range → disengage
             this.removeActor(actorId);
+            if (!this.inProgress) return;
             this.room.broadcast("disengage", { id: actorId });
             return;
         }
