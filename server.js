@@ -236,10 +236,10 @@ class MyRoom extends Room {
                 this.lastWeatherChange = Date.now();
         
                 const roll = Math.random();
-                if (roll < 0.6) return; // niente cambio
-        
-                if (roll < 0.85) {
-                    world.weather = Math.random() > 0.5 ? "rain";
+                if (roll < 0.5) {
+                    world.weather = "sunny";
+                } else if (roll < 0.8) {
+                    world.weather = "rain";
                 } else {
                     world.weather = "snow";
                 }
@@ -492,6 +492,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
