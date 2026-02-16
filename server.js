@@ -114,6 +114,46 @@ class Equipped extends Schema {
 }
 type({ map: EquippedItem })(Equipped.prototype, "slots");
 
+class EnemyLogic {
+    constructor(schemaEnemy, type) {
+        this.schema = schemaEnemy;
+        this.type = type;
+        this.speed = enemyStats[type].enemyspeed || 1;
+    }
+
+    update(dt, players) {
+        if (this.schema.aiState === "dead") return;
+
+        let nearest = null;
+        let distMin = Infinity;
+
+        players.forEach(p => {
+            const dx = p.playerPos.x - this.schema.pos.x;
+            const dz = p.playerPos.z - this.schema.pos.z;
+            const dist = Math.sqrt(dx*dx + dz*dz);
+            if (dist < distMin) {
+                distMin = dist;
+                nearest = p;
+            }
+        });
+
+        if (!nearest) return;
+
+        const dx = nearest.playerPos.x - this.schema.pos.x;
+        const dz = nearest.playerPos.z - this.schema.pos.z;
+        const len = Math.sqrt(dx*dx + dz*dz);
+
+        if (len > 0.5) {
+            this.schema.pos.x += (dx / len) * this.speed * dt;
+            this.schema.pos.z += (dz / len) * this.speed * dt;
+            this.schema.rot.y = Math.atan2(dx, dz);
+            this.schema.currentAnim = "walk";
+        } else {
+            this.schema.currentAnim = "idle";
+        }
+    }
+}
+
 // --- Server: aggiorna la posizione dei nemici ---
 class EnemyState {
     constructor(id, type, startPos) {
@@ -272,22 +312,62 @@ type("string")(ChatMessage.prototype, "name");
 type("string")(ChatMessage.prototype, "text");
 type("number")(ChatMessage.prototype, "timestamp");
 
+class EnemySchema extends Schema {
+    constructor() {
+        super();
+        this.id = "";
+        this.type = "";
+        this.pos = new Vec3();
+        this.rot = new Vec3();
+        this.health = 0;
+        this.aiState = "idle";
+        this.currentAnim = "idle";
+        this.inCombat = 0;
+    }
+}
+
+type("string")(EnemySchema.prototype, "id");
+type("string")(EnemySchema.prototype, "type");
+type(Vec3)(EnemySchema.prototype, "pos");
+type(Vec3)(EnemySchema.prototype, "rot");
+type("number")(EnemySchema.prototype, "health");
+type("string")(EnemySchema.prototype, "aiState");
+type("string")(EnemySchema.prototype, "currentAnim");
+type("number")(EnemySchema.prototype, "inCombat");
+
 class MyRoomState extends Schema {
     constructor() {
         super();
         this.players = new MapSchema();
+        this.enemies = new MapSchema(); // 👈
         this.world = new WorldState();
         this.chat = new ArraySchema();
     }
 }
+
 type({ map: PlayerState })(MyRoomState.prototype, "players");
+type({ map: EnemySchema })(MyRoomState.prototype, "enemies"); // 👈
 type(WorldState)(MyRoomState.prototype, "world");
 type([ChatMessage])(MyRoomState.prototype, "chat");
+
 
 // --- Room ---
 class MyRoom extends Room {
     maxClients = 40;
+
+    spawnEnemy(type, x, y, z) {
+        const enemy = new EnemySchema();
+        enemy.id = "E" + this.enemyIdCounter++;
+        enemy.type = type;
+        enemy.pos.x = x;
+        enemy.pos.y = y;
+        enemy.pos.z = z;
+        enemy.health = enemyStats[type].maxHealth;
     
+        this.state.enemies.set(enemy.id, enemy);
+        this.enemyLogic.set(enemy.id, new EnemyLogic(enemy, type));
+    }
+
     onCreate() {
         console.log("Room created");
         this.sessionToPlayerId = new Map();
@@ -299,6 +379,16 @@ class MyRoom extends Room {
         this.combat = new CombatCore(this);
         this.activeCombats = new Map(); // combatId -> CombatCore instance
         this.nextCombatId = 1;    
+        this.enemyLogic = new Map();
+        this.enemyIdCounter = 1;
+
+        this.clock.setInterval(() => {
+            const dt = 0.05;
+        
+            this.enemyLogic.forEach(logic => {
+                logic.update(dt, this.state.players);
+            });
+        }, 50);
         // --- equipItem ---
         this.onMessage("equipItem", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -316,7 +406,7 @@ class MyRoom extends Room {
             item.type = data.type ?? item.type;
             item.twohand = !!data.twohand;
         });
-        
+        this.spawnEnemy("goblin", 0, 0, 5); // per test
         this.clock.setInterval(() => {
             const world = this.state.world;
         
@@ -348,7 +438,7 @@ class MyRoom extends Room {
                 }
             }
         }, 1000);
-
+        
         // client segnala fine animazione
         this.onMessage("turnFinished", (client, data) => {
             const actorId = data.actorId;
@@ -621,6 +711,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
