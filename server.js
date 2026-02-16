@@ -114,6 +114,103 @@ class Equipped extends Schema {
 }
 type({ map: EquippedItem })(Equipped.prototype, "slots");
 
+// --- Server: aggiorna la posizione dei nemici ---
+class EnemyState {
+    constructor(id, type, startPos) {
+        this.id = id;
+        this.type = type;
+        this.pos = startPos.clone();
+        this.rot = new Vec3(0, 0, 0);
+        this.health = enemyStats[type].maxHealth;
+        this.aiState = "idle";         
+        this.targetPlayerId = null;
+        this.destination = null;
+        this.enemySpeed = enemyStats[type].enemyspeed || 1;
+        this.inCombat = 0;             
+        this.currentAnim = "idle";
+    }
+
+    update(deltaTime, players) {
+        if (this.aiState === "dead" || this.aiState === "frozen") return;
+
+        let nearestPlayer = null;
+        let nearestDist = Infinity;
+        for (const p of players) {
+            if (p.state === "dead" || p.status === "hidden") continue;
+            const dist = this.pos.distance(p.pos);
+            if (dist < nearestDist) { nearestDist = dist; nearestPlayer = p; }
+        }
+
+        if (nearestPlayer && nearestDist < enemyStats[this.type].radius) {
+            this.aiState = "combat";
+            this.targetPlayerId = nearestPlayer.id;
+            this.destination = null;
+            if (this.inCombat === 0) this.inCombat = generateCombatId();
+            this.setAnimation("attack");
+
+            const wRange = enemyStats[this.type].wRange || 0;
+            if (nearestDist > wRange) this.moveTowards(nearestPlayer.pos, deltaTime);
+        } else {
+            this.aiState = "roaming";
+            this.targetPlayerId = null;
+            this.inCombat = 0;
+
+            if (!this.destination || this.pos.distance(this.destination) < 0.5) {
+                this.destination = this.randomDestination();
+            }
+            this.moveTowards(this.destination, deltaTime);
+
+            this.setAnimation(this.pos.distance(this.destination) < 0.5 ? "idle" : "walk");
+        }
+    }
+
+    moveTowards(target, deltaTime) {
+        const dir = target.clone().sub(this.pos);
+        const dist = dir.length();
+        if (dist < 0.01) return;
+        dir.normalize();
+        this.pos.add(dir.scale(this.enemySpeed * deltaTime));
+        this.rot.y = Math.atan2(dir.x, dir.z);
+    }
+
+    randomDestination() {
+        const r = enemyStats[this.type].range || 5;
+        return new Vec3(
+            this.pos.x + (Math.random() * r * 2 - r),
+            this.pos.y,
+            this.pos.z + (Math.random() * r * 2 - r)
+        );
+    }
+
+    setAnimation(anim) {
+        if (this.currentAnim !== anim) this.currentAnim = anim;
+    }
+}
+
+// --- Client: interpolazione ---
+class EnemyClient {
+    constructor(serverEnemy) {
+        this.id = serverEnemy.id;
+        this.pos = serverEnemy.pos.clone();
+        this.rot = serverEnemy.rot.clone();
+        this.targetPos = serverEnemy.pos.clone();
+        this.targetRot = serverEnemy.rot.clone();
+        this.currentAnim = serverEnemy.currentAnim;
+    }
+
+    receiveUpdate(serverEnemy) {
+        this.targetPos = serverEnemy.pos.clone();
+        this.targetRot = serverEnemy.rot.clone();
+        this.currentAnim = serverEnemy.currentAnim;
+    }
+
+    interpolate(deltaTime) {
+        const lerpFactor = 0.1; // più piccolo = più fluido ma più lag
+        this.pos.lerp(this.targetPos, lerpFactor);
+        this.rot.y += (this.targetRot.y - this.rot.y) * lerpFactor;
+    }
+}
+
 class PlayerState extends Schema {
     constructor() {
         super();
@@ -520,6 +617,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
