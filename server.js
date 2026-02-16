@@ -183,8 +183,8 @@ type([ChatMessage])(MyRoomState.prototype, "chat");
 
 // --- Room ---
 class MyRoom extends Room {
-    maxClients = 20;
-
+    maxClients = 40;
+    
     onCreate() {
         console.log("Room created");
         this.sessionToPlayerId = new Map();
@@ -194,6 +194,8 @@ class MyRoom extends Room {
         this.weatherInterval = 10 * 60 * 1000;
         this.lastWeatherChange = Date.now();
         this.combat = new CombatCore(this);
+        this.activeCombats = new Map(); // combatId -> CombatCore instance
+        this.nextCombatId = 1;    
         // --- equipItem ---
         this.onMessage("equipItem", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -490,6 +492,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
