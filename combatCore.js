@@ -36,13 +36,15 @@ class CombatCore {
     }
 
     removeActor(id) {
-        this.actors.delete(id);
+        const removedIndex = this.turnOrder.indexOf(id);
         this.turnOrder = this.turnOrder.filter(x => x !== id);
-
+        
+        if (removedIndex < this.currentIndex) {
+            this.currentIndex--;
+        }
         if (this.currentIndex >= this.turnOrder.length) {
             this.currentIndex = 0;
         }
-
         if (this.actors.size < 2) {
             this.endCombat();
         }
@@ -145,7 +147,7 @@ class CombatCore {
     rollInitiative() {
         const scored = [];
         for (let [id, actor] of this.actors.entries()) {
-            const score = actor.combat - Math.floor(Math.random() * 12) + 1;
+            const score = actor.combat - (Math.floor(Math.random() * 12) + 1);
             scored.push({ id, score });
         }
         scored.sort((a, b) => b.score - a.score);
@@ -212,6 +214,7 @@ class CombatCore {
     endCombat() {
         this.inProgress = false;
         this.turnOrder = [];
+        this.actors.clear();
         this.currentIndex = 0;
         this.room.broadcast("combatEnd");
     }
