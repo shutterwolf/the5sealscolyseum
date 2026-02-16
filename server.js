@@ -82,7 +82,7 @@ type("string")(WorldState.prototype, "weather");
 class EquippedItem extends Schema {
     constructor() {
         super();
-        this.itemId = 0;
+        this.lootID = 0;
         this.armourValue = 1;
         this.damageValue = 0;
         this.durability = 0;
@@ -95,7 +95,7 @@ class EquippedItem extends Schema {
     }
 }
 
-type("number")(EquippedItem.prototype, "itemId");
+type("number")(EquippedItem.prototype, "lootID");
 type("number")(EquippedItem.prototype, "armourValue");
 type("number")(EquippedItem.prototype, "damageValue");
 type("number")(EquippedItem.prototype, "durability");
@@ -235,7 +235,7 @@ class MyRoom extends Room {
                 if (roll < 0.6) return; // niente cambio
         
                 if (roll < 0.85) {
-                    world.weather = Math.random() > 0.5 ? "rain" : "fog";
+                    world.weather = Math.random() > 0.5 ? "rain";
                 } else {
                     world.weather = "snow";
                 }
@@ -488,6 +488,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
