@@ -3,14 +3,14 @@ const { Schema, type } = require("@colyseus/schema");
 
 class CombatCore {
 
-    constructor(room) {
+    constructor(room, combatId) {
         this.room = room;
+        this.combatId = combatId; // <-- fondamentale
         this.inProgress = false;
         this.round = 1;
         this.currentIndex = 0;
         this.turnOrder = [];
-        this.actors = new Map(); // id -> actor data
-        // actor data: { hp, combat, defence, strength, wDamage, targetId }
+        this.actors = new Map();
     }
 
     /* =========================
@@ -50,7 +50,7 @@ class CombatCore {
             this.currentIndex = 0;
         }
     
-        if (this.actors.size < 2) {
+        if (this.actors.size < 2 && this.inProgress) {
             this.endCombat();
         }
     }
@@ -75,11 +75,11 @@ class CombatCore {
 
         this.rollInitiative();
 
-        this.room.broadcast("combatStart", { turnOrder: this.turnOrder });
+        this.broadcastToCombat("combatStart", { turnOrder: this.turnOrder });
 
         // il primo turno parte subito sul client
         const actorId = this.getCurrentActorId();
-        this.room.broadcast("startTurn", { actorId });
+        this.broadcastToCombat("startTurn", { actorId });
     }
 
     onActorAnimationFinished(actorId) {
@@ -103,7 +103,7 @@ class CombatCore {
             // fuori range → disengage
             this.removeActor(actorId);
             if (!this.inProgress) return;
-            this.room.broadcast("disengage", { id: actorId });
+            this.broadcastToCombat("disengage", { id: actorId });
             return;
         }
 
@@ -117,10 +117,10 @@ class CombatCore {
 
         if (target.hp <= 0) {
             this.removeActor(actor.targetId);
-            this.room.broadcast("actorDied", { id: actor.targetId });
+            this.broadcastToCombat("actorDied", { id: actor.targetId });
         }
 
-        this.room.broadcast("damage", {
+        this.broadcastToCombat("damage", {
             attackerId: actorId,
             targetId: actor.targetId,
             damage
@@ -147,7 +147,7 @@ class CombatCore {
 
         // Turno successivo
         const nextActorId = this.getCurrentActorId();
-        this.room.broadcast("startTurn", { actorId: nextActorId });
+        this.broadcastToCombat("startTurn", { actorId: nextActorId });
     }
 
     rollInitiative() {
@@ -177,10 +177,13 @@ class CombatCore {
             }
         }
 
-        toRemove.forEach(id => {
+        for (let id of toRemove) {
+            if (!this.inProgress) break;
             this.removeActor(id);
-            this.room.broadcast("disengage", { id });
-        });
+            if (this.inProgress) {
+                this.broadcastToCombat("disengage", { id });
+            }
+        }
     }
 
     isInRange(idA, idB) {
@@ -219,12 +222,44 @@ class CombatCore {
 
     endCombat() {
         this.inProgress = false;
+    
+        // libera i player
+        for (let id of this.actors.keys()) {
+    
+            const player = this.room.state.players.get(id);
+            if (player) {
+                player.inCombat = 0;
+            }
+        }
+    
+        // avvisa solo i partecipanti
+        this.broadcastToCombat("combatEnd", {
+            combatId: this.combatId
+        });
+    
         this.turnOrder = [];
         this.actors.clear();
         this.currentIndex = 0;
-        this.room.broadcast("combatEnd");
+    
+        // rimuove se stesso dalla room
+        this.room.activeCombats.delete(this.combatId);
     }
-
+    
+    broadcastToCombat(type, payload) {
+        for (let id of this.actors.keys()) {
+    
+            const client = [...this.room.clients].find(c =>
+                this.room.sessionToPlayerId.get(c.sessionId) === id
+            );
+    
+            if (client) {
+                client.send(type, {
+                    combatId: this.combatId,
+                    ...payload
+                });
+            }
+        }
+    }
 }
 
 module.exports = CombatCore;
