@@ -7,6 +7,7 @@ const { WebSocketTransport } = require("@colyseus/ws-transport");
 const { Schema, MapSchema, ArraySchema, type } = require("@colyseus/schema");
 const admin = require("firebase-admin");
 const CombatCore = require("./combatCore");
+const enemyStats = require("./enemyStats");
 // =============================
 // EXPRESS + HTTP
 // =============================
@@ -711,6 +712,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
