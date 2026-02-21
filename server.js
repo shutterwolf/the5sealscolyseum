@@ -493,8 +493,15 @@ class MyRoom extends Room {
         }, 50);
 
         this.onMessage("requestSpawnEnemies", (client, data) => {
-            const { questID, enemyType, startPos, num } = data;
-        
+                console.log("🔔 requestSpawnEnemies ricevuto");
+                console.log("Client sessionId:", client.sessionId);
+                console.log("Data ricevuta:", data);
+            
+                const { questID, enemyType, startPos, num } = data;
+                console.log("Parsed questID:", questID);
+                console.log("Parsed enemyType:", enemyType);
+                console.log("Parsed startPos:", startPos);
+                console.log("Parsed num:", num);
             for (let i = 0; i < num; i++) {
                 // genera il nemico lato server
                 const enemyID = this.spawnQuestEnemy(
@@ -887,4 +894,5 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
