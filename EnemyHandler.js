@@ -46,4 +46,3 @@ class EnemyServer {
 
 module.exports = EnemyServer;
 
-module.exports = EnemyServer;
