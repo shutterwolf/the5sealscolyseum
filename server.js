@@ -546,7 +546,7 @@ class MyRoom extends Room {
         this.onMessage("sceneReady", (client) => {
             console.log("Scene ready from:", client.sessionId);
             // esempio spawn sicuro
-            this.spawnEnemy("goblin", 0, 0, 5);
+            this.spawnEnemy("goblin", 0, 0, { localMap: 0, dungeonId: "", depth: 0 });
         });
         
         this.clock.setInterval(() => {
@@ -865,6 +865,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
