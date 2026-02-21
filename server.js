@@ -408,7 +408,7 @@ class MyRoom extends Room {
         // ownerId: singolo playerId o partyId (es. "P-00014")
         // questId: id della quest
         // config: { type, x, z, localMap, dungeonId, depth }
-    
+        
         const id = "E" + this.enemyIdCounter++;
     
         // 1️⃣ Schema sincronizzato con i client
@@ -439,7 +439,11 @@ class MyRoom extends Room {
         enemy.lootReady = false;
     
         this.state.enemies.set(id, enemy);
-    
+        console.log("▶ spawnQuestEnemy chiamato");
+        console.log("ownerId:", ownerId, "questId:", questId, "config:", config);
+        console.log("Nuovo enemyID generato:", id);
+        console.log("EnemySchema creato:", enemy);
+        console.log("Enemy aggiunto allo state:", this.state.enemies.get(id));
         // 2️⃣ Logica server (EnemyHandler) — opzionale, se hai update AI
         const logic = new EnemyServer({
             id: id,
@@ -894,5 +898,6 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
