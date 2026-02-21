@@ -325,6 +325,10 @@ class EnemySchema extends Schema {
         this.aiState = "idle";
         this.currentAnim = "idle";
         this.inCombat = 0;
+
+        this.localMap = 0;      
+        this.dungeonId = "";    
+        this.depth = 0;         
     }
 }
 
@@ -336,6 +340,9 @@ type("number")(EnemySchema.prototype, "health");
 type("string")(EnemySchema.prototype, "aiState");
 type("string")(EnemySchema.prototype, "currentAnim");
 type("number")(EnemySchema.prototype, "inCombat");
+type("number")(EnemySchema.prototype, "localMap");
+type("string")(EnemySchema.prototype, "dungeonId");
+type("number")(EnemySchema.prototype, "depth");
 
 class MyRoomState extends Schema {
     constructor() {
@@ -357,29 +364,28 @@ type([ChatMessage])(MyRoomState.prototype, "chat");
 class MyRoom extends Room {
     maxClients = 40;
 
-    spawnEnemy(type, x, y, z, dungeon = false) {
+    spawnEnemy(type, x, y, z, localMap, dungeonId = "", depth = 0) {
 
         const id = "E" + this.enemyIdCounter++;
     
-        // 1️⃣ Schema (quello sincronizzato ai client)
         const enemy = new EnemySchema();
         enemy.id = id;
         enemy.type = type;
+    
         enemy.pos.x = x;
-        enemy.pos.y = y;
+        enemy.pos.y = y;  // y=5 sicuro
         enemy.pos.z = z;
+    
         enemy.health = enemyStats[type].maxHealth;
+    
+        enemy.localMap = localMap;     
+        enemy.dungeonId = dungeonId;    
+        enemy.depth = depth;            
     
         this.state.enemies.set(id, enemy);
     
-        // 2️⃣ Logica server (EnemyServer)
-        const logic = new EnemyServer({
-            id: id,
-            enemy: type,
-            posX: x,
-            posY: z,
-            dungeon: dungeon
-        });
+        return id;
+    }
     
         this.enemyInstances.set(id, logic);
     }
@@ -755,6 +761,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
