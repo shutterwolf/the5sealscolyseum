@@ -8,6 +8,7 @@ const { Schema, MapSchema, ArraySchema, type } = require("@colyseus/schema");
 const admin = require("firebase-admin");
 const CombatCore = require("./combatCore");
 const enemyStats = require("./enemyStats");
+const EnemyServer = require("./enemyHandler");
 // =============================
 // EXPRESS + HTTP
 // =============================
@@ -356,17 +357,31 @@ type([ChatMessage])(MyRoomState.prototype, "chat");
 class MyRoom extends Room {
     maxClients = 40;
 
-    spawnEnemy(type, x, y, z) {
+    spawnEnemy(type, x, y, z, dungeon = false) {
+
+        const id = "E" + this.enemyIdCounter++;
+    
+        // 1️⃣ Schema (quello sincronizzato ai client)
         const enemy = new EnemySchema();
-        enemy.id = "E" + this.enemyIdCounter++;
+        enemy.id = id;
         enemy.type = type;
         enemy.pos.x = x;
         enemy.pos.y = y;
         enemy.pos.z = z;
         enemy.health = enemyStats[type].maxHealth;
     
-        this.state.enemies.set(enemy.id, enemy);
-        this.enemyLogic.set(enemy.id, new EnemyLogic(enemy, type));
+        this.state.enemies.set(id, enemy);
+    
+        // 2️⃣ Logica server (EnemyServer)
+        const logic = new EnemyServer({
+            id: id,
+            enemy: type,
+            posX: x,
+            posY: z,
+            dungeon: dungeon
+        });
+    
+        this.enemyInstances.set(id, logic);
     }
 
     onCreate() {
@@ -381,14 +396,24 @@ class MyRoom extends Room {
         this.activeCombats = new Map(); // combatId -> CombatCore instance
         this.nextCombatId = 1;    
         this.enemyLogic = new Map();
+        this.enemyInstances = new Map();
         this.enemyIdCounter = 1;
 
         this.clock.setInterval(() => {
+
             const dt = 0.05;
         
-            this.enemyLogic.forEach(logic => {
-                logic.update(dt, this.state.players);
+            this.enemyInstances.forEach((logic, id) => {
+        
+                logic.update(dt);
+        
+                const schema = this.state.enemies.get(id);
+                if (!schema) return;
+        
+                schema.pos.x = logic.position.x;
+                schema.pos.z = logic.position.y; // y del handler = z mondo
             });
+        
         }, 50);
         // --- equipItem ---
         this.onMessage("equipItem", (client, data) => {
@@ -439,6 +464,13 @@ class MyRoom extends Room {
                 }
             }
         }, 1000);
+
+        this.onMessage("enemyTarget", (client, data) => {
+            const enemy = this.enemyInstances.get(data.enemyId);
+            if (!enemy) return;
+        
+            enemy.setTarget(data.playerId, data.pos);
+        });
         
         // client segnala fine animazione
         this.onMessage("turnFinished", (client, data) => {
@@ -712,6 +744,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
