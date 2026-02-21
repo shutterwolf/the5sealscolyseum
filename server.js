@@ -364,32 +364,102 @@ type([ChatMessage])(MyRoomState.prototype, "chat");
 class MyRoom extends Room {
     maxClients = 40;
 
-    spawnEnemy(type, x, y, z, localMap, dungeonId = "", depth = 0) {
-
+    spawnEnemy(type, x, z, config = {}) {
         const id = "E" + this.enemyIdCounter++;
     
         const enemy = new EnemySchema();
         enemy.id = id;
         enemy.type = type;
-    
         enemy.pos.x = x;
-        enemy.pos.y = y;  // y=5 sicuro
+        enemy.pos.y = 5; // altezza sicura
         enemy.pos.z = z;
+        enemy.rot = new Vec3(0,0,0);
+        enemy.health = enemyStats[type]?.maxHealth || 20;
+        enemy.aiState = "idle";
+        enemy.currentAnim = "idle";
+        enemy.inCombat = 0;
+        enemy.localMap = config.localMap ?? 0;
+        enemy.dungeonId = config.dungeonId ?? "";
+        enemy.depth = config.depth ?? 0;
     
-        enemy.health = enemyStats[type].maxHealth;
+        // NON ha ownerId → loot libero o null
+        enemy.ownerId = "";
+        enemy.questId = "";
     
-        enemy.localMap = localMap;     
-        enemy.dungeonId = dungeonId;    
-        enemy.depth = depth;            
+        enemy.isDead = false;
+        enemy.lootReady = false;
     
         this.state.enemies.set(id, enemy);
+    
+        const logic = new EnemyServer({
+            id: id,
+            enemy: type,
+            posX: x,
+            posY: z,
+            dungeon: !!config.dungeonId
+        });
+    
+        this.enemyInstances.set(id, logic);
+    
+        return id;
+    }
+
+    spawnQuestEnemy(ownerId, questId, config) {
+        // ownerId: singolo playerId o partyId (es. "P-00014")
+        // questId: id della quest
+        // config: { type, x, z, localMap, dungeonId, depth }
+    
+        const id = "E" + this.enemyIdCounter++;
+    
+        // 1️⃣ Schema sincronizzato con i client
+        const enemy = new EnemySchema();
+        enemy.id = id;
+        enemy.type = config.type;
+        
+        enemy.pos.x = config.x;
+        enemy.pos.y = 5; // altezza sicura, la fisica client gestisce il terreno
+        enemy.pos.z = config.z;
+    
+        enemy.rot = new Vec3(0, 0, 0);
+        enemy.health = enemyStats[config.type]?.maxHealth || 20;
+        enemy.aiState = "idle";
+        enemy.currentAnim = "idle";
+        enemy.inCombat = 0;
+    
+        // zone / map
+        enemy.localMap = config.localMap ?? 0;
+        enemy.dungeonId = config.dungeonId ?? "";
+        enemy.depth = config.depth ?? 0;
+    
+        // quest / owner
+        enemy.ownerId = ownerId;   // singolo player o party
+        enemy.questId = questId;
+    
+        enemy.isDead = false;
+        enemy.lootReady = false;
+    
+        this.state.enemies.set(id, enemy);
+    
+        // 2️⃣ Logica server (EnemyHandler) — opzionale, se hai update AI
+        const logic = new EnemyServer({
+            id: id,
+            enemy: config.type,
+            posX: config.x,
+            posY: config.z, // attenzione: handler usa z come y mondo
+            dungeon: !!config.dungeonId
+        });
+    
+        this.enemyInstances.set(id, logic);
+    
+        // 3️⃣ Salva riferimento per cleanup / respawn
+        if (!this.activeQuestSpawns.has(ownerId)) {
+            this.activeQuestSpawns.set(ownerId, new Map());
+        }
+        this.activeQuestSpawns.get(ownerId).set(questId, id);
     
         return id;
     }
     
-        this.enemyInstances.set(id, logic);
-    }
-
     onCreate() {
         console.log("Room created");
         this.sessionToPlayerId = new Map();
@@ -421,6 +491,40 @@ class MyRoom extends Room {
             });
         
         }, 50);
+
+        this.onMessage("lootEnemy", (client, data) => {
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            const enemy = this.state.enemies.get(data.enemyId);
+            if (!enemy || !enemy.isDead || !enemy.lootReady) return;
+        
+            // solo chi è ownerId può lootare
+            if (enemy.ownerId !== playerId && enemy.ownerId !== player.partyId) return;
+        
+            this.giveQuestLoot(playerId, enemy);
+        
+            // rimuovi body
+            this.state.enemies.delete(enemy.id);
+        
+            // cleanup spawn tracking
+            const ownerMap = this.activeQuestSpawns.get(enemy.ownerId);
+            if (ownerMap) ownerMap.delete(enemy.questId);
+        });
+
+        this.onMessage("startQuest", (client, data) => {
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            const questId = data.questId;
+            const questConfig = {
+                type: data.enemyType,
+                x: data.spawnX,
+                z: data.spawnZ,
+                localMap: data.localMap,
+                dungeonId: data.dungeonId,
+                depth: data.depth
+            };
+        
+            this.spawnQuestEnemy(playerId, questId, questConfig);
+        });
+        
         // --- equipItem ---
         this.onMessage("equipItem", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -761,6 +865,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
