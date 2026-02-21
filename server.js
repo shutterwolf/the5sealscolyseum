@@ -328,7 +328,11 @@ class EnemySchema extends Schema {
 
         this.localMap = 0;      
         this.dungeonId = "";    
-        this.depth = 0;         
+        this.depth = 0;
+        this.destX = 0;
+        this.destZ = 0;
+        this.idleUntil = 0;
+        this.targetPlayerId = "";
     }
 }
 
@@ -343,6 +347,10 @@ type("number")(EnemySchema.prototype, "inCombat");
 type("number")(EnemySchema.prototype, "localMap");
 type("string")(EnemySchema.prototype, "dungeonId");
 type("number")(EnemySchema.prototype, "depth");
+type("number")(EnemySchema.prototype, "destX");
+type("number")(EnemySchema.prototype, "destZ");
+type("number")(EnemySchema.prototype, "idleUntil");
+type("string")(EnemySchema.prototype, "targetPlayerId");
 
 class MyRoomState extends Schema {
     constructor() {
@@ -479,22 +487,83 @@ class MyRoom extends Room {
         this.enemyInstances = new Map();
         this.enemyIdCounter = 1;
         this.activeQuestSpawns = new Map();
-        this.clock.setInterval(() => {
+        his.clock.setInterval(() => {
 
-            const dt = 0.05;
-        
-            this.enemyInstances.forEach((logic, id) => {
-        
-                logic.update(dt);
-        
-                const schema = this.state.enemies.get(id);
-                if (!schema) return;
-        
-                schema.pos.x = logic.position.x;
-                schema.pos.z = logic.position.y; // y del handler = z mondo
-            });
-        
-        }, 50);
+    const now = Date.now();
+
+    this.state.enemies.forEach((enemy) => {
+
+        if (enemy.isDead) return;
+
+        // -------- AGGRO CHECK --------
+        let nearest = null;
+        let nearestDist = Infinity;
+
+        this.state.players.forEach(player => {
+
+            if (player.hp <= 0) return;
+
+            const dx = player.playerPos.x - enemy.pos.x;
+            const dz = player.playerPos.z - enemy.pos.z;
+            const dist = Math.sqrt(dx*dx + dz*dz);
+
+            if (dist < nearestDist) {
+                nearestDist = dist;
+                nearest = player;
+            }
+        });
+
+        const aggroRange = enemyStats[enemy.type]?.radius || 8;
+
+        if (nearest && nearestDist < aggroRange) {
+
+            enemy.aiState = "move";
+            enemy.targetPlayerId = nearest.id;
+
+            enemy.destX = nearest.playerPos.x;
+            enemy.destZ = nearest.playerPos.z;
+
+            return;
+        }
+
+        enemy.targetPlayerId = "";
+
+        // -------- IDLE --------
+        if (enemy.aiState === "idle") {
+
+            if (enemy.idleUntil === 0) {
+                enemy.idleUntil = now + 2000 + Math.random() * 1000;
+                return;
+            }
+
+            if (now >= enemy.idleUntil) {
+                enemy.aiState = "move";
+                enemy.idleUntil = 0;
+            }
+
+            return;
+        }
+
+        // -------- MOVE --------
+        if (enemy.aiState === "move") {
+
+            // 1 su 4 idle
+            if (Math.random() < 0.25) {
+                enemy.aiState = "idle";
+                enemy.idleUntil = now + 2000 + Math.random() * 1000;
+                return;
+            }
+
+            // 3 su 4 nuova destinazione casuale
+            const range = enemyStats[enemy.type]?.range || 5;
+
+            enemy.destX = enemy.pos.x + (Math.random()*range*2 - range);
+            enemy.destZ = enemy.pos.z + (Math.random()*range*2 - range);
+        }
+
+    });
+
+}, 2000); // ogni 2 secondi decide cosa fare
 
         this.onMessage("requestSpawnEnemies", (client, data) => {
                 console.log("🔔 requestSpawnEnemies ricevuto");
@@ -892,6 +961,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
