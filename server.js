@@ -474,7 +474,7 @@ class MyRoom extends Room {
         this.enemyLogic = new Map();
         this.enemyInstances = new Map();
         this.enemyIdCounter = 1;
-
+        this.activeQuestSpawns = new Map();
         this.clock.setInterval(() => {
 
             const dt = 0.05;
@@ -887,3 +887,4 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
