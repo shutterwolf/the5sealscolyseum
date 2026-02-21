@@ -492,6 +492,28 @@ class MyRoom extends Room {
         
         }, 50);
 
+        this.onMessage("requestSpawnEnemies", (client, data) => {
+            const { questID, enemyType, startPos, num } = data;
+        
+            for (let i = 0; i < num; i++) {
+                // genera il nemico lato server
+                const enemyID = this.spawnQuestEnemy(
+                    this.sessionToPlayerId.get(client.sessionId),
+                    questID,
+                    {
+                        type: enemyType,
+                        x: startPos.x + i,
+                        z: startPos.z,
+                        localMap: 0,
+                        dungeonId: "",
+                        depth: 0
+                    }
+                );
+                // Colyseus aggiorna automaticamente i client
+                // quindi non serve fare client.emit come con socket.io
+            }
+        });
+        
         this.onMessage("lootEnemy", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             const enemy = this.state.enemies.get(data.enemyId);
@@ -865,33 +887,3 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
