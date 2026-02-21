@@ -432,7 +432,13 @@ class MyRoom extends Room {
             item.type = data.type ?? item.type;
             item.twohand = !!data.twohand;
         });
-        this.spawnEnemy("goblin", 0, 0, 5); // per test
+
+        this.onMessage("sceneReady", (client) => {
+            console.log("Scene ready from:", client.sessionId);
+            // esempio spawn sicuro
+            this.spawnEnemy("goblin", 0, 0, 5);
+        });
+        
         this.clock.setInterval(() => {
             const world = this.state.world;
         
@@ -749,6 +755,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
