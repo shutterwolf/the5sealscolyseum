@@ -489,11 +489,16 @@ class MyRoom extends Room {
         this.enemyIdCounter = 1;
         this.activeQuestSpawns = new Map();
         this.clock.setInterval(() => {
-
+        
     const now = Date.now();
 
     this.state.enemies.forEach((enemy) => {
-
+        console.log("---- ENEMY TICK ----");
+        console.log("ID:", enemy.id);
+        console.log("State:", enemy.aiState);
+        console.log("Pos:", enemy.pos.x.toFixed(2), enemy.pos.z.toFixed(2));
+        console.log("Dest:", enemy.destX?.toFixed(2), enemy.destZ?.toFixed(2));
+        console.log("Target:", enemy.targetPlayerId);
         if (enemy.isDead) return;
 
         // -------- AGGRO CHECK --------
@@ -547,7 +552,9 @@ class MyRoom extends Room {
 
         // -------- MOVE --------
         if (enemy.aiState === "move") {
-
+            console.log("New random destination:");
+            console.log("destX:", enemy.destX);
+            console.log("destZ:", enemy.destZ);
             // 1 su 4 idle
             if (Math.random() < 0.25) {
                 enemy.aiState = "idle";
@@ -962,6 +969,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
