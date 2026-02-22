@@ -489,30 +489,19 @@ class MyRoom extends Room {
         this.enemyIdCounter = 1;
         this.activeQuestSpawns = new Map();
         this.clock.setInterval(() => {
-        
     const now = Date.now();
 
     this.state.enemies.forEach((enemy) => {
-        console.log("---- ENEMY TICK ----");
-        console.log("ID:", enemy.id);
-        console.log("State:", enemy.aiState);
-        console.log("Pos:", enemy.pos.x.toFixed(2), enemy.pos.z.toFixed(2));
-        console.log("Dest:", enemy.destX?.toFixed(2), enemy.destZ?.toFixed(2));
-        console.log("Target:", enemy.targetPlayerId);
         if (enemy.isDead) return;
 
-        // -------- AGGRO CHECK --------
+        // --- AGGRO CHECK ---
         let nearest = null;
         let nearestDist = Infinity;
-
         this.state.players.forEach(player => {
-
             if (player.hp <= 0) return;
-
             const dx = player.playerPos.x - enemy.pos.x;
             const dz = player.playerPos.z - enemy.pos.z;
             const dist = Math.sqrt(dx*dx + dz*dz);
-
             if (dist < nearestDist) {
                 nearestDist = dist;
                 nearest = player;
@@ -520,58 +509,48 @@ class MyRoom extends Room {
         });
 
         const aggroRange = enemyStats[enemy.type]?.radius || 8;
-
         if (nearest && nearestDist < aggroRange) {
-
             enemy.aiState = "move";
             enemy.targetPlayerId = nearest.id;
-
             enemy.destX = nearest.playerPos.x;
             enemy.destZ = nearest.playerPos.z;
-
             return;
         }
-
         enemy.targetPlayerId = "";
 
-        // -------- IDLE --------
+        // --- IDLE LOGIC ---
         if (enemy.aiState === "idle") {
-
             if (enemy.idleUntil === 0) {
                 enemy.idleUntil = now + 2000 + Math.random() * 1000;
                 return;
             }
-
             if (now >= enemy.idleUntil) {
                 enemy.aiState = "move";
                 enemy.idleUntil = 0;
             }
-
             return;
         }
 
-        // -------- MOVE --------
+        // --- MOVE LOGIC ---
         if (enemy.aiState === "move") {
-            console.log("New random destination:");
-            console.log("destX:", enemy.destX);
-            console.log("destZ:", enemy.destZ);
-            // 1 su 4 idle
-            if (Math.random() < 0.25) {
-                enemy.aiState = "idle";
-                enemy.idleUntil = now + 2000 + Math.random() * 1000;
-                return;
+            const dx = enemy.destX - enemy.pos.x;
+            const dz = enemy.destZ - enemy.pos.z;
+            const dist = Math.sqrt(dx*dx + dz*dz);
+
+            // Controlla se è arrivato o bloccato
+            if (dist < 0.5 || (enemy.stuckSince && now - enemy.stuckSince > 2000)) {
+                const range = enemyStats[enemy.type]?.range || 5;
+                enemy.destX = enemy.pos.x + (Math.random() * range * 2 - range);
+                enemy.destZ = enemy.pos.z + (Math.random() * range * 2 - range);
+                enemy.stuckSince = null;
+                console.log("New random destination:", enemy.destX, enemy.destZ);
+            } else if (dist >= 0.5) {
+                // se è ancora lontano, aggiorna stuck timer
+                if (!enemy.stuckSince) enemy.stuckSince = now;
             }
-
-            // 3 su 4 nuova destinazione casuale
-            const range = enemyStats[enemy.type]?.range || 5;
-
-            enemy.destX = enemy.pos.x + (Math.random()*range*2 - range);
-            enemy.destZ = enemy.pos.z + (Math.random()*range*2 - range);
         }
-
     });
-
-}, 2000); // ogni 2 secondi decide cosa fare
+}, 2000);
 
         this.onMessage("requestSpawnEnemies", (client, data) => {
                 console.log("🔔 requestSpawnEnemies ricevuto");
@@ -969,6 +948,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
