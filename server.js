@@ -220,6 +220,7 @@ class EnemyState {
     }
 
     randomDestination() {
+        console.log("destination ",enemyStats[this.type]);
         const r = enemyStats[this.type].range || 5;
         return new Vec3(
             this.pos.x + (Math.random() * r * 2 - r),
@@ -418,7 +419,7 @@ class MyRoom extends Room {
         // config: { type, x, z, localMap, dungeonId, depth }
         
         const id = "E" + this.enemyIdCounter++;
-    
+        console.log("config type:",config.type);
         // 1️⃣ Schema sincronizzato con i client
         const enemy = new EnemySchema();
         enemy.id = id;
@@ -961,6 +962,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
