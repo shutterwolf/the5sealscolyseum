@@ -123,7 +123,8 @@ module.exports= {
         race: 'undead',
         wRange: 0,
         maxHealth:20,
-        attackType: "NATURAL_HEAVY"
+        attackType: "NATURAL_HEAVY",
+        enemyspeed: 0.8
     },
 
     Banshee: {
@@ -148,7 +149,8 @@ module.exports= {
         race: 'werewolf',
         wRange: 0,
         maxHealth:25,
-        attackType: "NATURAL_FAST"
+        attackType: "NATURAL_FAST",
+        enemyspeed: 1.2
     },
 
     bug: {
@@ -160,7 +162,8 @@ module.exports= {
         race: 'bee',
         wRange: 0,
         maxHealth:10,
-        attackType: "NATURAL_BITE"
+        attackType: "NATURAL_BITE",
+        enemyspeed: 0.8
     },
 
     "bug queen": {
@@ -172,7 +175,8 @@ module.exports= {
         race: 'bee',
         wRange: 0,
         maxHealth:15,
-        attackType: "NATURAL_BITE"
+        attackType: "NATURAL_BITE",
+        enemyspeed: 1.2
     },
 
     Icegar: {
@@ -184,7 +188,8 @@ module.exports= {
         race: 'Human',
         wRange: 0,
         maxHealth:18,
-        attackType: "SWORD"
+        attackType: "SWORD",
+        enemyspeed: 1
     },
 
     "goblin champ": {
@@ -196,7 +201,8 @@ module.exports= {
         race: 'goblin',
         wRange: 0,
         maxHealth:15,
-        attackType: "HAMMER"
+        attackType: "HAMMER",
+        enemyspeed: 0.8
     },
 
     minotaur: {
@@ -208,7 +214,8 @@ module.exports= {
         race: 'minotaur',
         wRange: 0,
         maxHealth:25,
-        attackType: "NATURAL_HEAVY"
+        attackType: "NATURAL_HEAVY",
+        enemyspeed: 1.2
     },
 
     spider: {
@@ -220,7 +227,8 @@ module.exports= {
         race: 'bee',
         wRange: 0,
         maxHealth:15,
-        attackType: "NATURAL_BITE"
+        attackType: "NATURAL_BITE",
+        enemyspeed: 1
     },
 
     bear: {
@@ -232,7 +240,8 @@ module.exports= {
         race: 'bear',
         wRange: 0,
         maxHealth:35,
-        attackType: "NATURAL_HEAVY"
+        attackType: "NATURAL_HEAVY",
+        enemyspeed: 1
     },
 
     sandspider: {
@@ -244,7 +253,8 @@ module.exports= {
         race: 'bee',
         wRange: 0,
         maxHealth:15,
-        attackType: "NATURAL_BITE"
+        attackType: "NATURAL_BITE",
+        enemyspeed: 1
     },
 
     necromancer: {
@@ -256,7 +266,8 @@ module.exports= {
         race: 'human',
         wRange: 0,
         attackType: "SWORD",
-        maxHealth:18
+        maxHealth:18,
+        enemyspeed: 1
     }
 
 };
