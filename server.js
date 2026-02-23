@@ -488,7 +488,8 @@ class MyRoom extends Room {
         this.enemyInstances = new Map();
         this.enemyIdCounter = 1;
         this.activeQuestSpawns = new Map();
-        this.clock.setInterval(() => {
+        
+        setInterval(() => {
             for (const [id, enemy] of this.enemyInstances) {
                 enemy.update(0.1, Array.from(this.state.players.values())); // deltaTime esempio
                 // sincronizza pos/anim allo schema
@@ -585,7 +586,7 @@ class MyRoom extends Room {
             item.twohand = !!data.twohand;
         });
         
-        this.clock.setInterval(() => {
+        setInterval(() => {
             const world = this.state.world;
         
             const speed = world.isDay
@@ -901,6 +902,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
