@@ -11,27 +11,24 @@ class Enemy {
             z: enemyData.posZ || 0
         };
 
-        // Nei dungeon parte disabilitato
         this.enabled = enemyData.dungeon ? false : true;
-
-        this.state = 'IDLE';        // IDLE, MOVE, AGGRO
-        this.destination = null;     // destinazione per MOVE
+        this.state = 'IDLE';
+        this.destination = null;
         this.speed = enemyData.speed || 3;  
         this.aggroRange = enemyData.aggroRange || 8;
-
-        this.targetPlayer = null;   // player in aggro
+        this.targetPlayer = null;
         this.localMap = enemyData.localMap || 0;
         this.depth = enemyData.depth || 0;
+    }
 
-        get position() {
-            return { x: this.pos.x, y: this.pos.z }; // y = asse z mondo
-        }
+    // getter corretto
+    get position() {
+        return { x: this.pos.x, y: this.pos.z }; // y = asse z mondo
     }
 
     update(players) {
         if (!this.enabled) return null;
 
-        // Se siamo in AGGRO, inseguo il player
         if (this.state === 'AGGRO') {
             if (!this.targetPlayer || !players[this.targetPlayer]) {
                 this.state = 'IDLE';
