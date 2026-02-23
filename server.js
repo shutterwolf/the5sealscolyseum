@@ -489,24 +489,18 @@ class MyRoom extends Room {
         this.enemyIdCounter = 1;
         this.activeQuestSpawns = new Map();
         this.clock.setInterval(() => {
-    const now = Date.now();
-
-    this.state.enemies.forEach((enemy) => {
-        if (enemy.isDead) return;
-
-        // --- AGGRO CHECK ---
-        let nearest = null;
-        let nearestDist = Infinity;
-        this.state.players.forEach(player => {
-            if (player.hp <= 0) return;
-            const dx = player.playerPos.x - enemy.pos.x;
-            const dz = player.playerPos.z - enemy.pos.z;
-            const dist = Math.sqrt(dx*dx + dz*dz);
-            if (dist < nearestDist) {
-                nearestDist = dist;
-                nearest = player;
+            for (const [id, enemy] of this.enemyInstances) {
+                enemy.update(0.1, Array.from(this.state.players.values())); // deltaTime esempio
+                // sincronizza pos/anim allo schema
+                const s = this.state.enemies.get(id);
+                if (s) {
+                    s.pos.x = enemy.position.x;
+                    s.pos.z = enemy.position.y; // EnemyServer usa posY come z mondo
+                    s.currentAnim = enemy.currentAnim;
+                    s.aiState = enemy.aiState;
+                }
             }
-        });
+        }, 100); // 10 volte/sec
 
         const aggroRange = enemyStats[enemy.type]?.radius || 8;
         if (nearest && nearestDist < aggroRange) {
@@ -948,12 +942,3 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
-
-
-
-
-
-
-
-
-
