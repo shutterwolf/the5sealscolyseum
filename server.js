@@ -543,7 +543,6 @@ class MyRoom extends Room {
                 if (!enemy.stuckSince) enemy.stuckSince = now;
             }
         }
-    });
 }, 2000);
 
         this.onMessage("requestSpawnEnemies", (client, data) => {
@@ -942,3 +941,4 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
