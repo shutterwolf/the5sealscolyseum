@@ -98,8 +98,9 @@ class Enemy {
         }
     }
 
-    setTarget(playerID) {
+    setTarget(playerID, pos) {
         this.targetPlayer = playerID;
+        if (pos) this.destination = pos;
         this.state = 'AGGRO';
     }
 
