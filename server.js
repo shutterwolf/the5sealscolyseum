@@ -502,49 +502,9 @@ class MyRoom extends Room {
             }
         }, 100); // 10 volte/sec
 
-        const aggroRange = enemyStats[enemy.type]?.radius || 8;
-        if (nearest && nearestDist < aggroRange) {
-            enemy.aiState = "move";
-            enemy.targetPlayerId = nearest.id;
-            enemy.destX = nearest.playerPos.x;
-            enemy.destZ = nearest.playerPos.z;
-            return;
-        }
-        enemy.targetPlayerId = "";
 
         // --- IDLE LOGIC ---
-        if (enemy.aiState === "idle") {
-            if (enemy.idleUntil === 0) {
-                enemy.idleUntil = now + 2000 + Math.random() * 1000;
-                return;
-            }
-            if (now >= enemy.idleUntil) {
-                enemy.aiState = "move";
-                enemy.idleUntil = 0;
-            }
-            return;
-        }
-
-        // --- MOVE LOGIC ---
-        if (enemy.aiState === "move") {
-            const dx = enemy.destX - enemy.pos.x;
-            const dz = enemy.destZ - enemy.pos.z;
-            const dist = Math.sqrt(dx*dx + dz*dz);
-
-            // Controlla se è arrivato o bloccato
-            if (dist < 0.5 || (enemy.stuckSince && now - enemy.stuckSince > 2000)) {
-                const range = enemyStats[enemy.type]?.range || 5;
-                enemy.destX = enemy.pos.x + (Math.random() * range * 2 - range);
-                enemy.destZ = enemy.pos.z + (Math.random() * range * 2 - range);
-                enemy.stuckSince = null;
-                console.log("New random destination:", enemy.destX, enemy.destZ);
-            } else if (dist >= 0.5) {
-                // se è ancora lontano, aggiorna stuck timer
-                if (!enemy.stuckSince) enemy.stuckSince = now;
-            }
-        }
-}
-
+        
         this.onMessage("requestSpawnEnemies", (client, data) => {
                 console.log("🔔 requestSpawnEnemies ricevuto");
                 console.log("Client sessionId:", client.sessionId);
@@ -941,6 +901,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
