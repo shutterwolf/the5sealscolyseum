@@ -22,6 +22,10 @@ class Enemy {
         this.targetPlayer = null;   // player in aggro
         this.localMap = enemyData.localMap || 0;
         this.depth = enemyData.depth || 0;
+
+        get position() {
+            return { x: this.pos.x, y: this.pos.z }; // y = asse z mondo
+        }
     }
 
     update(players) {
