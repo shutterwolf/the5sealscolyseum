@@ -352,6 +352,10 @@ type("number")(EnemySchema.prototype, "destX");
 type("number")(EnemySchema.prototype, "destZ");
 type("number")(EnemySchema.prototype, "idleUntil");
 type("string")(EnemySchema.prototype, "targetPlayerId");
+type("number")(EnemySchema.prototype, "speed");
+type("number")(EnemySchema.prototype, "radius");
+type("number")(EnemySchema.prototype, "wRange");
+type("number")(EnemySchema.prototype, "maxHealth");
 
 class MyRoomState extends Schema {
     constructor() {
@@ -390,6 +394,11 @@ class MyRoom extends Room {
         enemy.localMap = config.localMap ?? 0;
         enemy.dungeonId = config.dungeonId ?? "";
         enemy.depth = config.depth ?? 0;
+        const stats = enemyStats[type];
+        enemy.speed = stats.enemyspeed;
+        enemy.radius = stats.radius;
+        enemy.wRange = stats.wRange;
+        enemy.maxHealth = stats.maxHealth;
     
         // NON ha ownerId → loot libero o null
         enemy.ownerId = "";
@@ -910,6 +919,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
