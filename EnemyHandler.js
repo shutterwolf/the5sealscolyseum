@@ -114,5 +114,5 @@ class Enemy {
 }
 
 module.exports = Enemy; // oppure
-module.exports = { EnemyServer: Enemy }; 
+ 
 
