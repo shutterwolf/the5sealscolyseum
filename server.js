@@ -491,7 +491,7 @@ class MyRoom extends Room {
         
         setInterval(() => {
             for (const [id, enemy] of this.enemyInstances) {
-                enemy.update(0.1, Array.from(this.state.players.values())); // deltaTime esempio
+                enemy.update(this.state.players);
                 // sincronizza pos/anim allo schema
                 const s = this.state.enemies.get(id);
                 if (s) {
@@ -910,6 +910,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
