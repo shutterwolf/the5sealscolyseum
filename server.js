@@ -626,8 +626,16 @@ class MyRoom extends Room {
         });
 
         this.onMessage("spawnEnemy", (client, data) => {
-            const { type, x, y, z, questId, dungeon } = data;
-            this.spawnEnemy(type, x, y, z, dungeon);
+            this.spawnEnemy(
+                data.type,
+                data.x,
+                data.z,
+                {
+                    localMap: data.localMap ?? 0,
+                    dungeonId: data.dungeonId ?? "",
+                    depth: data.depth ?? 0
+                }
+            );
         });
         
         // client segnala fine animazione
@@ -902,6 +910,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
