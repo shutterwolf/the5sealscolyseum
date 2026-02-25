@@ -23,7 +23,11 @@ class Enemy {
 
     // getter corretto
     get position() {
-        return { x: this.pos.x, y: this.pos.z }; // y = asse z mondo
+        return { 
+            x: this.pos.x,   // X mondo
+            y: this.pos.y,   // Y verticale
+            z: this.pos.z    // Z mondo
+        };
     }
 
     update(players) {
