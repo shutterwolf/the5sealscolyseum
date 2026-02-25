@@ -497,22 +497,6 @@ class MyRoom extends Room {
         this.enemyInstances = new Map();
         this.enemyIdCounter = 1;
         this.activeQuestSpawns = new Map();
-        
-        setInterval(() => {
-            for (const [id, enemy] of this.enemyInstances) {
-                enemy.update(this.state.players);
-                // sincronizza pos/anim allo schema
-                const s = this.state.enemies.get(id);
-                if (s) {
-                    s.pos.x = enemy.position.x;
-                    s.pos.y = enemy.position.y; // altezza
-                    s.pos.z = enemy.position.z; // z reale dal server
-                    s.currentAnim = enemy.currentAnim;
-                    s.aiState = enemy.aiState;
-                }
-            }
-        }, 100); // 10 volte/sec
-
 
         // --- IDLE LOGIC ---
         
@@ -920,6 +904,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
