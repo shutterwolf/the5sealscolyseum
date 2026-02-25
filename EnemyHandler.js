@@ -46,7 +46,7 @@ class Enemy {
             const dist = Math.sqrt(dx*dx + dz*dz);
 
             if (dist > 0.1) {
-                const step = Math.min(dist, this.speed * 0.1);
+                const step = Math.min(dist, this.speed * dt);
                 this.pos.x += (dx/dist)*step;
                 this.pos.z += (dz/dist)*step;
             }
