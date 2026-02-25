@@ -122,38 +122,6 @@ class EnemyLogic {
         this.type = type;
         this.speed = enemyStats[type].enemyspeed || 1;
     }
-
-    update(dt, players) {
-        if (this.schema.aiState === "dead") return;
-
-        let nearest = null;
-        let distMin = Infinity;
-
-        players.forEach(p => {
-            const dx = p.playerPos.x - this.schema.pos.x;
-            const dz = p.playerPos.z - this.schema.pos.z;
-            const dist = Math.sqrt(dx*dx + dz*dz);
-            if (dist < distMin) {
-                distMin = dist;
-                nearest = p;
-            }
-        });
-
-        if (!nearest) return;
-
-        const dx = nearest.playerPos.x - this.schema.pos.x;
-        const dz = nearest.playerPos.z - this.schema.pos.z;
-        const len = Math.sqrt(dx*dx + dz*dz);
-
-        if (len > 0.5) {
-            this.schema.pos.x += (dx / len) * this.speed * dt;
-            this.schema.pos.z += (dz / len) * this.speed * dt;
-            this.schema.rot.y = Math.atan2(dx, dz);
-            this.schema.currentAnim = "walk";
-        } else {
-            this.schema.currentAnim = "idle";
-        }
-    }
 }
 
 // --- Server: aggiorna la posizione dei nemici ---
@@ -904,6 +872,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
