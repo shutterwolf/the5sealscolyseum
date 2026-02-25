@@ -505,7 +505,8 @@ class MyRoom extends Room {
                 const s = this.state.enemies.get(id);
                 if (s) {
                     s.pos.x = enemy.position.x;
-                    s.pos.z = enemy.position.y; // EnemyServer usa posY come z mondo
+                    s.pos.y = enemy.position.y; // altezza
+                    s.pos.z = enemy.position.z; // z reale dal server
                     s.currentAnim = enemy.currentAnim;
                     s.aiState = enemy.aiState;
                 }
@@ -919,6 +920,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
