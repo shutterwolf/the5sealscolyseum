@@ -15,7 +15,7 @@ class Enemy {
         this.state = 'IDLE';
         this.destination = null;
         this.speed = enemyData.speed || 3;  
-        this.aggroRange = enemyData.aggroRange || 8;
+        this.aggroRange = enemyData.aggroRange || 5;
         this.targetPlayer = null;
         this.localMap = enemyData.localMap || 0;
         this.depth = enemyData.depth || 0;
@@ -30,7 +30,7 @@ class Enemy {
         };
     }
 
-    update(players) {
+    update(players,dt) {
         if (!this.enabled) return null;
 
         if (this.state === 'AGGRO') {
@@ -51,6 +51,12 @@ class Enemy {
                 this.pos.z += (dz/dist)*step;
             }
 
+            if (dist > this.aggroRange) {
+                this.state = 'IDLE';
+                this.targetPlayer = null;
+                return { pos: this.pos, anim: 'idle' };
+            }
+            
             return { pos: this.pos, anim: 'run' };
         }
 
