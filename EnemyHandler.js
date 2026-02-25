@@ -54,20 +54,20 @@ class Enemy {
             let dz = player.z - this.pos.z;
             const dist = Math.sqrt(dx*dx + dz*dz);
 
-            // evita divisione per zero
-            if (dist > 0.001) {
-                const step = Math.min(dist, this.speed * dt);
-                this.pos.x += (dx/dist) * step;
-                this.pos.z += (dz/dist) * step;
-            }
-
             if (dist > this.aggroRange) {
                 this.state = 'IDLE';
                 this.targetPlayer = null;
                 return { pos: this.position, anim: 'idle' };
             }
 
-            return { pos: this.position, anim: this.state === "MOVE" ? "walking" : "idle" };
+            const dirX = dist > 0.001 ? dx / dist : 0;
+            const dirZ = dist > 0.001 ? dz / dist : 0;
+            
+            return {
+                moveDir: { x: dirX, z: dirZ },
+                state: 'MOVE',
+                anim: 'walking'
+            };
         }
 
         // ------------------------
@@ -85,7 +85,14 @@ class Enemy {
             if (dist <= this.aggroRange) {
                 this.state = 'AGGRO';
                 this.targetPlayer = pid;
-                return { pos: this.position, anim: 'run' };
+                const dirX = dist > 0.001 ? dx / dist : 0;
+                const dirZ = dist > 0.001 ? dz / dist : 0;
+                
+                return {
+                    moveDir: { x: dirX, z: dirZ },
+                    state: 'AGGRO',
+                    anim: 'walking'
+                };
             }
         }
 
@@ -114,15 +121,23 @@ class Enemy {
             this.destination = null;
             return { pos: this.position, anim: 'idle' };
         } else {
-            const step = Math.min(dist, this.speed * dt);
-            if (dist > 0.0001) {
-                this.pos.x += (dx/dist) * step;
-                this.pos.z += (dz/dist) * step;
-            }
-            return { pos: this.position, anim: 'walk' };
+            const dirX = dist > 0.001 ? dx / dist : 0;
+            const dirZ = dist > 0.001 ? dz / dist : 0;
+            
+            return {
+                moveDir: { x: dirX, z: dirZ },
+                state: 'MOVE',
+                anim: 'walk'
+            };
         }
     }
 
+    updatePositionFromClient(pos) {
+        this.pos.x = pos.x;
+        this.pos.y = pos.y;
+        this.pos.z = pos.z;
+    }
+    
     setTarget(playerID, pos) {
         this.targetPlayer = playerID;
         if (pos) this.destination = pos;
