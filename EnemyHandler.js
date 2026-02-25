@@ -33,9 +33,15 @@ class Enemy {
     update(players, dt) {
         if (!this.enabled) return null;
 
-        // ------------------------
-        // Aggro su un player
-        // ------------------------
+        if (!this.destination) {
+            const radius = 5;
+            this.destination = {
+                x: this.pos.x + (Math.random() * 2 - 1) * radius,
+                z: this.pos.z + (Math.random() * 2 - 1) * radius
+            };
+            this.state = "MOVE";
+        }
+        
         if (this.state === 'AGGRO') {
             const player = players[this.targetPlayer];
             if (!player) {
@@ -49,7 +55,7 @@ class Enemy {
             const dist = Math.sqrt(dx*dx + dz*dz);
 
             // evita divisione per zero
-            if (dist > 0.0001) {
+            if (dist > 0.001) {
                 const step = Math.min(dist, this.speed * dt);
                 this.pos.x += (dx/dist) * step;
                 this.pos.z += (dz/dist) * step;
@@ -61,7 +67,7 @@ class Enemy {
                 return { pos: this.position, anim: 'idle' };
             }
 
-            return { pos: this.position, anim: 'run' };
+            return { pos: this.position, anim: this.state === "MOVE" ? "walking" : "idle" };
         }
 
         // ------------------------
