@@ -6,9 +6,9 @@ class Enemy {
         this.level = enemyData.level || 1;
 
         this.pos = {
-            x: enemyData.posX || 0,
-            y: enemyData.posY || 0,
-            z: enemyData.posZ || 0
+            x: isFinite(enemyData.posX) ? enemyData.posX : 0,
+            y: isFinite(enemyData.posY) ? enemyData.posY : 5, // altezza sicura
+            z: isFinite(enemyData.posZ) ? enemyData.posZ : 0
         };
 
         this.enabled = enemyData.dungeon ? false : true;
@@ -21,52 +21,55 @@ class Enemy {
         this.depth = enemyData.depth || 0;
     }
 
-    // getter corretto
+    // getter posizione sicura
     get position() {
         return { 
-            x: this.pos.x,   // X mondo
-            y: this.pos.y,   // Y verticale
-            z: this.pos.z    // Z mondo
+            x: isFinite(this.pos.x) ? this.pos.x : 0,
+            y: isFinite(this.pos.y) ? this.pos.y : 5,
+            z: isFinite(this.pos.z) ? this.pos.z : 0
         };
     }
 
-    update(players,dt) {
+    update(players, dt) {
         if (!this.enabled) return null;
 
+        // ------------------------
+        // Aggro su un player
+        // ------------------------
         if (this.state === 'AGGRO') {
-            if (!this.targetPlayer || !players[this.targetPlayer]) {
+            const player = players[this.targetPlayer];
+            if (!player) {
                 this.state = 'IDLE';
                 this.targetPlayer = null;
-                return { pos: this.pos, anim: 'idle' };
+                return { pos: this.position, anim: 'idle' };
             }
 
-            const p = players[this.targetPlayer];
-            const dx = p.x - this.pos.x;
-            const dz = p.z - this.pos.z;
+            let dx = player.x - this.pos.x;
+            let dz = player.z - this.pos.z;
             const dist = Math.sqrt(dx*dx + dz*dz);
-            console.log(
-                `[SERVER update] Enemy ${this.id} | state=${this.state} | ` +
-                `pos=(${this.pos.x.toFixed(2)}, ${this.pos.z.toFixed(2)})`
-            );
 
-            if (dist > 0.1) {
+            // evita divisione per zero
+            if (dist > 0.0001) {
                 const step = Math.min(dist, this.speed * dt);
-                this.pos.x += (dx/dist)*step;
-                this.pos.z += (dz/dist)*step;
+                this.pos.x += (dx/dist) * step;
+                this.pos.z += (dz/dist) * step;
             }
 
             if (dist > this.aggroRange) {
                 this.state = 'IDLE';
                 this.targetPlayer = null;
-                return { pos: this.pos, anim: 'idle' };
+                return { pos: this.position, anim: 'idle' };
             }
-            
-            return { pos: this.pos, anim: 'run' };
+
+            return { pos: this.position, anim: 'run' };
         }
 
-        // Controllo aggro verso tutti i player nella stessa localMap/depth
+        // ------------------------
+        // Aggro check su tutti i player
+        // ------------------------
         for (let pid in players) {
             const player = players[pid];
+            if (!player) continue;
             if (player.localMap !== this.localMap || player.depth !== this.depth) continue;
 
             const dx = player.x - this.pos.x;
@@ -76,40 +79,41 @@ class Enemy {
             if (dist <= this.aggroRange) {
                 this.state = 'AGGRO';
                 this.targetPlayer = pid;
-                return { pos: this.pos, anim: 'run' };
+                return { pos: this.position, anim: 'run' };
             }
         }
 
-        // IDLE o MOVE casuale
-        if (this.state === 'IDLE' || !this.destination) {
-            // nuova destinazione casuale
+        // ------------------------
+        // Movimento casuale (IDLE -> MOVE)
+        // ------------------------
+        if (!this.destination || this.state === 'IDLE') {
             const radius = 5;
             this.destination = {
-                x: this.pos.x + (Math.random()*2-1)*radius,
-                z: this.pos.z + (Math.random()*2-1)*radius
+                x: this.pos.x + (Math.random()*2 -1) * radius,
+                z: this.pos.z + (Math.random()*2 -1) * radius
             };
             this.state = 'MOVE';
-            return { pos: this.pos, anim: 'walk' };
+            return { pos: this.position, anim: 'walk' };
         }
 
+        // ------------------------
         // MOVE verso destinazione
-        const dx = this.destination.x - this.pos.x;
-        const dz = this.destination.z - this.pos.z;
+        // ------------------------
+        let dx = this.destination.x - this.pos.x;
+        let dz = this.destination.z - this.pos.z;
         const dist = Math.sqrt(dx*dx + dz*dz);
-        console.log(
-            `[SERVER] Enemy ${this.id} | state=${this.state} | ` +
-            `pos=(${this.pos.x.toFixed(2)}, ${this.pos.z.toFixed(2)})`
-        );
 
-        if (dist < 0.1) {
+        if (dist < 0.1 || !isFinite(dist)) {
             this.state = 'IDLE';
             this.destination = null;
-            return { pos: this.pos, anim: 'idle' };
+            return { pos: this.position, anim: 'idle' };
         } else {
             const step = Math.min(dist, this.speed * dt);
-            this.pos.x += (dx/dist)*step;
-            this.pos.z += (dz/dist)*step;
-            return { pos: this.pos, anim: 'walk' };
+            if (dist > 0.0001) {
+                this.pos.x += (dx/dist) * step;
+                this.pos.z += (dz/dist) * step;
+            }
+            return { pos: this.position, anim: 'walk' };
         }
     }
 
@@ -131,6 +135,4 @@ class Enemy {
     }
 }
 
-module.exports = Enemy; // oppure
- 
-
+module.exports = Enemy;
