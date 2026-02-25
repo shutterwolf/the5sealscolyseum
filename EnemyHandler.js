@@ -44,6 +44,10 @@ class Enemy {
             const dx = p.x - this.pos.x;
             const dz = p.z - this.pos.z;
             const dist = Math.sqrt(dx*dx + dz*dz);
+            console.log(
+                `[SERVER update] Enemy ${this.id} | state=${this.state} | ` +
+                `pos=(${this.pos.x.toFixed(2)}, ${this.pos.z.toFixed(2)})`
+            );
 
             if (dist > 0.1) {
                 const step = Math.min(dist, this.speed * dt);
@@ -92,6 +96,10 @@ class Enemy {
         const dx = this.destination.x - this.pos.x;
         const dz = this.destination.z - this.pos.z;
         const dist = Math.sqrt(dx*dx + dz*dz);
+        console.log(
+            `[SERVER] Enemy ${this.id} | state=${this.state} | ` +
+            `pos=(${this.pos.x.toFixed(2)}, ${this.pos.z.toFixed(2)})`
+        );
 
         if (dist < 0.1) {
             this.state = 'IDLE';
