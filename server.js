@@ -502,6 +502,12 @@ class MyRoom extends Room {
                 if (result.moveDir) {
                     schemaEnemy.pos.x += result.moveDir.x * logic.speed * (deltaTime / 1000);
                     schemaEnemy.pos.z += result.moveDir.z * logic.speed * (deltaTime / 1000);
+                
+                    // aggiorna destinazione visibile lato client
+                    if (logic.destination) {
+                        schemaEnemy.destX = logic.destination.x;
+                        schemaEnemy.destZ = logic.destination.z;
+                    }
                 }
                 schemaEnemy.aiState = result.state || schemaEnemy.aiState;
                 schemaEnemy.currentAnim = result.anim || schemaEnemy.currentAnim;
@@ -832,6 +838,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
