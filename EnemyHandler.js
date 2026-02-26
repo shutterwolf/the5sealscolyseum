@@ -88,7 +88,6 @@ class Enemy {
         const dist = Math.sqrt(dx*dx + dz*dz);
         
         if (dist < 0.1 || !isFinite(dist)) {
-            console.warn(`[Enemy ${this.id}] Destinazione raggiunta o invalida, reset IDLE. Pos: x=${this.pos.x.toFixed(2)}, z=${this.pos.z.toFixed(2)}, dest: ${this.destination ? `x=${this.destination.x.toFixed(2)}` : 'null'}`);
             this.state = 'IDLE';
             this.destination = null;
             return { moveDir: { x: 0, z: 0 }, state: 'IDLE', anim: 'idle' };
