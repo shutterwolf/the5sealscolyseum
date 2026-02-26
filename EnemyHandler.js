@@ -1,4 +1,3 @@
-// server/EnemyHandler.js
 class Enemy {
     constructor(enemyData) {
         this.id = enemyData.id;
@@ -14,36 +13,35 @@ class Enemy {
         this.enabled = enemyData.dungeon ? false : true;
         this.state = 'IDLE';
         this.destination = null;
+
         this.speed = enemyData.speed || 3;
+        this.radius = enemyData.radius || 5;
         this.aggroRange = enemyData.aggroRange || 5;
+
         this.targetPlayer = null;
         this.localMap = enemyData.localMap || 0;
         this.depth = enemyData.depth || 0;
     }
 
-    // getter posizione sicura
     get position() {
         return { 
-            x: isFinite(this.pos.x),
-            y: isFinite(this.pos.y),
-            z: isFinite(this.pos.z)
+            x: isFinite(this.pos.x) ? this.pos.x : 0,
+            y: isFinite(this.pos.y) ? this.pos.y : 0,
+            z: isFinite(this.pos.z) ? this.pos.z : 0
         };
     }
 
-    // aggiornamento server → client
     update(players, dt) {
         if (!this.enabled) return null;
 
-        // ------------------------
-        // Aggro check su tutti i player
-        // ------------------------
+        // Aggro check
         for (let pid in players) {
             const player = players[pid];
             if (!player) continue;
             if (player.localMap !== this.localMap || player.depth !== this.depth) continue;
 
-            const dx = player.x - this.pos.x;
-            const dz = player.z - this.pos.z;
+            const dx = player.playerPos.x - this.pos.x;
+            const dz = player.playerPos.z - this.pos.z;
             const dist = Math.sqrt(dx*dx + dz*dz);
 
             if (dist <= this.aggroRange) {
@@ -53,34 +51,33 @@ class Enemy {
                 const dirX = dist > 0.001 ? dx / dist : 0;
                 const dirZ = dist > 0.001 ? dz / dist : 0;
 
+                console.log(`[Enemy ${this.id}] Aggro su player ${pid}, distanza: ${dist.toFixed(2)}`);
                 return {
-                    moveDir: { x: dirX, z: dirZ },
+                    moveDir: { x: dirX * this.speed, z: dirZ * this.speed },
                     state: 'AGGRO',
-                    anim: 'walk' // sempre walk
+                    anim: 'walk'
                 };
             }
         }
 
-        // ------------------------
-        // Movimento casuale (IDLE -> MOVE)
-        // ------------------------
+        // Movimento casuale
         if (!this.destination || this.state === 'IDLE') {
-            const r = this.radius || 5; // usa il valore passato al costruttore
+            const r = this.radius;
             this.destination = {
                 x: this.pos.x + (Math.random() * 2 - 1) * r,
                 z: this.pos.z + (Math.random() * 2 - 1) * r
             };
             this.state = 'MOVE';
+            console.log(`[Enemy ${this.id}] Nuova destinazione casuale: x=${this.destination.x.toFixed(2)}, z=${this.destination.z.toFixed(2)}, radius=${r}`);
         }
 
-        // ------------------------
-        // MOVE verso destinazione
-        // ------------------------
+        // Movimento verso destinazione
         const dx = this.destination.x - this.pos.x;
         const dz = this.destination.z - this.pos.z;
         const dist = Math.sqrt(dx*dx + dz*dz);
 
         if (dist < 0.1 || !isFinite(dist)) {
+            console.warn(`[Enemy ${this.id}] Destinazione raggiunta o invalida, reset IDLE. Pos: x=${this.pos.x.toFixed(2)}, z=${this.pos.z.toFixed(2)}, dest: ${this.destination ? `x=${this.destination.x.toFixed(2)}, z=${this.destination.z.toFixed(2)}` : 'null'}`);
             this.state = 'IDLE';
             this.destination = null;
             return { moveDir: { x: 0, z: 0 }, state: 'IDLE', anim: 'idle' };
@@ -88,15 +85,16 @@ class Enemy {
             const dirX = dist > 0.001 ? dx / dist : 0;
             const dirZ = dist > 0.001 ? dz / dist : 0;
 
+            // log per tracciare il movimento
+            console.log(`[Enemy ${this.id}] MOVE verso destinazione, dirX=${dirX.toFixed(2)}, dirZ=${dirZ.toFixed(2)}, dist=${dist.toFixed(2)}`);
             return {
-                moveDir: { x: dirX, z: dirZ },
+                moveDir: { x: dirX * this.speed, z: dirZ * this.speed },
                 state: this.state,
-                anim: 'walk' // sempre walk
+                anim: 'walk'
             };
         }
     }
 
-    // aggiornamento posizione dal client (con rigidbody)
     updatePositionFromClient(pos) {
         if (!pos) return;
         this.pos.x = pos.x;
@@ -104,22 +102,19 @@ class Enemy {
         this.pos.z = pos.z;
     }
 
-    // targeting manuale
     setTarget(playerID, pos) {
         this.targetPlayer = playerID;
         if (pos) this.destination = pos;
         this.state = 'AGGRO';
+        console.log(`[Enemy ${this.id}] Target manuale: player ${playerID}, destinazione x=${pos?.x}, z=${pos?.z}`);
     }
 
-    enable() {
-        this.enabled = true;
-    }
-
-    disable() {
-        this.enabled = false;
-        this.state = 'IDLE';
-        this.targetPlayer = null;
-        this.destination = null;
+    enable() { this.enabled = true; }
+    disable() { 
+        this.enabled = false; 
+        this.state = 'IDLE'; 
+        this.targetPlayer = null; 
+        this.destination = null; 
     }
 }
 
