@@ -24,9 +24,9 @@ class Enemy {
     // getter posizione sicura
     get position() {
         return { 
-            x: isFinite(this.pos.x) ? this.pos.x : 0,
-            y: isFinite(this.pos.y) ? this.pos.y : 5,
-            z: isFinite(this.pos.z) ? this.pos.z : 0
+            x: isFinite(this.pos.x) ? this.pos.x,
+            y: isFinite(this.pos.y) ? this.pos.y,
+            z: isFinite(this.pos.z) ? this.pos.z
         };
     }
 
