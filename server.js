@@ -501,9 +501,6 @@ class MyRoom extends Room {
                 if (!result) return;
                 // 🔥 Applica movimento SOLO XZ
                 if (result.moveDir) {
-                    schemaEnemy.pos.x += result.moveDir.x * logic.speed * (deltaTime / 1000);
-                    schemaEnemy.pos.z += result.moveDir.z * logic.speed * (deltaTime / 1000);
-                
                     // aggiorna destinazione visibile lato client
                     if (logic.destination) {
                         schemaEnemy.destX = logic.destination.x;
@@ -839,6 +836,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
