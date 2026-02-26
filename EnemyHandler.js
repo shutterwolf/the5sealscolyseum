@@ -84,10 +84,15 @@ class Enemy {
         }
 
         // Movimento verso destinazione
+        if (!this.destination) {
+            // se non c'è destinazione, non muovere
+            return { moveDir: { x: 0, z: 0 }, state: this.state, anim: 'idle' };
+        }
+        
         const dx = this.destination.x - this.pos.x;
         const dz = this.destination.z - this.pos.z;
         const dist = Math.sqrt(dx*dx + dz*dz);
-
+        
         if (dist < 0.1 || !isFinite(dist)) {
             console.warn(`[Enemy ${this.id}] Destinazione raggiunta o invalida, reset IDLE. Pos: x=${this.pos.x.toFixed(2)}, z=${this.pos.z.toFixed(2)}, dest: ${this.destination ? `x=${this.destination.x.toFixed(2)}, z=${this.destination.z.toFixed(2)}` : 'null'}`);
             this.state = 'IDLE';
@@ -96,9 +101,7 @@ class Enemy {
         } else {
             const dirX = dist > 0.001 ? dx / dist : 0;
             const dirZ = dist > 0.001 ? dz / dist : 0;
-
-            // log per tracciare il movimento
-            console.log(`[Enemy ${this.id}] MOVE verso destinazione, dirX=${dirX.toFixed(2)}, dirZ=${dirZ.toFixed(2)}, dist=${dist.toFixed(2)}`);
+        
             return {
                 moveDir: { x: dirX * this.speed, z: dirZ * this.speed },
                 state: this.state,
