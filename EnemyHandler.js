@@ -114,7 +114,6 @@ class Enemy {
         this.targetPlayer = playerID;
         if (pos) this.destination = pos;
         this.state = 'AGGRO';
-        console.log(`[Enemy ${this.id}] Target manuale: player ${playerID}, destinazione x=${pos?.x}, z=${pos?.z}`);
     }
 
     enable() { this.enabled = true; }
