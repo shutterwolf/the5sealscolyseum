@@ -62,13 +62,25 @@ class Enemy {
 
         // Movimento casuale
         if (!this.destination || this.state === 'IDLE') {
-            const r = this.radius;
-            this.destination = {
-                x: this.pos.x + (Math.random() * 2 - 1) * r,
-                z: this.pos.z + (Math.random() * 2 - 1) * r
-            };
-            this.state = 'MOVE';
-            console.log(`[Enemy ${this.id}] Nuova destinazione casuale: x=${this.destination.x.toFixed(2)}, z=${this.destination.z.toFixed(2)}, radius=${r}`);
+
+            // controlliamo che non generi ogni frame
+            const chance = Math.floor(Math.random() * 20); // 0..19
+            if (chance === 0) { // 1 su 20 frame, simile al tuo v===1
+                const r = this.radius || 5; // fallback se radius non definito
+        
+                // calcolo sicuro della nuova posizione casuale
+                const dx = (Math.random() * 2 - 1) * r; // -r..+r
+                const dz = (Math.random() * 2 - 1) * r; // -r..+r
+                const newX = (this.pos?.x ?? 0) + dx;   // fallback pos.x=0
+                const newZ = (this.pos?.z ?? 0) + dz;   // fallback pos.z=0
+        
+                // Impostiamo la destinazione come Vec3
+                this.destination = new pc.Vec3(newX, this.pos?.y ?? 0, newZ);
+        
+                this.state = 'MOVE';
+        
+                console.log(`[Enemy ${this.id}] Nuova destinazione casuale: x=${this.destination.x.toFixed(2)}, z=${this.destination.z.toFixed(2)}, radius=${r}`);
+            }
         }
 
         // Movimento verso destinazione
