@@ -50,8 +50,6 @@ class Enemy {
 
                 const dirX = dist > 0.001 ? dx / dist : 0;
                 const dirZ = dist > 0.001 ? dz / dist : 0;
-
-                console.log(`[Enemy ${this.id}] Aggro su player ${pid}, distanza: ${dist.toFixed(2)}`);
                 return {
                     moveDir: { x: dirX * this.speed, z: dirZ * this.speed },
                     state: 'AGGRO',
@@ -72,8 +70,6 @@ class Enemy {
                 this.destination = new pc.Vec3(this.pos.x + dx, this.pos.y, this.pos.z + dz);
 
                 this.state = 'MOVE';
-        
-                console.log(`[Enemy ${this.id}] Nuova destinazione casuale: x=${this.destination.x.toFixed(2)}, z=${this.destination.z.toFixed(2)}");
             }
         }
 
