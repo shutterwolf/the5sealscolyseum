@@ -65,10 +65,10 @@ class Enemy {
         // Movimento casuale (IDLE -> MOVE)
         // ------------------------
         if (!this.destination || this.state === 'IDLE') {
-            const radius = 5;
+            const r = this.radius || 5; // usa il valore passato al costruttore
             this.destination = {
-                x: this.pos.x + (Math.random() * 2 - 1) * radius,
-                z: this.pos.z + (Math.random() * 2 - 1) * radius
+                x: this.pos.x + (Math.random() * 2 - 1) * r,
+                z: this.pos.z + (Math.random() * 2 - 1) * r
             };
             this.state = 'MOVE';
         }
