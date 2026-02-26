@@ -6,9 +6,9 @@ class Enemy {
         this.level = enemyData.level || 1;
 
         this.pos = {
-            x: isFinite(enemyData.posX) ? enemyData.posX : 0,
-            y: isFinite(enemyData.posY) ? enemyData.posY : 5, // altezza sicura
-            z: isFinite(enemyData.posZ) ? enemyData.posZ : 0
+            x: isFinite(enemyData.posX) ? enemyData.posX,
+            y: isFinite(enemyData.posY) ? enemyData.posY, // altezza sicura
+            z: isFinite(enemyData.posZ) ? enemyData.posZ
         };
 
         this.enabled = enemyData.dungeon ? false : true;
