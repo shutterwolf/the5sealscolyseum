@@ -690,7 +690,7 @@ class MyRoom extends Room {
                     this.state.players.delete(charId);
                 }
         
-                console.log(`❌ Character ${charId} deleted successfully`);
+                //console.log(`❌ Character ${charId} deleted successfully`);
             } catch (err) {
                 console.error(`❌ Error deleting character ${charId}:`, err);
             }
@@ -836,6 +836,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
