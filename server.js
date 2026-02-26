@@ -324,7 +324,8 @@ class MyRoom extends Room {
             id: id,
             enemy: type,
             posX: x,
-            posY: z,
+            posY: y,
+            posZ: z,
             dungeon: !!config.dungeonId
         });
     
@@ -346,7 +347,7 @@ class MyRoom extends Room {
         enemy.type = config.type;
         
         enemy.pos.x = config.x;
-        enemy.pos.y = 5; // altezza sicura, la fisica client gestisce il terreno
+        enemy.pos.y = 3; // altezza sicura, la fisica client gestisce il terreno
         enemy.pos.z = config.z;
     
         enemy.rot = new Vec3(0, 0, 0);
@@ -838,6 +839,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
