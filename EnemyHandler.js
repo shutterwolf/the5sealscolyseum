@@ -64,7 +64,7 @@ class Enemy {
         if (!this.destination || this.state === 'IDLE') {
 
             // controlliamo che non generi ogni frame
-            const chance = Math.floor(Math.random() * 20); // 0..19
+            const chance = Math.floor(Math.random() * 2); // 0..19
             if (chance === 0) { // 1 su 20 frame, simile al tuo v===1
                 // calcolo sicuro della nuova posizione casuale
                 const dx = Math.floor((Math.random() * (this.radius*2)) - this.radius);
@@ -73,7 +73,7 @@ class Enemy {
 
                 this.state = 'MOVE';
         
-                console.log(`[Enemy ${this.id}] Nuova destinazione casuale: x=${this.destination.x.toFixed(2)}, z=${this.destination.z.toFixed(2)}, radius=${r}`);
+                console.log(`[Enemy ${this.id}] Nuova destinazione casuale: x=${this.destination.x.toFixed(2)}, z=${this.destination.z.toFixed(2)}");
             }
         }
 
@@ -88,7 +88,7 @@ class Enemy {
         const dist = Math.sqrt(dx*dx + dz*dz);
         
         if (dist < 0.1 || !isFinite(dist)) {
-            console.warn(`[Enemy ${this.id}] Destinazione raggiunta o invalida, reset IDLE. Pos: x=${this.pos.x.toFixed(2)}, z=${this.pos.z.toFixed(2)}, dest: ${this.destination ? `x=${this.destination.x.toFixed(2)}, z=${this.destination.z.toFixed(2)}` : 'null'}`);
+            console.warn(`[Enemy ${this.id}] Destinazione raggiunta o invalida, reset IDLE. Pos: x=${this.pos.x.toFixed(2)}, z=${this.pos.z.toFixed(2)}, dest: ${this.destination ? `x=${this.destination.x.toFixed(2)}` : 'null'}`);
             this.state = 'IDLE';
             this.destination = null;
             return { moveDir: { x: 0, z: 0 }, state: 'IDLE', anim: 'idle' };
