@@ -140,63 +140,6 @@ class EnemyState {
         this.currentAnim = "idle";
     }
 
-    update(deltaTime, players) {
-        if (this.aiState === "dead" || this.aiState === "frozen") return;
-
-        let nearestPlayer = null;
-        let nearestDist = Infinity;
-        for (const p of players) {
-            if (p.state === "dead" || p.status === "hidden") continue;
-            const dist = this.pos.distance(p.pos);
-            if (dist < nearestDist) { nearestDist = dist; nearestPlayer = p; }
-        }
-
-        if (nearestPlayer && nearestDist < enemyStats[this.type].radius) {
-            this.aiState = "combat";
-            this.targetPlayerId = nearestPlayer.id;
-            this.destination = null;
-            if (this.inCombat === 0) this.inCombat = generateCombatId();
-            this.setAnimation("attack");
-
-            const wRange = enemyStats[this.type].wRange || 0;
-            if (nearestDist > wRange) this.moveTowards(nearestPlayer.pos, deltaTime);
-        } else {
-            this.aiState = "roaming";
-            this.targetPlayerId = null;
-            this.inCombat = 0;
-
-            if (!this.destination || this.pos.distance(this.destination) < 0.5) {
-                this.destination = this.randomDestination();
-            }
-            this.moveTowards(this.destination, deltaTime);
-
-            this.setAnimation(this.pos.distance(this.destination) < 0.5 ? "idle" : "walk");
-        }
-    }
-
-    moveTowards(target, deltaTime) {
-        const dir = target.clone().sub(this.pos);
-        const dist = dir.length();
-        if (dist < 0.01) {
-            this.velocity = new Vec3(0, 0, 0);
-            return;
-        }
-        dir.normalize();
-        this.velocity = dir.clone().scale(this.enemySpeed);
-        this.pos.add(this.velocity.clone().scale(deltaTime));
-        this.rot.y = Math.atan2(dir.x, dir.z);
-    }
-
-    randomDestination() {
-        console.log("destination ",enemyStats[this.type]);
-        const r = enemyStats[this.type].range || 5;
-        return new Vec3(
-            this.pos.x + (Math.random() * r * 2 - r),
-            this.pos.y,
-            this.pos.z + (Math.random() * r * 2 - r)
-        );
-    }
-
     setAnimation(anim) {
         if (this.currentAnim !== anim) this.currentAnim = anim;
     }
@@ -547,6 +490,23 @@ class MyRoom extends Room {
             item.type = data.type ?? item.type;
             item.twohand = !!data.twohand;
         });
+
+        this.setSimulationInterval((deltaTime) => {
+            const playersArray = Array.from(this.state.players.values());
+            this.enemyInstances.forEach((logic, id) => {
+                const schemaEnemy = this.state.enemies.get(id);
+                if (!schemaEnemy) return;
+                const result = logic.update(playersArray, deltaTime / 1000);
+                if (!result) return;
+                // 🔥 Applica movimento SOLO XZ
+                if (result.moveDir) {
+                    schemaEnemy.pos.x += result.moveDir.x * logic.speed * (deltaTime / 1000);
+                    schemaEnemy.pos.z += result.moveDir.z * logic.speed * (deltaTime / 1000);
+                }
+                schemaEnemy.aiState = result.state || schemaEnemy.aiState;
+                schemaEnemy.currentAnim = result.anim || schemaEnemy.currentAnim;
+            });
+        }, 1000 / 20); // 20 tick al secondo
         
         setInterval(() => {
             const world = this.state.world;
@@ -872,6 +832,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
