@@ -560,7 +560,6 @@ class MyRoom extends Room {
             this.spawnEnemy(
                 data.type,
                 data.x,
-                data.y,
                 data.z,
                 {
                     localMap: data.localMap ?? 0,
@@ -842,6 +841,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
