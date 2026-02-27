@@ -73,7 +73,7 @@ class Enemy {
         if (!this.nextMoveTime || Date.now() >= this.nextMoveTime) {
             const dx = Math.floor(Math.random() * (this.radius * 2 + 1)) - this.radius; // -7..7
             const dz = Math.floor(Math.random() * (this.radius * 2 + 1)) - this.radius; // -7..7
-
+            console.log("Destinazione", dx, dz)
             this.destination = {
                 x: this.pos.x + dx,
                 y: this.pos.y,
