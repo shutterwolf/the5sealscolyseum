@@ -379,7 +379,8 @@ class MyRoom extends Room {
             id: id,
             enemy: config.type,
             posX: config.x,
-            posY: config.z, // attenzione: handler usa z come y mondo
+            posY:3,
+            posZ: config.z, // attenzione: handler usa z come y mondo
             dungeon: !!config.dungeonId
         });
     
@@ -841,6 +842,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
