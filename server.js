@@ -497,16 +497,21 @@ class MyRoom extends Room {
             this.enemyInstances.forEach((logic, id) => {
                 const schemaEnemy = this.state.enemies.get(id);
                 if (!schemaEnemy) return;
+            
                 const result = logic.update(playersArray, deltaTime / 1000);
                 if (!result) return;
-                // 🔥 Applica movimento SOLO XZ
-                if (result.moveDir) {
-                    // aggiorna destinazione visibile lato client
-                    if (logic.destination) {
-                        schemaEnemy.destX = logic.destination.x;
-                        schemaEnemy.destZ = logic.destination.z;
-                    }
+            
+                // 🔥 SINCRONIZZA POSIZIONE
+                schemaEnemy.pos.x = logic.pos.x;
+                schemaEnemy.pos.y = logic.pos.y;
+                schemaEnemy.pos.z = logic.pos.z;
+            
+                // aggiorna destinazione
+                if (logic.destination) {
+                    schemaEnemy.destX = logic.destination.x;
+                    schemaEnemy.destZ = logic.destination.z;
                 }
+            
                 schemaEnemy.aiState = result.state || schemaEnemy.aiState;
                 schemaEnemy.currentAnim = result.anim || schemaEnemy.currentAnim;
             });
@@ -836,6 +841,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
