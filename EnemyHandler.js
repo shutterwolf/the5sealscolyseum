@@ -71,8 +71,8 @@ class Enemy {
     // 2️⃣ Movimento casuale se non in Aggro
     if (!updateData && (!this.destination || this.state === 'IDLE')) {
         if (!this.nextMoveTime || Date.now() >= this.nextMoveTime) {
-            const dx = Math.floor((Math.random() * (this.radius*2)) - this.radius);
-            const dz = Math.floor((Math.random() * (this.radius*2)) - this.radius);
+            const dx = Math.floor(Math.random() * (this.radius * 2 + 1)) - this.radius; // -7..7
+            const dz = Math.floor(Math.random() * (this.radius * 2 + 1)) - this.radius; // -7..7
 
             this.destination = {
                 x: this.pos.x + dx,
