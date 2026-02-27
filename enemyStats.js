@@ -8,7 +8,7 @@ module.exports= {
         race: 'orc',
         wRange: 0,
         maxHealth:18,
-        attackType: "SWORD",
+        attackType: "SWORD", radius: 7, aggroRange: 5,
         enemyspeed: 0.8
     },
     goblin: {
@@ -20,7 +20,7 @@ module.exports= {
         race: 'goblin',
         wRange: 0,
         maxHealth:12,
-        attackType: "BLADE",
+        attackType: "BLADE", radius: 7, aggroRange: 5,
         enemyspeed: 0.8
     },
     skeleton: {
@@ -32,7 +32,7 @@ module.exports= {
         race: 'undead',
         wRange: 0,
         maxHealth:15,
-        attackType: "SWORD",
+        attackType: "SWORD", radius: 7, aggroRange: 5,
         enemyspeed: 1
     },
 
@@ -45,7 +45,7 @@ module.exports= {
         race: 'undead',
         wRange: 5,
         maxHealth:15,
-        attackType: "BOW",
+        attackType: "BOW", radius: 7, aggroRange: 5,
         enemyspeed: 1
     },
 
@@ -58,7 +58,7 @@ module.exports= {
         race: 'undead',
         wRange: 0,
         maxHealth:20,
-        attackType: "NATURAL_MEDIUM",
+        attackType: "NATURAL_MEDIUM", radius: 7, aggroRange: 5,
         enemyspeed: 0.8
     },
 
@@ -71,7 +71,7 @@ module.exports= {
         race: 'orc',
         wRange: 0,
         maxHealth:18,
-        attackType: "SWORD",
+        attackType: "SWORD", radius: 7, aggroRange: 5,
         enemyspeed: 0.8
     },
 
@@ -84,7 +84,7 @@ module.exports= {
         race: 'goblin',
         wRange: 0,
         maxHealth:12,
-        attackType: "SPEAR",
+        attackType: "SPEAR", radius: 7, aggroRange: 5,
         enemyspeed: 0.8
     },
 
@@ -97,7 +97,7 @@ module.exports= {
         race: 'human',
         wRange: 0,
         maxHealth:15,
-        attackType: "BLADE",
+        attackType: "BLADE", radius: 7, aggroRange: 5,
         enemyspeed: 1
     },
 
@@ -110,7 +110,7 @@ module.exports= {
         race: 'undead',
         wRange: 0,
         maxHealth:18,
-        attackType: "SWORD",
+        attackType: "SWORD", radius: 7, aggroRange: 5,
         enemyspeed: 1.5
     },
 
@@ -123,7 +123,7 @@ module.exports= {
         race: 'undead',
         wRange: 0,
         maxHealth:20,
-        attackType: "NATURAL_HEAVY",
+        attackType: "NATURAL_HEAVY", radius: 7, aggroRange: 5,
         enemyspeed: 0.8
     },
 
@@ -136,7 +136,7 @@ module.exports= {
         race: 'undead',
         wRange: 0,
         maxHealth:15,
-        attackType: "NATURAL_MEDIUM",
+        attackType: "NATURAL_MEDIUM", radius: 7, aggroRange: 5,
         enemyspeed: 1.2
     },
 
@@ -149,7 +149,7 @@ module.exports= {
         race: 'werewolf',
         wRange: 0,
         maxHealth:25,
-        attackType: "NATURAL_FAST",
+        attackType: "NATURAL_FAST", radius: 7, aggroRange: 5,
         enemyspeed: 1.2
     },
 
@@ -162,7 +162,7 @@ module.exports= {
         race: 'bee',
         wRange: 0,
         maxHealth:10,
-        attackType: "NATURAL_BITE",
+        attackType: "NATURAL_BITE", radius: 7, aggroRange: 5,
         enemyspeed: 0.8
     },
 
@@ -175,7 +175,7 @@ module.exports= {
         race: 'bee',
         wRange: 0,
         maxHealth:15,
-        attackType: "NATURAL_BITE",
+        attackType: "NATURAL_BITE", radius: 7, aggroRange: 5,
         enemyspeed: 1.2
     },
 
@@ -188,7 +188,7 @@ module.exports= {
         race: 'Human',
         wRange: 0,
         maxHealth:18,
-        attackType: "SWORD",
+        attackType: "SWORD", radius: 7, aggroRange: 5,
         enemyspeed: 1
     },
 
@@ -201,7 +201,7 @@ module.exports= {
         race: 'goblin',
         wRange: 0,
         maxHealth:15,
-        attackType: "HAMMER",
+        attackType: "HAMMER", radius: 7, aggroRange: 5,
         enemyspeed: 0.8
     },
 
@@ -214,7 +214,7 @@ module.exports= {
         race: 'minotaur',
         wRange: 0,
         maxHealth:25,
-        attackType: "NATURAL_HEAVY",
+        attackType: "NATURAL_HEAVY", radius: 7, aggroRange: 5,
         enemyspeed: 1.2
     },
 
@@ -227,7 +227,7 @@ module.exports= {
         race: 'bee',
         wRange: 0,
         maxHealth:15,
-        attackType: "NATURAL_BITE",
+        attackType: "NATURAL_BITE", radius: 7, aggroRange: 5,
         enemyspeed: 1
     },
 
@@ -240,7 +240,7 @@ module.exports= {
         race: 'bear',
         wRange: 0,
         maxHealth:35,
-        attackType: "NATURAL_HEAVY",
+        attackType: "NATURAL_HEAVY", radius: 7, aggroRange: 5,
         enemyspeed: 1
     },
 
@@ -253,7 +253,7 @@ module.exports= {
         race: 'bee',
         wRange: 0,
         maxHealth:15,
-        attackType: "NATURAL_BITE",
+        attackType: "NATURAL_BITE", radius: 7, aggroRange: 5,
         enemyspeed: 1
     },
 
@@ -265,7 +265,7 @@ module.exports= {
         swordmanship: 2, shooting: 0,
         race: 'human',
         wRange: 0,
-        attackType: "SWORD",
+        attackType: "SWORD", radius: 7, aggroRange: 5,
         maxHealth:18,
         enemyspeed: 1
     }
