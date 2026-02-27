@@ -59,17 +59,21 @@ class Enemy {
         }
 
         // Movimento casuale
+        // solo oggetti JS nativi
         if (!this.destination || this.state === 'IDLE') {
-
-            // controlliamo che non generi ogni frame
-            const chance = Math.floor(Math.random() * 2); // 0..19
-            if (chance === 0) { // 1 su 20 frame, simile al tuo v===1
-                // calcolo sicuro della nuova posizione casuale
+            if (!this.nextMoveTime || Date.now() >= this.nextMoveTime) {
+        
                 const dx = Math.floor((Math.random() * (this.radius*2)) - this.radius);
                 const dz = Math.floor((Math.random() * (this.radius*2)) - this.radius);
-                this.destination = new pc.Vec3(this.pos.x + dx, this.pos.y, this.pos.z + dz);
-
+        
+                this.destination = {
+                    x: this.pos.x + dx,
+                    y: this.pos.y,
+                    z: this.pos.z + dz
+                };
+        
                 this.state = 'MOVE';
+                this.nextMoveTime = Date.now() + 1000; // almeno 1 secondo tra movimenti
             }
         }
 
