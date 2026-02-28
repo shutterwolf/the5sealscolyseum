@@ -499,13 +499,8 @@ class MyRoom extends Room {
                 const schemaEnemy = this.state.enemies.get(id);
                 if (!schemaEnemy) return;
             
-                const result = logic.update(playersArray, deltaTime / 1000);
+                const result = logic.update(playersArray, deltaTime / 1000, this);
                 if (!result) return;
-            
-                // 🔥 SINCRONIZZA POSIZIONE
-                schemaEnemy.pos.x = logic.pos.x;
-                schemaEnemy.pos.y = logic.pos.y;
-                schemaEnemy.pos.z = logic.pos.z;
             
                 // aggiorna destinazione
                 if (logic.destination) {
@@ -842,6 +837,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
