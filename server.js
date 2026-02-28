@@ -443,11 +443,25 @@ class MyRoom extends Room {
         });
 
         this.onMessage("enemyReachedTarget", (client, data) => {
-            const enemy = this.enemyInstances.get(data.enemyId);
-            if (!enemy) return;
+            const logic = this.enemyInstances.get(data.enemyId);
+            const schemaEnemy = this.state.enemies.get(data.enemyId);
         
-            // chiama metodo in EnemyHandler
-            enemy.updatePositionFromClient(data.pos);
+            if (!logic || !schemaEnemy) return;
+        
+            // 1️⃣ aggiorna logica AI
+            logic.updatePositionFromClient(data.pos);
+        
+            // 2️⃣ aggiorna posizione reale nello state
+            schemaEnemy.pos.x = data.pos.x;
+            schemaEnemy.pos.z = data.pos.z;
+
+            // 2️⃣ ferma la destinazione AI
+            logic.destination = null;
+        
+            // 3️⃣ pulisci destinazione
+            schemaEnemy.destX = data.pos.x;
+            schemaEnemy.destZ = data.pos.z;
+        
         });
         
         this.onMessage("lootEnemy", (client, data) => {
@@ -845,6 +859,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
