@@ -124,7 +124,7 @@ class Enemy {
 
     // 4️⃣ Invio update al client
     if (updateData && room) {
-        room.send("enemyMove", {
+        room.broadcast("enemyMove", {
             id: this.id,
             destX: updateData.destX,
             destZ: updateData.destZ,
