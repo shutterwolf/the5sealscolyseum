@@ -441,6 +441,14 @@ class MyRoom extends Room {
                 // quindi non serve fare client.emit come con socket.io
             }
         });
+
+        this.onMessage("enemyReachedTarget", (client, data) => {
+            const enemy = this.enemyInstances.get(data.enemyId);
+            if (!enemy) return;
+        
+            // chiama metodo in EnemyHandler
+            enemy.updatePositionFromClient(data.pos);
+        });
         
         this.onMessage("lootEnemy", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -837,6 +845,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
