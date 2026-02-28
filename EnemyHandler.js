@@ -93,34 +93,8 @@ class Enemy {
         }
     }
 
-    // 3️⃣ Movimento verso destinazione
-    if (!updateData && this.destination) {
-        const dx = this.destination.x - this.pos.x;
-        const dz = this.destination.z - this.pos.z;
-        const dist = Math.sqrt(dx*dx + dz*dz);
-
-        if (dist < 0.1 || !isFinite(dist)) {
-            this.state = 'IDLE';
-            this.destination = null;
-            updateData = { moveDir: { x: 0, z: 0 }, state: 'IDLE', anim: 'idle', destX: this.pos.x, destZ: this.pos.z };
-            console.log(`[Enemy ${this.id}] Raggiunta destinazione, resto in IDLE`);
-        } else {
-            const dirX = dx / dist;
-            const dirZ = dz / dist;
-
-            this.pos.x += dirX * this.speed * dt;
-            this.pos.z += dirZ * this.speed * dt;
-
-            updateData = {
-                moveDir: { x: dirX * this.speed, z: dirZ * this.speed },
-                state: this.state,
-                anim: 'walk',
-                destX: this.destination.x,
-                destZ: this.destination.z
-            };
-            console.log(`[Enemy ${this.id}] Muovo verso destinazione: ${this.destination.x}, ${this.destination.z}, posizione attuale: ${this.pos.x.toFixed(2)}, ${this.pos.z.toFixed(2)}`);
-        }
-    }
+    
+    
 
     // 4️⃣ Invio update al client
     if (updateData && room) {
