@@ -341,21 +341,28 @@ class MyRoom extends Room {
         // ownerId: singolo playerId o partyId (es. "P-00014")
         // questId: id della quest
         // config: { type, x, z, localMap, dungeonId, depth }
-        
+
         const id = "E" + this.enemyIdCounter++;
-        console.log("config type:",config.type);
-        // 1️⃣ Schema sincronizzato con i client
+
+        const stats = enemyStats[config.type];
+        if (!stats) {
+            console.error("Enemy type non trovato in enemyStats:", config.type);
+            return null;
+        }
         const enemy = new EnemySchema();
         enemy.id = id;
-        enemy.typeId = config.id;
         enemy.type = config.type;
-        
+        enemy.typeId = stats.id;         // ✅ derivato dal server
         enemy.pos.x = config.x;
-        enemy.pos.y = 3; // altezza sicura, la fisica client gestisce il terreno
+        enemy.pos.y = 3;                 // altezza sicura
         enemy.pos.z = config.z;
-    
         enemy.rot = new Vec3(0, 0, 0);
-        enemy.health = enemyStats[config.type]?.maxHealth || 20;
+        enemy.health = stats.maxHealth;
+        enemy.maxHealth = stats.maxHealth;
+        enemy.speed = stats.enemyspeed;
+        enemy.radius = stats.radius;
+        enemy.wRange = stats.wRange;
+    
         enemy.aiState = "idle";
         enemy.currentAnim = "idle";
         enemy.inCombat = 0;
@@ -366,28 +373,23 @@ class MyRoom extends Room {
         enemy.depth = config.depth ?? 0;
     
         // quest / owner
-        enemy.ownerId = ownerId;   // singolo player o party
+        enemy.ownerId = ownerId;
         enemy.questId = questId;
     
         enemy.isDead = false;
         enemy.lootReady = false;
     
         this.state.enemies.set(id, enemy);
-        console.log("▶ spawnQuestEnemy chiamato");
-        console.log("ownerId:", ownerId, "questId:", questId, "config:", config);
-        console.log("Nuovo enemyID generato:", id);
-        console.log("EnemySchema creato:", enemy);
-        console.log("Enemy aggiunto allo state:", this.state.enemies.get(id));
-        // 2️⃣ Logica server (EnemyHandler) — opzionale, se hai update AI
+    
+        // 2️⃣ Logica server (EnemyHandler)
         const logic = new EnemyServer({
             id: id,
             enemy: config.type,
             posX: config.x,
-            posY:3,
-            posZ: config.z, // attenzione: handler usa z come y mondo
+            posY: 3,
+            posZ: config.z,
             dungeon: !!config.dungeonId
         });
-    
         this.enemyInstances.set(id, logic);
     
         // 3️⃣ Salva riferimento per cleanup / respawn
@@ -395,6 +397,8 @@ class MyRoom extends Room {
             this.activeQuestSpawns.set(ownerId, new Map());
         }
         this.activeQuestSpawns.get(ownerId).set(questId, id);
+    
+        console.log("▶ spawnQuestEnemy chiamato:", id, config.type);
     
         return id;
     }
@@ -864,6 +868,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
