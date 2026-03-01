@@ -433,7 +433,6 @@ class MyRoom extends Room {
                     this.sessionToPlayerId.get(client.sessionId),
                     questID,
                     {
-                        typeId:id,
                         type: enemyType,
                         x: startPos.x + i,
                         z: startPos.z,
@@ -865,6 +864,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
