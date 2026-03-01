@@ -422,31 +422,41 @@ class MyRoom extends Room {
         // --- IDLE LOGIC ---
         
         this.onMessage("requestSpawnEnemies", (client, data) => {
-                console.log("🔔 requestSpawnEnemies ricevuto");
-                console.log("Client sessionId:", client.sessionId);
-                console.log("Data ricevuta:", data);
-            
-                const { questID, enemyType, startPos, num } = data;
-                console.log("Parsed questID:", questID);
-                console.log("Parsed enemyType:", enemyType);
-                console.log("Parsed startPos:", startPos);
-                console.log("Parsed num:", num);
+            console.log("🔔 requestSpawnEnemies ricevuto");
+            console.log("Client sessionId:", client.sessionId);
+            console.log("Data ricevuta:", data);
+        
+            const { questID, enemyType, startPos, num } = data;
+            console.log("Parsed questID:", questID);
+            console.log("Parsed enemyType:", enemyType);
+            console.log("Parsed startPos:", startPos);
+            console.log("Parsed num:", num);
+        
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            if (!playerId) {
+                console.warn("Player non trovato per session:", client.sessionId);
+                return;
+            }
+        
             for (let i = 0; i < num; i++) {
-                // genera il nemico lato server
                 const enemyID = this.spawnQuestEnemy(
-                    this.sessionToPlayerId.get(client.sessionId),
+                    playerId,
                     questID,
                     {
                         type: enemyType,
-                        x: startPos.x + i,
+                        x: startPos.x + i, // offset per non sovrapporre
                         z: startPos.z,
                         localMap: 0,
                         dungeonId: "",
                         depth: 0
                     }
                 );
-                // Colyseus aggiorna automaticamente i client
-                // quindi non serve fare client.emit come con socket.io
+        
+                if (!enemyID) {
+                    console.error("Spawn fallito per enemyType:", enemyType);
+                } else {
+                    console.log("✅ Enemy spawnato:", enemyType, enemyID);
+                }
             }
         });
 
@@ -868,6 +878,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
