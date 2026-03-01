@@ -230,6 +230,7 @@ class EnemySchema extends Schema {
     constructor() {
         super();
         this.id = "";
+        this.typeId = 0;
         this.type = "";
         this.pos = new Vec3();
         this.rot = new Vec3();
@@ -249,6 +250,7 @@ class EnemySchema extends Schema {
 }
 
 type("string")(EnemySchema.prototype, "id");
+type("number")(EnemySchema.prototype, "typeId");
 type("string")(EnemySchema.prototype, "type");
 type(Vec3)(EnemySchema.prototype, "pos");
 type(Vec3)(EnemySchema.prototype, "rot");
@@ -293,6 +295,7 @@ class MyRoom extends Room {
     
         const enemy = new EnemySchema();
         enemy.id = id;
+        enemy.typeId = stats.id;
         enemy.type = type;
         enemy.pos.x = x;
         enemy.pos.y = 5; // altezza sicura
@@ -344,6 +347,7 @@ class MyRoom extends Room {
         // 1️⃣ Schema sincronizzato con i client
         const enemy = new EnemySchema();
         enemy.id = id;
+        enemy.typeId = stats.id;
         enemy.type = config.type;
         
         enemy.pos.x = config.x;
@@ -860,6 +864,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
