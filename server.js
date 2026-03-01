@@ -443,6 +443,7 @@ class MyRoom extends Room {
         });
 
         this.onMessage("enemyReachedTarget", (client, data) => {
+            console.log(">>> enemyReachedTarget RICEVUTO per enemy:", data.enemyId);
             const logic = this.enemyInstances.get(data.enemyId);
             const schemaEnemy = this.state.enemies.get(data.enemyId);
         
@@ -859,6 +860,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
