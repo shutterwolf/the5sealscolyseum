@@ -347,7 +347,7 @@ class MyRoom extends Room {
         // 1️⃣ Schema sincronizzato con i client
         const enemy = new EnemySchema();
         enemy.id = id;
-        enemy.typeId = stats.id;
+        enemy.typeId = config.id;
         enemy.type = config.type;
         
         enemy.pos.x = config.x;
@@ -433,6 +433,7 @@ class MyRoom extends Room {
                     this.sessionToPlayerId.get(client.sessionId),
                     questID,
                     {
+                        typeId:id,
                         type: enemyType,
                         x: startPos.x + i,
                         z: startPos.z,
@@ -864,6 +865,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
