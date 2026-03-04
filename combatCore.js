@@ -37,19 +37,20 @@ class CombatCore {
 
     removeActor(id) {
         if (!this.actors.has(id)) return;
-    
         this.actors.delete(id);
-    
         const removedIndex = this.turnOrder.indexOf(id);
         this.turnOrder = this.turnOrder.filter(x => x !== id);
     
         if (removedIndex < this.currentIndex) {
             this.currentIndex--;
+        } else if (removedIndex === this.currentIndex) {
+            // Se stiamo rimuovendo l’attore corrente, currentIndex rimane valido
+            // Non facciamo ++ qui, endTurn gestirà chi è next
+            this.currentIndex--; 
         }
-        if (this.currentIndex >= this.turnOrder.length) {
-            this.currentIndex = 0;
-        }
-    
+        // Wrap-around
+        if (this.currentIndex < 0) this.currentIndex = 0;
+        if (this.currentIndex >= this.turnOrder.length) this.currentIndex = 0;
         if (this.actors.size < 2 && this.inProgress) {
             this.endCombat();
         }
@@ -132,19 +133,18 @@ class CombatCore {
 
     endTurn() {
         this.checkDistances();
-
         if (this.actors.size < 2) {
             this.endCombat();
             return;
         }
-
-        this.currentIndex++;
-        if (this.currentIndex >= this.turnOrder.length) {
-            this.currentIndex = 0;
-            this.round++;
-            this.rollInitiative();
-        }
-
+        do {
+            this.currentIndex++;
+            if (this.currentIndex >= this.turnOrder.length) {
+                this.currentIndex = 0;
+                this.round++;
+                this.rollInitiative();
+            }
+        } while (!this.actors.has(this.turnOrder[this.currentIndex]));
         // Turno successivo
         const nextActorId = this.getCurrentActorId();
         this.broadcastToCombat("startTurn", { actorId: nextActorId });
@@ -258,6 +258,17 @@ class CombatCore {
                     ...payload
                 });
             }
+        }
+    }
+    applyDamage(targetId, amount) {
+        const target = this.actors.get(targetId) ?? this.room.state.players.get(targetId);
+        if (!target) return;
+    
+        target.hp -= amount;
+    
+        if (target.hp <= 0) {
+            this.broadcastToCombat("actorDied", { id: targetId });
+            this.removeActor(targetId);
         }
     }
 }
