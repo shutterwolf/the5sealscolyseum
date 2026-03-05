@@ -16,13 +16,17 @@ class CombatCore {
     /* =========================
        ACTOR MANAGEMENT
     ========================= */
-    addActor(id, stats) {
+    addActor(id, stats, type = "player") {
         if (this.actors.has(id)) return;
-
-        const player = this.room.state.players.get(id);
-        const hp = player?.hp ?? stats.hp ?? 20;
-
+    
+        const entity = this.getEntity(id, type);
+        const hp =
+            type === "player"
+                ? entity?.hp ?? stats.hp ?? 20
+                : entity?.health ?? stats.hp ?? 20;
         this.actors.set(id, {
+            id,
+            type, // 🔴 fondamentale
             hp: hp,
             combat: stats.combat ?? 5,
             defence: stats.defence ?? 5,
@@ -30,9 +34,11 @@ class CombatCore {
             wDamage: stats.wDamage ?? 2,
             targetId: null
         });
-
-        // sincronizza HP con PlayerState
-        if (player) player.hp = hp;
+    
+        if (entity) {
+            if (type === "player") entity.hp = hp;
+            if (type === "enemy") entity.health = hp;
+        }
     }
 
     removeActor(id) {
@@ -111,9 +117,16 @@ class CombatCore {
         const damage = this.resolveHit(actor, target);
         if (damage > 0) {
             target.hp -= damage;
-
-            const targetPlayer = this.room.state.players.get(actor.targetId);
-            if (targetPlayer) targetPlayer.hp = target.hp;
+            const targetActor = this.actors.get(actor.targetId);
+            if (targetActor?.type === "player") {
+                const p = this.room.state.players.get(actor.targetId);
+                if (p) p.hp = target.hp;
+            }
+            
+            if (targetActor?.type === "enemy") {
+                const e = this.room.state.enemies.get(actor.targetId);
+                if (e) e.health = target.hp;
+            }
         }
 
         if (target.hp <= 0) {
@@ -187,17 +200,18 @@ class CombatCore {
     }
 
     isInRange(idA, idB) {
-        const playerA = this.room.state.players.get(idA);
-        const playerB = this.room.state.players.get(idB);
-
-        if (!playerA || !playerB) return false;
-
-        const dx = playerA.playerPos.x - playerB.playerPos.x;
-        const dy = playerA.playerPos.y - playerB.playerPos.y;
-        const dz = playerA.playerPos.z - playerB.playerPos.z;
-
-        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        return dist <= 0.8; // cutoff
+        const posA = this.getPosition(idA);
+        const posB = this.getPosition(idB);
+    
+        if (!posA || !posB) return false;
+    
+        const dx = posA.x - posB.x;
+        const dy = posA.y - posB.y;
+        const dz = posA.z - posB.z;
+    
+        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    
+        return dist <= 0.8;
     }
 
     /* =========================
@@ -270,6 +284,38 @@ class CombatCore {
             this.broadcastToCombat("actorDied", { id: targetId });
             this.removeActor(targetId);
         }
+    }
+
+    getEntity(id, type) {
+        if (type === "player")
+            return this.room.state.players.get(id);
+    
+        if (type === "enemy")
+            return this.room.state.enemies.get(id);
+    
+        return null;
+    }
+
+    setTarget(attackerId, targetId) {
+        const attacker = this.actors.get(attackerId);
+        const target = this.actors.get(targetId);
+    
+        if (!attacker || !target) return;
+    
+        // 🔴 evita friendly combat
+        if (attacker.type === target.type) return;
+    
+        attacker.targetId = targetId;
+    }
+
+    getPosition(id) {
+        const player = this.room.state.players.get(id);
+        if (player) return player.playerPos;
+    
+        const enemy = this.room.state.enemies.get(id);
+        if (enemy) return enemy.pos;
+    
+        return null;
     }
 }
 
