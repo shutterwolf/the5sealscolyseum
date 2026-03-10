@@ -63,7 +63,10 @@ class CombatCore {
         this.broadcastToCombat("combatStart", { turnOrder: this.turnOrder });
 
         const actorId = this.getCurrentActorId();
-        this.broadcastToCombat("startTurn", { actorId });
+        this.broadcastToCombat("startTurn", {
+            actorId,
+            targetId: this.actors.get(actorId)?.targetId
+        });
     }
 
     onActorAnimationFinished(actorId) {
