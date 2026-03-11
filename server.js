@@ -411,7 +411,6 @@ class MyRoom extends Room {
         this.nightDuration = 15 * 60 * 1000;  // 15 min
         this.weatherInterval = 10 * 60 * 1000;
         this.lastWeatherChange = Date.now();
-        this.combat = new CombatCore(this);
         this.activeCombats = new Map(); // combatId -> CombatCore instance
         this.nextCombatId = 1;    
         this.enemyLogic = new Map();
@@ -878,6 +877,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
