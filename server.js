@@ -294,6 +294,7 @@ class MyRoom extends Room {
         const id = "E" + this.enemyIdCounter++;
     
         const enemy = new EnemySchema();
+        const stats = enemyStats[type];
         enemy.id = id;
         enemy.typeId = stats.id;
         enemy.type = type;
@@ -308,7 +309,6 @@ class MyRoom extends Room {
         enemy.localMap = config.localMap ?? 0;
         enemy.dungeonId = config.dungeonId ?? "";
         enemy.depth = config.depth ?? 0;
-        const stats = enemyStats[type];
         enemy.speed = stats.enemyspeed;
         enemy.radius = stats.radius;
         enemy.wRange = stats.wRange;
@@ -878,6 +878,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
