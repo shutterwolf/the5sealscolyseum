@@ -619,28 +619,21 @@ class MyRoom extends Room {
         });
         
         this.onMessage("startCombat", (client, data) => {
+            console.log("⚔️ startCombat ricevuto:", data);
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             const targetId = data.targetId;
-        
             if (!playerId || !targetId) return;
-        
             const player = this.state.players.get(playerId);
-            const target = this.state.players.get(targetId);
-        
-            if (!player || !target) return;
-        
-            // già in combat?
-            if (player.inCombat > 0 || target.inCombat > 0) return;
-        
+            let target = this.state.players.get(targetId) || this.state.enemies.get(targetId);
+            if (!player || !target) {
+                console.log("❌ target non trovato:", targetId);
+                return;
+            }
+            if (player.inCombat > 0) return;
             const combatId = this.nextCombatId++;
-        
             const combat = new CombatCore(this, combatId);
-        
             this.activeCombats.set(combatId, combat);
-        
             player.inCombat = combatId;
-            target.inCombat = combatId;
-        
             combat.addActor(playerId, { hp: 20, combat: 6, defence: 5, strength: 4, wDamage: 2 });
             combat.addActor(targetId, { hp: 20, combat: 6, defence: 5, strength: 4, wDamage: 2 });
         
@@ -877,6 +870,7 @@ const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
     console.log(`Server listening on port ${PORT}`);
 });
+
 
 
 
