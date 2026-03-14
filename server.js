@@ -138,6 +138,10 @@ class EnemyState {
         this.enemySpeed = enemyStats[type].enemyspeed || 1;
         this.inCombat = 0;             
         this.currentAnim = "idle";
+        this.speed = 0;
+        this.radius = 0;
+        this.wRange = 0;
+        this.maxHealth = 0;
     }
 
     setAnimation(anim) {
