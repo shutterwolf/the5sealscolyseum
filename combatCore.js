@@ -199,11 +199,25 @@ class CombatCore {
     }
 
     broadcastToCombat(type, payload) {
-        for (let id of this.actors.keys()) {
-            const client = [...this.room.clients].find(c => this.room.sessionToPlayerId.get(c.sessionId) === id);
-            if (client) client.send(type, { combatId: this.combatId, ...payload });
+        const actorId = payload.actorId;
+        const actor = this.actors.get(actorId);
+        if (!actor) return;
+    
+        // turno di un player → solo quel client
+        if (actor.type === "player") {
+            const client = [...this.room.clients].find(
+                c => this.room.sessionToPlayerId.get(c.sessionId) === actorId
+            );
+            if (client) {
+                client.send(type, { combatId: this.combatId, ...payload });
+            }
+        }
+        else {
+            // turno enemy → broadcast
+            this.room.broadcast(type, { combatId: this.combatId, ...payload });
         }
     }
+
 
     updateEntityHP(id, type, hp) {
         if (type === "player") {
