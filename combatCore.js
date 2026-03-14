@@ -36,13 +36,18 @@ class CombatCore {
 
     removeActor(id) {
         if (!this.actors.has(id)) return;
+        const indexRemoved = this.turnOrder.indexOf(id);
         this.actors.delete(id);
         this.turnOrder = this.turnOrder.filter(x => x !== id);
-
+        // 🔹 Fix currentIndex se necessario
+        if (indexRemoved <= this.currentIndex && this.currentIndex > 0) {
+            this.currentIndex--;
+        }
         if (this.actors.size < 2 && this.inProgress) {
             this.endCombat();
         }
     }
+
 
     setTarget(attackerId, targetId) {
         const attacker = this.actors.get(attackerId);
