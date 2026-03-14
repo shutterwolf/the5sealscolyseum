@@ -623,29 +623,44 @@ class MyRoom extends Room {
         });
         
         this.onMessage("startCombat", (client, data) => {
-            console.log("⚔️ startCombat ricevuto:", data);
-            const playerId = this.sessionToPlayerId.get(client.sessionId);
-            const targetId = data.targetId;
-            if (!playerId || !targetId) return;
-            const player = this.state.players.get(playerId);
-            let target = this.state.players.get(targetId) || this.state.enemies.get(targetId);
-            if (!player || !target) {
-                console.log("❌ target non trovato:", targetId);
-                return;
-            }
-            if (player.inCombat > 0) return;
-            const combatId = this.nextCombatId++;
-            const combat = new CombatCore(this, combatId);
-            this.activeCombats.set(combatId, combat);
-            player.inCombat = combatId;
-            combat.addActor(playerId, { hp: 20, combat: 6, defence: 5, strength: 4, wDamage: 2 });
-            combat.addActor(targetId, { hp: 20, combat: 6, defence: 5, strength: 4, wDamage: 2 });
-        
-            combat.setTarget(playerId, targetId);
-            combat.setTarget(targetId, playerId);
-        
-            combat.startCombat();
-        });
+
+    console.log("⚔️ startCombat ricevuto:", data);
+
+    const attackerId = data.attackerId;
+    const targetId = data.targetId;
+
+    if (!attackerId || !targetId) return;
+
+    const attacker =
+        this.state.players.get(attackerId) ||
+        this.state.enemies.get(attackerId);
+
+    const target =
+        this.state.players.get(targetId) ||
+        this.state.enemies.get(targetId);
+
+    if (!attacker || !target) {
+        console.log("❌ target non trovato:", targetId);
+        return;
+    }
+
+    const combatId = this.nextCombatId++;
+    const combat = new CombatCore(this, combatId);
+
+    this.activeCombats.set(combatId, combat);
+
+    attacker.inCombat = combatId;
+    target.inCombat = combatId;
+
+    combat.addActor(attackerId, attacker.stats);
+    combat.addActor(targetId, target.stats);
+
+    combat.setTarget(attackerId, targetId);
+    combat.setTarget(targetId, attackerId);
+
+    combat.startCombat();
+});
+
         
         // --- playerInput ---
         this.onMessage("playerInput", (client, data) => {
