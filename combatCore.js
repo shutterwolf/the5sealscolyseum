@@ -177,8 +177,8 @@ class CombatCore {
     }
 
     resolveHit(attacker, target) {
-        const diceAt = Math.floor(Math.random() * 10);
-        const diceDef = Math.floor(Math.random() * 10);
+        const diceAt = Math.floor(Math.random() * 10)+1;
+        const diceDef = Math.floor(Math.random() * 10)+1;
         const combat = (attacker.combat + diceAt) - (target.defence + diceDef);
         if (combat <= 0) return 0;
 
@@ -204,24 +204,32 @@ class CombatCore {
     }
 
     broadcastToCombat(type, payload) {
-        const actorId = payload.actorId;
-        const actor = this.actors.get(actorId);
-        if (!actor) return;
-    
-        // turno di un player → solo quel client
-        if (actor.type === "player") {
+    const fullPayload = { combatId: this.combatId, ...payload };
+
+    // startTurn: only send to the player whose turn it is
+    if (type === "startTurn" && payload.actorId) {
+        const actor = this.actors.get(payload.actorId);
+        if (actor && actor.type === "player") {
             const client = [...this.room.clients].find(
-                c => this.room.sessionToPlayerId.get(c.sessionId) === actorId
+                c => this.room.sessionToPlayerId.get(c.sessionId) === payload.actorId
             );
-            if (client) {
-                client.send(type, { combatId: this.combatId, ...payload });
-            }
-        }
-        else {
-            // turno enemy → broadcast
-            this.room.broadcast(type, { combatId: this.combatId, ...payload });
+            if (client) client.send(type, fullPayload);
+            return;
         }
     }
+
+    // Everything else → all players in this combat
+    const playerIdsInCombat = [...this.actors.values()]
+        .filter(a => a.type === "player")
+        .map(a => a.id);
+
+    for (const client of this.room.clients) {
+        const playerId = this.room.sessionToPlayerId.get(client.sessionId);
+        if (playerIdsInCombat.includes(playerId)) {
+            client.send(type, fullPayload);
+        }
+    }
+}
 
 
     updateEntityHP(id, type, hp) {
