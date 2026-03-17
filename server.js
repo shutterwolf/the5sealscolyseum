@@ -463,6 +463,45 @@ class MyRoom extends Room {
             }
         });
 
+        // Replace the broken client-side handlers with these server-side ones:
+        this.onMessage("requestCombat", (client, message) => {
+            const { attackerId, targetId } = message;
+            const combatId = `${attackerId}_${targetId}_${Date.now()}`;
+            const combat = new CombatCore(this, combatId);
+            this.activeCombats.set(combatId, combat);
+        
+            const playerState = this.state.players.get(attackerId);
+            const enemyState  = this.state.enemies.get(targetId);
+        
+            combat.addActor(attackerId, {
+                combat:   playerState?.combat   ?? 5,
+                defence:  playerState?.defence  ?? 5,
+                strength: playerState?.strength ?? 3,
+                wDamage:  playerState?.wDamage  ?? 2
+            }, "player");
+        
+            combat.addActor(targetId, {
+                combat:   enemyState?.combat   ?? 5,
+                defence:  enemyState?.defence  ?? 5,
+                strength: enemyState?.strength ?? 3,
+                wDamage:  enemyState?.wDamage  ?? 2
+            }, "enemy");
+        
+            combat.setTarget(attackerId, targetId);
+            combat.setTarget(targetId, attackerId);
+            combat.startCombat();
+        });
+        
+        this.onMessage("combatActionFinished", (client, msg) => {
+            const actorId = msg.actorId;
+            for (const combat of this.activeCombats.values()) {
+                if (combat.actors.has(actorId)) {
+                    combat.onActorAnimationFinished(actorId);
+                    break;
+                }
+            }
+        });
+        
         this.onMessage("enemyReachedTarget", (client, data) => {
             console.log(">>> enemyReachedTarget RICEVUTO per enemy:", data.enemyId);
             const logic = this.enemyInstances.get(data.enemyId);
