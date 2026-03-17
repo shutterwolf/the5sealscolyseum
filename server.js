@@ -465,6 +465,7 @@ class MyRoom extends Room {
 
         // Replace the broken client-side handlers with these server-side ones:
         this.onMessage("requestCombat", (client, message) => {
+            console.log("⚔️ requestCombat received:", message); /
             const { attackerId, targetId } = message;
             const combatId = `${attackerId}_${targetId}_${Date.now()}`;
             const combat = new CombatCore(this, combatId);
@@ -647,59 +648,6 @@ class MyRoom extends Room {
                 }
             );
         });
-        
-        // client segnala fine animazione
-        this.onMessage("turnFinished", (client, data) => {
-            const actorId = data.actorId;
-            const player = this.state.players.get(actorId);
-        
-            if (!player || player.inCombat === 0) return;
-        
-            const combat = this.activeCombats.get(player.inCombat);
-            if (!combat) return;
-        
-            combat.onActorAnimationFinished(actorId);
-        });
-        
-        this.onMessage("startCombat", (client, data) => {
-
-    console.log("⚔️ startCombat ricevuto:", data);
-
-    const attackerId = data.attackerId;
-    const targetId = data.targetId;
-
-    if (!attackerId || !targetId) return;
-
-    const attacker =
-        this.state.players.get(attackerId) ||
-        this.state.enemies.get(attackerId);
-
-    const target =
-        this.state.players.get(targetId) ||
-        this.state.enemies.get(targetId);
-
-    if (!attacker || !target) {
-        console.log("❌ target non trovato:", targetId);
-        return;
-    }
-
-    const combatId = this.nextCombatId++;
-    const combat = new CombatCore(this, combatId);
-
-    this.activeCombats.set(combatId, combat);
-
-    attacker.inCombat = combatId;
-    target.inCombat = combatId;
-
-    combat.addActor(attackerId, attacker.stats);
-    combat.addActor(targetId, target.stats);
-
-    combat.setTarget(attackerId, targetId);
-    combat.setTarget(targetId, attackerId);
-
-    combat.startCombat();
-});
-
         
         // --- playerInput ---
         this.onMessage("playerInput", (client, data) => {
