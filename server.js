@@ -193,6 +193,7 @@ class PlayerState extends Schema {
         this.dungeonId = "";
         this.hp=0;
         this.inCombat = 0;
+        this.partyId = null;
         this.equipped = new Equipped();
     }
 }
@@ -214,6 +215,7 @@ type("number")(PlayerState.prototype, "depth");
 type("string")(PlayerState.prototype, "dungeonId");
 type("number")(PlayerState.prototype, "hp");
 type("number")(PlayerState.prototype, "inCombat");
+type("number")(PlayerState.prototype, "partyId");
 type(Equipped)(PlayerState.prototype, "equipped");
 
 class ChatMessage extends Schema {
@@ -250,6 +252,11 @@ class EnemySchema extends Schema {
         this.destZ = 0;
         this.idleUntil = 0;
         this.targetPlayerId = "";
+
+        this.oownerId=null;
+        this.questiId=null;
+        this.isDead=false;
+        this.lootReady=false;
     }
 }
 
@@ -273,6 +280,10 @@ type("number")(EnemySchema.prototype, "speed");
 type("number")(EnemySchema.prototype, "radius");
 type("number")(EnemySchema.prototype, "wRange");
 type("number")(EnemySchema.prototype, "maxHealth");
+type("string")(EnemySchema.prototype, "ownerId");
+type("number")(EnemySchema.prototype, "questId");
+type("boolean")(EnemySchema.prototype, "isDead");
+type("boolean")(EnemySchema.prototype, "lootReady");
 
 class MyRoomState extends Schema {
     constructor() {
@@ -465,7 +476,7 @@ class MyRoom extends Room {
 
         // Replace the broken client-side handlers with these server-side ones:
         this.onMessage("requestCombat", (client, message) => {
-            console.log("⚔️ requestCombat received:", message); /
+            console.log("⚔️ requestCombat received:", message); 
             const { attackerId, targetId } = message;
             const combatId = `${attackerId}_${targetId}_${Date.now()}`;
             const combat = new CombatCore(this, combatId);
@@ -482,10 +493,10 @@ class MyRoom extends Room {
             }, "player");
         
             combat.addActor(targetId, {
-                combat:   enemyState?.combat   ?? 5,
-                defence:  enemyState?.defence  ?? 5,
-                strength: enemyState?.strength ?? 3,
-                wDamage:  enemyState?.wDamage  ?? 2
+                combat:   enemyStats[combat]   ?? 5,
+                defence:  enemyStats[defence]  ?? 5,
+                strength: enemyStats[strength] ?? 3,
+                wDamage:  enemyStats[wDamage]  ?? 2
             }, "enemy");
         
             combat.setTarget(attackerId, targetId);
