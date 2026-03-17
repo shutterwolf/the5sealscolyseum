@@ -578,12 +578,13 @@ class MyRoom extends Room {
         });
 
         this.setSimulationInterval((deltaTime) => {
-            const playersArray = Array.from(this.state.players.values());
+            const playersMap = {};
+            this.state.players.forEach((player, id) => { playersMap[id] = player; });
             this.enemyInstances.forEach((logic, id) => {
                 const schemaEnemy = this.state.enemies.get(id);
                 if (!schemaEnemy) return;
             
-                const result = logic.update(playersArray, deltaTime / 1000, this);
+                const result = logic.update(playersMap, deltaTime / 1000, this);
                 if (!result) return;
             
                 // aggiorna destinazione
