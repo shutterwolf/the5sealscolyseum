@@ -89,7 +89,7 @@ class Enemy {
                 destX: this.destination.x,
                 destZ: this.destination.z
             };
-            console.log(`[Enemy ${this.id}] Movimento casuale, nuova destinazione: ${this.destination.x}, ${this.destination.z}`);
+            //console.log(`[Enemy ${this.id}] Movimento casuale, nuova destinazione: ${this.destination.x}, ${this.destination.z}`);
         }
     }
 
@@ -105,7 +105,7 @@ class Enemy {
             state: updateData.state,
             anim: updateData.anim
         });
-        console.log(`[Enemy ${this.id}] Inviato update al client: state=${updateData.state}, anim=${updateData.anim}`);
+        //console.log(`[Enemy ${this.id}] Inviato update al client: state=${updateData.state}, anim=${updateData.anim}`);
     }
 
     return updateData;
