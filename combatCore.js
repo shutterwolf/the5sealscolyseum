@@ -58,13 +58,14 @@ class CombatCore {
     }
 
     startCombat() {
+        console.log("🥊 startCombat called, actors:", this.actors.size, [...this.actors.keys()]);
         if (this.actors.size < 2) return;
-
+        console.log("❌ Not enough actors, aborting");
         this.inProgress = true;
         this.round = 1;
         this.currentIndex = 0;
         this.rollInitiative();
-
+        console.log("🎲 turnOrder:", this.turnOrder);
         this.broadcastToCombat("combatStart", { turnOrder: this.turnOrder });
 
         const actorId = this.getCurrentActorId();
@@ -204,6 +205,7 @@ class CombatCore {
     }
 
     broadcastToCombat(type, payload) {
+        console.log(`📡 broadcastToCombat: ${type}`, payload);
     const fullPayload = { combatId: this.combatId, ...payload };
 
     // startTurn: only send to the player whose turn it is
@@ -213,6 +215,7 @@ class CombatCore {
             const client = [...this.room.clients].find(
                 c => this.room.sessionToPlayerId.get(c.sessionId) === payload.actorId
             );
+            console.log("🔍 startTurn client found:", !!client, "sessionToPlayerId:", [...this.room.sessionToPlayerId.entries()]);
             if (client) client.send(type, fullPayload);
             return;
         }
@@ -222,9 +225,11 @@ class CombatCore {
     const playerIdsInCombat = [...this.actors.values()]
         .filter(a => a.type === "player")
         .map(a => a.id);
+        console.log("🎯 playerIdsInCombat:", playerIdsInCombat, "clients:", this.room.clients.length);
 
     for (const client of this.room.clients) {
         const playerId = this.room.sessionToPlayerId.get(client.sessionId);
+        console.log("  client", client.sessionId, "→ playerId:", playerId);
         if (playerIdsInCombat.includes(playerId)) {
             client.send(type, fullPayload);
         }
