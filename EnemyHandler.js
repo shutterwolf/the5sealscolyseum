@@ -33,7 +33,7 @@ class Enemy {
 
     update(players, dt, room) {
     if (!this.enabled) {
-        console.log(`[Enemy ${this.id}] disabled, skipping update.`);
+        //console.log(`[Enemy ${this.id}] disabled, skipping update.`);
         return null;
     }
 
@@ -63,7 +63,7 @@ class Enemy {
                 destX: player.playerPos.x,
                 destZ: player.playerPos.z
             };
-            console.log(`[Enemy ${this.id}] Aggro su player ${pid}, destX: ${updateData.destX}, destZ: ${updateData.destZ}`);
+            //console.log(`[Enemy ${this.id}] Aggro su player ${pid}, destX: ${updateData.destX}, destZ: ${updateData.destZ}`);
             break;
         }
     }
