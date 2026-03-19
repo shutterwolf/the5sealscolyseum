@@ -76,6 +76,7 @@ class CombatCore {
     }
 
     onActorAnimationFinished(actorId) {
+        console.log("SERVER RECEIVED:", actorId, "CURRENT:", this.getCurrentActorId());
         if (!this.inProgress || this.getCurrentActorId() !== actorId) return;
 
         const actor = this.actors.get(actorId);
