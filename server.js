@@ -478,6 +478,8 @@ class MyRoom extends Room {
         this.onMessage("requestCombat", (client, message) => {
             console.log("⚔️ requestCombat received:", message);
             const { attackerId, targetId } = message;
+            const enemyState = this.state.enemies.get(targetId);
+            if (enemyState) enemyState.inCombat = true;
             const combatId = `${attackerId}_${targetId}_${Date.now()}`;
             const combat = new CombatCore(this, combatId);
             this.activeCombats.set(combatId, combat);
@@ -594,7 +596,7 @@ class MyRoom extends Room {
             this.enemyInstances.forEach((logic, id) => {
                 const schemaEnemy = this.state.enemies.get(id);
                 if (!schemaEnemy) return;
-            
+                if (schemaEnemy.inCombat === true) return; 
                 const result = logic.update(playersMap, deltaTime / 1000, this);
                 if (!result) return;
             
