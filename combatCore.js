@@ -59,8 +59,10 @@ class CombatCore {
 
     startCombat() {
         console.log("🥊 startCombat called, actors:", this.actors.size, [...this.actors.keys()]);
-        if (this.actors.size < 2) return;
-        console.log("❌ Not enough actors, aborting");
+        if (this.actors.size < 2) {
+            console.log("❌ Not enough actors, aborting");
+            return;
+        }
         this.inProgress = true;
         this.round = 1;
         this.currentIndex = 0;
