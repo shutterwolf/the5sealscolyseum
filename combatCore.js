@@ -198,8 +198,14 @@ class CombatCore {
 
     endCombat() {
         this.inProgress = false;
-        for (let id of this.actors.keys()) this.updateEntityHP(id, this.actors.get(id).type, this.actors.get(id).hp);
-
+        for (let id of this.actors.keys()) {
+            const actor = this.actors.get(id);
+            this.updateEntityHP(id, actor.type, actor.hp);
+            if (actor.type === "enemy") {
+                const e = this.room.state.enemies.get(id);
+                if (e) e.inCombat = 0;
+            }
+        }
         this.broadcastToCombat("combatEnd", { combatId: this.combatId });
         this.turnOrder = [];
         this.actors.clear();
