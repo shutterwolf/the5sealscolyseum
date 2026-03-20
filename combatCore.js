@@ -92,12 +92,12 @@ class CombatCore {
             this.endTurn();
             return;
         }
-
+        /*
         if (!this.isInRange(actorId, actor.targetId)) {
             this.removeActor(actorId);
             this.broadcastToCombat("disengage", { id: actorId });
             return;
-        }
+        }*/
 
         const damage = this.resolveHit(actor, target);
         if (damage > 0) {
