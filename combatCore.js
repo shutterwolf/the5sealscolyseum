@@ -120,7 +120,7 @@ class CombatCore {
     }
 
     endTurn() {
-        this.checkDistances();
+        //this.checkDistances();
         if (this.actors.size < 2) {
             this.endCombat();
             return;
