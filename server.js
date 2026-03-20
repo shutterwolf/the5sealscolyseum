@@ -593,7 +593,7 @@ class MyRoom extends Room {
             this.enemyInstances.forEach((logic, id) => {
                 const schemaEnemy = this.state.enemies.get(id);
                 if (!schemaEnemy) return;
-                if (schemaEnemy.inCombat === true) return; 
+                if (schemaEnemy.inCombat === 1) return; 
                 const result = logic.update(playersMap, deltaTime / 1000, this);
                 if (!result) return;
             
