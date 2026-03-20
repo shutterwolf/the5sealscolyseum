@@ -478,15 +478,12 @@ class MyRoom extends Room {
         this.onMessage("requestCombat", (client, message) => {
             console.log("⚔️ requestCombat received:", message);
             const { attackerId, targetId } = message;
-            const enemyState = this.state.enemies.get(targetId);
-            if (enemyState) enemyState.inCombat = true;
             const combatId = `${attackerId}_${targetId}_${Date.now()}`;
             const combat = new CombatCore(this, combatId);
             this.activeCombats.set(combatId, combat);
-        
             const playerState = this.state.players.get(attackerId);
             const enemyState  = this.state.enemies.get(targetId);
-        
+            if (enemyState) enemyState.inCombat = 1;   // ← add here, after the existing declaration
             combat.addActor(attackerId, {
                 combat:   playerState?.combat   ?? 5,
                 defence:  playerState?.defence  ?? 5,
