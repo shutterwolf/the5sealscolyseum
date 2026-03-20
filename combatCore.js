@@ -69,11 +69,11 @@ class CombatCore {
         this.rollInitiative();
         console.log("🎲 turnOrder:", this.turnOrder);
         this.broadcastToCombat("combatStart", { turnOrder: this.turnOrder });
-
-        const actorId = this.getCurrentActorId();
+        const nextActorId = this.getCurrentActorId();
+        const nextActor = this.actors.get(nextActorId);
         this.broadcastToCombat("startTurn", {
-            actorId,
-            targetId: this.actors.get(actorId)?.targetId
+            actorId: nextActorId,
+            targetId: nextActor?.targetId ?? null
         });
     }
 
