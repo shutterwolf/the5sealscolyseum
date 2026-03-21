@@ -128,32 +128,42 @@ class CombatCore {
     }
 
     endTurn() {
-        //this.checkDistances();
         if (this.actors.size < 2) {
             this.endCombat();
             return;
         }
-
-        do {
-            this.currentIndex++;
-            if (this.currentIndex >= this.turnOrder.length) {
-                this.currentIndex = 0;
-                this.round++;
-                this.rollInitiative();
-            }
-        } while (!this.actors.has(this.turnOrder[this.currentIndex]));
-
+    
+        this.currentIndex++;
+    
+        // 👉 FINE ROUND
+        if (this.currentIndex >= this.turnOrder.length) {
+            this.round++;
+    
+            // 🔥 ricalcola iniziativa SOLO qui
+            this.rollInitiative();
+    
+            this.currentIndex = 0;
+        }
+    
         const nextActorId = this.getCurrentActorId();
-        this.broadcastToCombat("startTurn", { actorId: nextActorId });
+        const nextActor = this.actors.get(nextActorId);
+    
+        this.broadcastToCombat("startTurn", {
+            actorId: nextActorId,
+            targetId: nextActor?.targetId ?? null
+        });
     }
 
     rollInitiative() {
         const scored = [];
+    
         for (let [id, actor] of this.actors.entries()) {
             const score = actor.combat - (Math.floor(Math.random() * 12) + 1);
             scored.push({ id, score });
         }
+    
         scored.sort((a, b) => b.score - a.score);
+    
         this.turnOrder = scored.map(s => s.id);
     }
 
