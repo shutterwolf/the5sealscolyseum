@@ -223,6 +223,10 @@ class CombatCore {
                 const e = this.room.state.enemies.get(id);
                 if (e) e.inCombat = 0;
             }
+            if (actor.type === "player") {
+                const p = this.room.state.players.get(id);
+                if (p) p.inCombat = false; // oppure p.inCombat = 0 se usi numeri
+            }
         }
         this.broadcastToCombat("combatEnd", { combatId: this.combatId });
         this.turnOrder = [];
