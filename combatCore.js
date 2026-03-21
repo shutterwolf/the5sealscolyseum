@@ -43,9 +43,6 @@ class CombatCore {
         if (indexRemoved <= this.currentIndex && this.currentIndex > 0) {
             this.currentIndex--;
         }
-        if (this.actors.size < 2 && this.inProgress) {
-            this.endCombat();
-        }
     }
 
 
@@ -105,16 +102,16 @@ class CombatCore {
             this.updateEntityHP(target.id, target.type, target.hp);
         }
 
-        if (target.hp <= 0) {
-            this.removeActor(target.id);
-            this.broadcastToCombat("actorDied", { id: target.id });
-        }
-
         this.broadcastToCombat("damage", {
             attackerId: actorId,
             targetId: actor.targetId,
             damage
         });
+        
+        if (target.hp <= 0) {
+            this.broadcastToCombat("actorDied", { id: target.id });
+            this.removeActor(target.id);
+        }
 
         this.endTurn();
     }
