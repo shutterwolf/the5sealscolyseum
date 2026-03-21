@@ -14,26 +14,34 @@ class CombatCore {
 
     addActor(id, stats, type = "player") {
         if (this.actors.has(id)) return;
-
+    
         const entity = this.getEntity(id, type);
+    
+        // valori sicuri
+        let initialHP = 20;
+        if (type === "player") {
+            if (entity && typeof entity.phealth === "number") initialHP = entity.phealth;
+            else if (typeof stats.hp === "number") initialHP = stats.hp;
+        } else {
+            if (entity && typeof entity.health === "number") initialHP = entity.health;
+            else if (typeof stats.hp === "number") initialHP = stats.hp;
+        }
+    
         this.actors.set(id, {
             id,
             type,
-            hp,
+            hp: initialHP,
             combat: stats.combat ?? 5,
             defence: stats.defence ?? 5,
             strength: stats.strength ?? 3,
             wDamage: stats.wDamage ?? 2,
             targetId: null
         });
-
-        const hp = type === "player"
-            ? entity?.phealth ?? stats.hp ?? 20   // ← usa phealth
-            : entity?.health ?? stats.hp ?? 20;
-        
+    
+        // Aggiorna lo state corretto
         if (entity) {
-            if (type === "player") entity.phealth = hp;  // ← usa phealth
-            if (type === "enemy") entity.health = hp;
+            if (type === "player") entity.phealth = initialHP;
+            if (type === "enemy") entity.health = initialHP;
         }
     }
 
