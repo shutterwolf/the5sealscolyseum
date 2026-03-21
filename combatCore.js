@@ -16,7 +16,6 @@ class CombatCore {
         if (this.actors.has(id)) return;
 
         const entity = this.getEntity(id, type);
-        const hp = type === "player" ? entity?.hp ?? stats.hp ?? 20 : entity?.health ?? stats.hp ?? 20;
         this.actors.set(id, {
             id,
             type,
@@ -28,8 +27,12 @@ class CombatCore {
             targetId: null
         });
 
+        const hp = type === "player"
+            ? entity?.phealth ?? stats.hp ?? 20   // ← usa phealth
+            : entity?.health ?? stats.hp ?? 20;
+        
         if (entity) {
-            if (type === "player") entity.hp = hp;
+            if (type === "player") entity.phealth = hp;  // ← usa phealth
             if (type === "enemy") entity.health = hp;
         }
     }
@@ -246,7 +249,7 @@ class CombatCore {
     updateEntityHP(id, type, hp) {
         if (type === "player") {
             const p = this.room.state.players.get(id);
-            if (p) p.hp = hp;
+            if (p) p.phealth = hp;   // ← usa phealth
         } else {
             const e = this.room.state.enemies.get(id);
             if (e) e.health = hp;
