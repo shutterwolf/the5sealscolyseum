@@ -244,7 +244,7 @@ class CombatCore {
             else if (locRoll <= 10) location = 'BOOTS';
             else location = 'HELM';
             const armorProt = defender.equipped[location]?.armourValue+defender.equipped[location].variable || 0;
-            armorAbsorb =  Math.floor(Math.random() * armorProt) + 1);
+            armorAbsorb =  Math.floor(Math.random() * armorProt) + 1;
         }
         const finalWound = Math.max(0, wound - armorAbsorb);
         return {
