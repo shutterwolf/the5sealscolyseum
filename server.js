@@ -88,7 +88,7 @@ class EquippedItem extends Schema {
         this.name = "";
         this.armourValue = 1;
         this.damageValue = 0;
-        this.durability = 0;
+        this.resistence = 0;
         this.variable = 0;
         this.obj = "";
         this.slot = ""; // sempre string
@@ -104,7 +104,7 @@ type("string")(EquippedItem.prototype, "name");
 type("number")(EquippedItem.prototype, "armourValue");
 type("number")(EquippedItem.prototype, "damageValue");
 type("number")(EquippedItem.prototype, "variable");
-type("number")(EquippedItem.prototype, "durability");
+type("number")(EquippedItem.prototype, "resistence");
 type("string")(EquippedItem.prototype, "obj");
 type("string")(EquippedItem.prototype, "slot");
 type("string")(EquippedItem.prototype, "special");
