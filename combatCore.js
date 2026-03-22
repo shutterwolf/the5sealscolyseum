@@ -198,20 +198,60 @@ class CombatCore {
         return dist <= 0.8;
     }
 
-    resolveHit(attacker, target) {
-        const diceAt = Math.floor(Math.random() * 10)+1;
-        const diceDef = Math.floor(Math.random() * 10)+1;
-        const combat = (attacker.combat + diceAt) - (target.defence + diceDef);
-        if (combat <= 0) return 0;
-
-        let wound = 0;
-        const rolls = Math.min(attacker.wDamage, combat);
-        for (let i = 0; i < rolls; i++) wound += 1 + Math.floor(Math.random() * 4);
-
-        if (attacker.strength > attacker.wDamage) {
-            wound += Math.min(attacker.strength - attacker.wDamage, combat);
+    function resolveHit(attacker, defender) {
+        let attackerSkill = 0;
+        let defenderSkill = 0;
+        const isPlayerAttacker = attacker.equipped !== undefined;
+        const isPlayerDefender = defender.equipped !== undefined;
+        // ===== Determina abilità attacker =====
+        if (isPlayerAttacker) {
+            const weaponType = attacker.equipped.WEAPON?.type;
+            if (weaponType) {
+                attackerSkill = attacker[weaponType.toLowerCase()] || 0;
+            }
+        } else {
+            attackerSkill = attacker.attack;
         }
-        return wound;
+        // ===== Determina abilità difensore =====
+        if (isPlayerDefender) {
+            if (defender.equipped.SHIELD && defender.equipped.SHIELD !== 0) {
+                defenderSkill = defender.shield.level; // usa scudo
+            } else {
+                const weaponType = defender.equipped.WEAPON?.type;
+                defenderSkill = weaponType ? defender[weaponType.toLowerCase()] : 0; // usa arma se a due mani
+            }
+        } else {
+            defenderSkill = defender.defense;
+        }
+        // ===== Tiri casuali =====
+        const attackRoll = attackerSkill + Math.floor(Math.random() * 10) + 1;
+        const defenseRoll = defenderSkill + Math.floor(Math.random() * 10) + 1;
+        const diff = attackRoll - defenseRoll;
+        // ===== Controllo hit/scudo =====
+        if (diff <= 0) return {hit: false, shieldDamage: 0, wound: 0};
+        if (isPlayerDefender && defender.equipped.SHIELD && defender.equipped.SHIELD !== 0 && diff <= defender.shield.protection) {
+            const shieldDamage = diff * (Math.floor(Math.random() * 4) + 1);
+            return {hit: false, shieldDamage, wound: 0};
+        }
+        // ===== Calcolo danno =====
+        const wound = diff * (Math.floor(Math.random() * 4) + 1);
+        let armorAbsorb = 0;
+        if (isPlayerDefender && defender.armor) {
+            const locRoll = Math.floor(Math.random() * 12) + 1;
+            let location;
+            if (locRoll <= 6) location = 'ARMOUR';
+            else if (locRoll <= 8) location = 'GLOVES';
+            else if (locRoll <= 10) location = 'BOOTS';
+            else location = 'HELM';
+            const armorProt = defender.equipped[location]?.armourValue || 0;
+            armorAbsorb = armorProt * (Math.floor(Math.random() * 4) + 1);
+        }
+        const finalWound = Math.max(0, wound - armorAbsorb);
+        return {
+            hit: true,
+            shieldDamage: 0,
+            wound: finalWound
+        };
     }
 
     endCombat() {
