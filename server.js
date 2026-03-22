@@ -823,26 +823,26 @@ class MyRoom extends Room {
                 if (data.playerPos) Object.assign(player.playerPos, data.playerPos);
                 if (data.rotation) Object.assign(player.rotation, data.rotation);
 
-                if (data.equipped) {
-                    Object.entries(data.equipped).forEach(([slot, raw]) => {
+                if (data.equipped && Array.isArray(data.equipped)) {
+                    data.equipped.forEach(raw => {
                         const item = new EquippedItem();
-
-                        // Copia solo i campi validi
-                        item.lootID = raw.lootID ?? 0;
-                        item.armourValue = raw.armourValue ?? 1;
-                        item.damageValue = raw.damageValue ?? 0;
-                        item.durability = raw.durability ?? 0;
+                
+                        // ❌ Chiave dello slot: usa type se esiste
+                        const slotKey = raw.type?.toUpperCase() || `SLOT_${raw.slot}`;
+                
+                        item.lootID = Number(raw.lootID) || 0;
+                        item.damageValue = Number(raw.damageValue) || 0;
+                        item.armourValue = Number(raw.armourValue) || 0;
+                        item.durability = Number(raw.durability) || 0;
                         item.obj = raw.obj ?? "";
-                        item.special = raw.special ?? "";
+                        item.slot = slotKey; // Colyseus vuole stringa
                         item.twohand = !!raw.twohand;
                         item.type = raw.type ?? "";
-                        item.value = raw.value ?? 0;
-
-                        // Il nome dello slot DEVE essere stringa per Colyseus
-                        // Se Firebase ti invia un numero (anche se nel DB è “giusto”), il server lo converte
-                        item.slot = String(slot);
-
-                        player.equipped.slots.set(slot, item);
+                        item.value = Number(raw.value) || 0;
+                        item.special = raw.special ?? "";
+                
+                        // 🔹 Inserisce nell’equipped MapSchema
+                        player.equipped.slots.set(slotKey, item);
                     });
                 }
 
