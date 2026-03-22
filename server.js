@@ -796,7 +796,7 @@ class MyRoom extends Room {
         const player = new PlayerState();
         player.id = playerId;
 
-        const DEFAULT_SLOTS = ["HELM", "ARMOUR", "WEAPON", "WEAPON2", "SHIELD", "SHIELD2", "ITEM"];
+        const DEFAULT_SLOTS = ["HELM", "ARMOUR", "WEAPON", "WEAPON2", "SHIELD", "SHIELD2", "GLOVES", "BOOTS", "ITEM"];
         DEFAULT_SLOTS.forEach(slot => {
             const item = new EquippedItem();
             item.slot = slot;
