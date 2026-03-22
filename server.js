@@ -85,9 +85,11 @@ class EquippedItem extends Schema {
     constructor() {
         super();
         this.lootID = 0;
+        this.name = "";
         this.armourValue = 1;
         this.damageValue = 0;
         this.durability = 0;
+        this.variable = 0;
         this.obj = "";
         this.slot = ""; // sempre string
         this.special = "";
@@ -98,8 +100,10 @@ class EquippedItem extends Schema {
 }
 
 type("number")(EquippedItem.prototype, "lootID");
+type("string")(EquippedItem.prototype, "name");
 type("number")(EquippedItem.prototype, "armourValue");
 type("number")(EquippedItem.prototype, "damageValue");
+type("number")(EquippedItem.prototype, "variable");
 type("number")(EquippedItem.prototype, "durability");
 type("string")(EquippedItem.prototype, "obj");
 type("string")(EquippedItem.prototype, "slot");
