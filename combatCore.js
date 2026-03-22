@@ -243,14 +243,15 @@ class CombatCore {
             else if (locRoll <= 8) location = 'GLOVES';
             else if (locRoll <= 10) location = 'BOOTS';
             else location = 'HELM';
-            const armorProt = defender.equipped[location]?.armourValue || 0;
-            armorAbsorb = armorProt * (Math.floor(Math.random() * 4) + 1);
+            const armorProt = defender.equipped[location]?.armourValue+defender.equipped[location].variable || 0;
+            armorAbsorb =  Math.floor(Math.random() * armorProt) + 1);
         }
         const finalWound = Math.max(0, wound - armorAbsorb);
         return {
             hit: true,
             shieldDamage: 0,
-            wound: finalWound
+            wound: finalWound,
+            armorAbsorb: armorAbsorb 
         };
     }
 
