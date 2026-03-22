@@ -829,11 +829,12 @@ class MyRoom extends Room {
                 
                         // ❌ Chiave dello slot: usa type se esiste
                         const slotKey = raw.type?.toUpperCase() || `SLOT_${raw.slot}`;
-                
+                        item.name= raw.name;
                         item.lootID = Number(raw.lootID) || 0;
                         item.damageValue = Number(raw.damageValue) || 0;
                         item.armourValue = Number(raw.armourValue) || 0;
                         item.durability = Number(raw.durability) || 0;
+                        item.variable=Number(raw.variable) || 0;
                         item.obj = raw.obj ?? "";
                         item.slot = slotKey; // Colyseus vuole stringa
                         item.twohand = !!raw.twohand;
