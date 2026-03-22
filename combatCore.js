@@ -198,7 +198,7 @@ class CombatCore {
         return dist <= 0.8;
     }
 
-    function resolveHit(attacker, defender) {
+    resolveHit(attacker, defender) {
         let attackerSkill = 0;
         let defenderSkill = 0;
         const isPlayerAttacker = attacker.equipped !== undefined;
