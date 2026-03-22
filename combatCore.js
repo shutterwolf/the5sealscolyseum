@@ -215,7 +215,7 @@ class CombatCore {
         // ===== Determina abilità difensore =====
         if (isPlayerDefender) {
             if (defender.equipped.SHIELD && defender.equipped.SHIELD !== 0) {
-                defenderSkill = defender.shield.level; // usa scudo
+                defenderSkill = defender.aShield; // usa scudo
             } else {
                 const weaponType = defender.equipped.WEAPON?.type;
                 defenderSkill = weaponType ? defender[weaponType.toLowerCase()] : 0; // usa arma se a due mani
@@ -244,7 +244,7 @@ class CombatCore {
             else if (locRoll <= 10) location = 'BOOTS';
             else location = 'HELM';
             const armorProt = defender.equipped[location]?.armourValue+defender.equipped[location].variable || 0;
-            armorAbsorb =  Math.floor(Math.random() * armorProt) + 1;
+            armorAbsorb = armorProt > 0 ? Math.floor(Math.random() * armorProt) + 1 : 0;
         }
         const finalWound = Math.max(0, wound - armorAbsorb);
         return {
