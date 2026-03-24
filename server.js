@@ -299,6 +299,7 @@ class MyRoomState extends Schema {
         this.enemies = new MapSchema(); // 👈
         this.world = new WorldState();
         this.chat = new ArraySchema();
+        this.dungeons = new MapSchema();
     }
 }
 
@@ -306,7 +307,7 @@ type({ map: PlayerState })(MyRoomState.prototype, "players");
 type({ map: EnemySchema })(MyRoomState.prototype, "enemies"); // 👈
 type(WorldState)(MyRoomState.prototype, "world");
 type([ChatMessage])(MyRoomState.prototype, "chat");
-
+type({ map: Schema })(MyRoomState.prototype, "dungeons");
 
 // --- Room ---
 class MyRoom extends Room {
@@ -788,6 +789,50 @@ class MyRoom extends Room {
             // broadcast a tutti
             this.broadcast("chatMessage", msg);
         });
+    }
+
+    createDungeon(dungeonId) {
+        const config = dungeonConfig.Dungeons.find(d => d.id === dungeonId);
+        if (!config) return null;
+    
+        const dungeon = {
+            id: config.id,
+            name: config.Name,
+            levels: {},           // ogni livello verrà creato quando serve
+            config: config
+        };
+    
+        this.state.dungeons.set(dungeonId, dungeon);
+        return dungeon;
+    }
+    
+    createLevel(dungeonConfig, level) {
+        // esempio di livello generato
+        const newLevel = {
+            enemies: [],
+            loot: [],
+            doors: dungeonConfig.Doors ? this.generateDoors(dungeonConfig) : [],
+            furnitures: this.generateFurnitures(dungeonConfig),
+            entrance: { x: 0, z: 0 },
+            exit: { x: dungeonConfig.dunWidth-1, z: dungeonConfig.dunHeight-1 },
+            dugMap: this.generateDugMap(dungeonConfig)
+        };
+    
+        // spawn nemici
+        for (let i = 0; i < dungeonConfig.enemies; i++) {
+            const x = Math.floor(Math.random() * dungeonConfig.dunWidth);
+            const z = Math.floor(Math.random() * dungeonConfig.dunHeight);
+            const enemyId = this.spawnEnemy(
+                dungeonConfig.Enemy || "bandit",
+                x, z,
+                { dungeonId: dungeonConfig.id, depth: level }
+            );
+            newLevel.enemies.push(enemyId);
+        }
+    
+        // spawn loot e furniture simile...
+    
+        return newLevel;
     }
 
     async onJoin(client, options) {
