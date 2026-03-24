@@ -49,26 +49,34 @@ export class DungeonRoom extends Room {
     // CREAZIONE DUNGEON
     // =========================
     createDungeon(dungeonId) {
-        const seed = Math.floor(Math.random() * 1000000);
+        const dungeonData = dungeonConfig.Dungeons.find(d => d.id === dungeonId);
+        if (!dungeonData) throw new Error("Dungeon ID non trovato");
+    
         return {
             id: dungeonId,
-            seed: seed,
-            createdAt: Date.now(),
-            levels: {}
+            name: dungeonData.Name,
+            levels: {},
+            config: dungeonData,
+            createdAt: Date.now()
         };
     }
 
     // =========================
     // CREAZIONE LEVEL
     // =========================
-    createLevel(seed, level) {
+    createLevel(dungeonConfig, levelNum) {
         return {
-            enemies: this.generateEnemies(level),
-            loot: this.generateLoot(level),
-            doors: this.generateDoors(level),
-            furnitures: this.generateFurnitures(level),
-            entrance: this.generateEntrance(level),
-            exit: this.generateExit(level),
+            enemies: this.generateEnemies(levelNum, dungeonConfig.enemies, dungeonConfig.Enemy),
+            loot: this.generateLoot(levelNum, dungeonConfig.loot),
+            doors: this.generateDoors(levelNum, dungeonConfig.Doors),
+            furnitures: this.generateFurnitures(levelNum, dungeonConfig.furniture),
+            width: dungeonConfig.dunWidth,
+            height: dungeonConfig.dunHeight,
+            roomWidth: dungeonConfig.xroom,
+            roomHeight: dungeonConfig.yroom,
+            dugPercentage: dungeonConfig.dug,
+            entrance: { x: 3, y: 3 },  // puoi renderlo random o statico
+            exit: { x: dungeonConfig.dunWidth - 3, y: dungeonConfig.dunHeight - 3 },
             lastRespawn: Date.now()
         };
     }
@@ -76,64 +84,110 @@ export class DungeonRoom extends Room {
     // =========================
     // GENERAZIONE DINAMICA
     // =========================
-    generateEnemies(level) {
+    generateEnemies(level, count, type) {
         const enemies = {};
-        const count = 20 + level * 2;
         for (let i = 0; i < count; i++) {
-            const x = Math.floor(Math.random() * 50);
-            const y = Math.floor(Math.random() * 50);
+            const x = Math.floor(Math.random() * 50); // oppure usare width del dungeon
+            const y = Math.floor(Math.random() * 50); // oppure usare height del dungeon
             const key = `${x},${y}`;
-            enemies[key] = { type: "goblin", alive: true };
+    
+            // evita sovrapposizioni
+            if (enemies[key]) {
+                i--;
+                continue;
+            }
+    
+            enemies[key] = {
+                type: type || "default",
+                alive: true,
+                lastAttacked: null,
+                entityId: null // riferimento lato client
+            };
         }
         return enemies;
     }
-
-    generateLoot(level) {
+    
+    generateLoot(level, count) {
         const loot = {};
-        const count = 10;
         for (let i = 0; i < count; i++) {
             const x = Math.floor(Math.random() * 50);
             const y = Math.floor(Math.random() * 50);
             const key = `${x},${y}`;
-            loot[key] = { opened: false };
+    
+            if (loot[key]) {
+                i--;
+                continue;
+            }
+    
+            loot[key] = {
+                opened: false,
+                contents: [], // puoi aggiungere oggetti qui
+                entityId: null
+            };
         }
         return loot;
     }
-
-    generateDoors(level) {
+    
+    generateDoors(level, hasDoors) {
         const doors = {};
-        const count = 5;
-        for (let i = 0; i < count; i++) {
+        if (!hasDoors) return doors;
+    
+        const doorCount = Math.floor(Math.random() * 5) + 3; // 3-7 porte
+        for (let i = 0; i < doorCount; i++) {
             const x = Math.floor(Math.random() * 50);
             const y = Math.floor(Math.random() * 50);
             const key = `${x},${y}`;
-            doors[key] = { locked: Math.random() < 0.2 }; // 20% porte bloccate
+    
+            if (doors[key]) {
+                i--;
+                continue;
+            }
+    
+            doors[key] = {
+                locked: false,
+                entityId: null
+            };
         }
         return doors;
     }
-
-    generateFurnitures(level) {
+    
+    generateFurnitures(level, count) {
         const furnitures = {};
         const types = ["table", "column", "bookcase"];
-        const count = 8;
+    
         for (let i = 0; i < count; i++) {
             const x = Math.floor(Math.random() * 50);
             const y = Math.floor(Math.random() * 50);
             const key = `${x},${y}`;
+    
+            if (furnitures[key]) {
+                i--;
+                continue;
+            }
+    
             const type = types[Math.floor(Math.random() * types.length)];
-            furnitures[key] = { type, active: true };
+    
+            furnitures[key] = {
+                type: type,
+                active: true, // se il player lo distrugge o sposta diventa false
+                entityId: null
+            };
         }
         return furnitures;
     }
-
-    generateEntrance(level) {
-        return { x: 3, y: 3 }; // posizione fissa o random
+    
+    generateEntranceExit(levelData, dungeonConfig) {
+        // semplice esempio: angoli opposti
+        levelData.entrance = {
+            x: 1 + Math.floor(Math.random() * 3), 
+            y: 1 + Math.floor(Math.random() * 3)
+        };
+    
+        levelData.exit = {
+            x: dungeonConfig.dunWidth - 2 - Math.floor(Math.random() * 3),
+            y: dungeonConfig.dunHeight - 2 - Math.floor(Math.random() * 3)
+        };
     }
-
-    generateExit(level) {
-        return { x: 45, y: 50 }; // posizione fissa o random
-    }
-
     // =========================
     // AZIONI CLIENT
     // =========================
