@@ -482,6 +482,35 @@ class MyRoom extends Room {
             }
         });
 
+        this.onMessage("enterDungeon", (client, data) => {
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            if (!playerId) return;
+        
+            const dungeonId = data.dungeonId;
+            const level = data.level || 0;
+        
+            // 1️⃣ Recupera o crea il dungeon
+            let dungeon = this.state.dungeons.get(dungeonId);
+            if (!dungeon) dungeon = this.createDungeon(dungeonId);
+        
+            // 2️⃣ Crea il livello se non esiste
+            if (!dungeon.levels[level]) {
+                dungeon.levels[level] = this.createLevel(dungeon.config, level);
+            }
+        
+            // 3️⃣ Aggiorna lo stato del giocatore
+            const player = this.state.players.get(playerId);
+            player.dungeonId = dungeonId;
+            player.depth = level;
+        
+            // 4️⃣ Invia lo stato del dungeon al client
+            client.send("loadDungeon", {
+                dungeonId,
+                level,
+                state: dungeon.levels[level]
+            });
+        });
+        
         // Replace the broken client-side handlers with these server-side ones:
         this.onMessage("requestCombat", (client, message) => {
             console.log("⚔️ requestCombat received:", message);
