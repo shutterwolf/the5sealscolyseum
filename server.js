@@ -312,6 +312,40 @@ type({ map: Schema })(MyRoomState.prototype, "dungeons");
 // --- Room ---
 class MyRoom extends Room {
     maxClients = 40;
+    import ROT from "rot-js";
+
+    generateUniformMap(dungeonConfig, seed) {
+        const width = dungeonConfig.dunWidth;
+        const height = dungeonConfig.dunHeight;
+    
+        // RNG deterministico
+        const rng = ROT.RNG.clone();
+        rng.setSeed(seed);
+    
+        const map = [];
+    
+        for (let x = 0; x < width; x++) {
+            map[x] = [];
+            for (let y = 0; y < height; y++) {
+                map[x][y] = 1; // 1 = wall
+            }
+        }
+    
+        const digger = new ROT.Map.Digger(width, height, {
+            roomWidth: [dungeonConfig.xroom, dungeonConfig.xroom + 2],
+            roomHeight: [dungeonConfig.yroom, dungeonConfig.yroom + 2],
+            corridorLength: [2, 10],
+            dugPercentage: dungeonConfig.dug,
+            rng: rng
+        });
+    
+        digger.create((x, y, value) => {
+            map[x][y] = value === 1 ? 1 : 0; // 0 = floor
+        });
+    
+        return map;
+    }
+    
 
     spawnEnemy(type, x, z, config = {}) {
         const id = "E" + this.enemyIdCounter++;
