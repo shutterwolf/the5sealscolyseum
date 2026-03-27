@@ -312,8 +312,6 @@ type({ map: Schema })(MyRoomState.prototype, "dungeons");
 // --- Room ---
 class MyRoom extends Room {
     maxClients = 40;
-    import ROT from "rot-js";
-
     generateUniformMap(dungeonConfig, seed) {
         const width = dungeonConfig.dunWidth;
         const height = dungeonConfig.dunHeight;
