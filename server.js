@@ -9,8 +9,8 @@ const admin = require("firebase-admin");
 const CombatCore = require("./combatCore");
 const enemyStats = require("./enemyStats");
 const EnemyServer = require("./EnemyHandler");
-import fs from "fs";
-
+const fs = require("fs");
+const ROT = require("rot-js");
 const dungeonConfig = JSON.parse(fs.readFileSync("dungeons.json"));
 // =============================
 // EXPRESS + HTTP
