@@ -11,7 +11,7 @@ const enemyStats = require("./enemyStats");
 const EnemyServer = require("./EnemyHandler");
 const fs = require("fs");
 const ROT = require("rot-js");
-const dungeonConfig = JSON.parse(fs.readFileSync("dungeons.json"));
+const dungeonConfig = JSON.parse(fs.readFileSync("Dungeons.json"));
 // =============================
 // EXPRESS + HTTP
 // =============================
