@@ -486,24 +486,29 @@ class MyRoom extends Room {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
         
-            const dungeonId = data.dungeonId;
+            const config = dungeonConfig.Dungeons.find(d => d.Name === data.name);
+            if (!config) {
+                console.warn("Dungeon non trovato:", data.name);
+                return;
+            }
+            const dungeonId = config.id;
             const level = data.level || 0;
         
-            // 1️⃣ Recupera o crea il dungeon
+            // 1️⃣ Recupera o crea dungeon
             let dungeon = this.state.dungeons.get(dungeonId);
             if (!dungeon) dungeon = this.createDungeon(dungeonId);
         
-            // 2️⃣ Crea il livello se non esiste
+            // 2️⃣ Crea livello se non esiste
             if (!dungeon.levels[level]) {
-                dungeon.levels[level] = this.createLevel(dungeon.config, level);
+                dungeon.levels[level] = this.createLevel(config, level);
             }
         
-            // 3️⃣ Aggiorna lo stato del giocatore
+            // 3️⃣ Aggiorna player
             const player = this.state.players.get(playerId);
             player.dungeonId = dungeonId;
             player.depth = level;
         
-            // 4️⃣ Invia lo stato del dungeon al client
+            // 4️⃣ Invia al client
             client.send("loadDungeon", {
                 dungeonId,
                 level,
