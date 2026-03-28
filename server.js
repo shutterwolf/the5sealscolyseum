@@ -753,7 +753,18 @@ class MyRoom extends Room {
                 w: Number(data.rotation?.w) || 1
             };
 
-            Object.assign(player.playerPos, pos);
+            const quantize = (v) => Math.round(v * 10) / 10;
+            const newX = quantize(pos.x);
+            const newZ = quantize(pos.z);
+            // aggiorna solo se cambia davvero (soglia 0.1)
+            if (Math.abs(player.playerPos.x - newX) > 0.1) {
+                player.playerPos.x = newX;
+            }
+            if (Math.abs(player.playerPos.z - newZ) > 0.1) {
+                player.playerPos.z = newZ;
+            }
+            // opzionale: fissa Y se non ti serve
+            player.playerPos.y = player.playerPos.y ?? 0;
             Object.assign(player.rotation, rot);
 
             player.texTure = data.texTure ?? player.texTure;
