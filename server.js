@@ -315,33 +315,65 @@ class MyRoom extends Room {
     generateUniformMap(dungeonConfig, seed) {
         const width = dungeonConfig.dunWidth;
         const height = dungeonConfig.dunHeight;
-    
-        // RNG deterministico
-        const rng = ROT.RNG.clone();
-        rng.setSeed(seed);
-    
-        const map = [];
-    
-        for (let x = 0; x < width; x++) {
-            map[x] = [];
-            for (let y = 0; y < height; y++) {
-                map[x][y] = 1; // 1 = wall
-            }
-        }
-    
-        const digger = new ROT.Map.Digger(width, height, {
+        // 🔑 Seed deterministico
+        ROT.RNG.setSeed(seed);
+        const map = {};
+        const freeCells = [];
+        const roomsData = [];
+        const doors = {};
+        // 🗺️ Generatore
+        const mapGen = new ROT.Map.Digger(width, height, {
             roomWidth: [dungeonConfig.xroom, dungeonConfig.xroom + 2],
             roomHeight: [dungeonConfig.yroom, dungeonConfig.yroom + 2],
             corridorLength: [2, 10],
-            dugPercentage: dungeonConfig.dug,
-            rng: rng
+            dugPercentage: dungeonConfig.dug
         });
-    
-        digger.create((x, y, value) => {
-            map[x][y] = value === 1 ? 1 : 0; // 0 = floor
+        // 🧱 Creazione mappa
+        mapGen.create((x, y, value) => {
+            const key = `${x},${y}`;
+            // value: 0 = floor, 1 = wall
+            if (value === 0) {
+                map[key] = 0;
+                freeCells.push({ x, y });
+            } else {
+                map[key] = 1;
+            }
         });
-    
-        return map;
+        // 🏠 Recupero stanze
+        const rooms = mapGen.getRooms();
+        for (let i = 0; i < rooms.length; i++) {
+            const room = rooms[i];
+            roomsData.push({
+                x: room.getLeft(),
+                y: room.getTop(),
+                width: room.getRight() - room.getLeft() + 1,
+                height: room.getBottom() - room.getTop() + 1
+            });
+            // 🚪 Gestione porte (solo se abilitate)
+            if (dungeonConfig.Doors === true) {
+                room.getDoors((x, y) => {
+                    const key = `${x},${y}`;
+                    // evita porte duplicate
+                    if (!doors[key]) {
+                        doors[key] = { closed: true };
+                        // rimuovi dalle freeCells
+                        for (let i = 0; i < freeCells.length; i++) {
+                            if (freeCells[i].x === x && freeCells[i].y === y) {
+                                freeCells.splice(i, 1);
+                                break;
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        // 🔥 risultato completo
+        return {
+            map,
+            freeCells,
+            rooms: roomsData,
+            doors
+        };
     }
     
 
