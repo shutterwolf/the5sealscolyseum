@@ -263,7 +263,7 @@ class EnemySchema extends Schema {
         this.radius = 0;
         this.wRange = 0;
         this.maxHealth = 0;
-        this.ownerId=0;
+        this.ownerId="";
         this.questId=0;
         this.isDead=false;
         this.lootReady=false;
@@ -290,7 +290,7 @@ type("number")(EnemySchema.prototype, "speed");
 type("number")(EnemySchema.prototype, "radius");
 type("number")(EnemySchema.prototype, "wRange");
 type("number")(EnemySchema.prototype, "maxHealth");
-type("number")(EnemySchema.prototype, "ownerId");
+type("string")(EnemySchema.prototype, "ownerId");
 type("number")(EnemySchema.prototype, "questId");
 type("boolean")(EnemySchema.prototype, "isDead");
 type("boolean")(EnemySchema.prototype, "lootReady");
@@ -376,9 +376,7 @@ class MyRoom extends Room {
     }
 
     generateFurnitures(levelData, config, occupied = new Set()) {
-        const furnitures = [];
-        const occupied = new Set();
-    
+    const furnitures = [];
         const count = config.furnitureCount || 10;
     
         for (let i = 0; i < count; i++) {
