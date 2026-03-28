@@ -302,7 +302,6 @@ class MyRoomState extends Schema {
         this.enemies = new MapSchema(); // 👈
         this.world = new WorldState();
         this.chat = new ArraySchema();
-        this.dungeons = new MapSchema();
     }
 }
 
@@ -310,7 +309,6 @@ type({ map: PlayerState })(MyRoomState.prototype, "players");
 type({ map: EnemySchema })(MyRoomState.prototype, "enemies"); // 👈
 type(WorldState)(MyRoomState.prototype, "world");
 type([ChatMessage])(MyRoomState.prototype, "chat");
-type({ map: Schema })(MyRoomState.prototype, "dungeons");
 
 // --- Room ---
 class MyRoom extends Room {
@@ -377,7 +375,7 @@ class MyRoom extends Room {
 
     generateFurnitures(levelData, config, occupied = new Set()) {
     const furnitures = [];
-        const count = config.furnitureCount || 10;
+        const count = config.furniture || 10;
     
         for (let i = 0; i < count; i++) {
     
@@ -424,7 +422,7 @@ class MyRoom extends Room {
 
     generateLoot(levelData, config, occupied = new Set()) {
         const loots = [];
-        const count = config.lootCount || 5;
+        const count = config.loot || 5;
     
         for (let i = 0; i < count; i++) {
     
@@ -682,7 +680,7 @@ class MyRoom extends Room {
         this.enemyInstances = new Map();
         this.enemyIdCounter = 1;
         this.activeQuestSpawns = new Map();
-
+        this.dungeons = new Map();
         // --- IDLE LOGIC ---
         
         this.onMessage("requestSpawnEnemies", (client, data) => {
@@ -727,44 +725,29 @@ class MyRoom extends Room {
         this.onMessage("enterDungeon", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
-        
             const config = dungeonConfig.Dungeons.find(d => d.Name === data.name);
-            if (!config) {
-                console.warn("Dungeon non trovato:", data.name);
-                return;
-            }
+            if (!config) return;
             const dungeonId = config.id;
             const level = data.level || 0;
-        
-            // 1️⃣ Recupera o crea dungeon
-            let dungeon = this.state.dungeons.get(dungeonId);
-            if (!dungeon) dungeon = this.createDungeon(dungeonId);
-        
-            // 2️⃣ Crea livello se non esiste
+            // Get or create dungeon
+            if (!this.dungeons.has(dungeonId)) {
+                this.dungeons.set(dungeonId, { id: dungeonId, levels: {} });
+            }
+            const dungeon = this.dungeons.get(dungeonId);
+            // Get or create this level (generate once, reuse after)
             if (!dungeon.levels[level]) {
-                dungeon.levels[level] = this.createLevel(config, level);
-                dungeon.levels[level].entrance = this.placeEntrance(dungeon.levels[level]);
+                dungeon.levels[level] = this.createLevel(config, level, dungeonId);
             }
             const levelData = dungeon.levels[level];
-            const exit = this.placeExit(levelData, level, config);
-            if (exit) {
-                levelData.exit = exit;
-            }
-            if (config.Doors === true) {
-                levelData.doors = this.generateDoors(levelData, levelData.map, config);
-            } else {
-                levelData.doors = null;
-            }
-            // 3️⃣ Aggiorna player
             const player = this.state.players.get(playerId);
-            player.dungeonId = dungeonId;
-            player.depth = level;
-        
-            // 4️⃣ Invia al client
+            if (player) {
+                player.dungeonId = String(dungeonId);
+                player.depth = level;
+            }
             client.send("loadDungeon", {
                 dungeonId,
                 level,
-                state: dungeon.levels[level]
+                state: levelData
             });
         });
         
@@ -1107,9 +1090,12 @@ class MyRoom extends Room {
         return dungeon;
     }
     
-    createLevel(config, level) {
+    createLevel(config, level, dungeonId) {
         const generated = this.generateUniformMap(config, Date.now());
+        const occupied = new Set();
         const newLevel = {
+            dungeonId,          // ← explicitly linked
+            depth: level,       // ← explicitly linked
             map: generated.map,
             freeCells: generated.freeCells,
             rooms: generated.rooms,
@@ -1120,30 +1106,46 @@ class MyRoom extends Room {
             entrance: null,
             exit: null
         };
-        // 🚪 ENTRANCE (se ti serve già qui)
+        // Entrance
         const entrance = this.placeEntrance(newLevel);
         if (entrance) {
+            entrance.dungeonId = dungeonId;   // linked
+            entrance.depth = level;
             newLevel.entrance = entrance;
+            occupied.add(`${entrance.x},${entrance.y}`);
         }
-        
+        // Exit
         const exit = this.placeExit(newLevel, level, config);
         if (exit) {
+            exit.dungeonId = dungeonId;       // linked
+            exit.depth = level;
             newLevel.exit = exit;
+            occupied.add(`${exit.x},${exit.y}`);
         }
-        const occupied = new Set();
-        if (newLevel.entrance) {
-            occupied.add(`${newLevel.entrance.x},${newLevel.entrance.y}`);
-        }
-        if (newLevel.exit) {
-            occupied.add(`${newLevel.exit.x},${newLevel.exit.y}`);
-        }
+        // Doors
         if (config.Doors) {
             newLevel.doors = this.generateDoors(newLevel, newLevel.map, config);
         }
-        // 🪑 FURNITURE (DOPO exit!)
+        // Furnitures — use config.furniture (not furnitureCount)
         newLevel.furnitures = this.generateFurnitures(newLevel, config, occupied);
-            // 💰 LOOT
+        // Loot — use config.loot (not lootCount)
         newLevel.loot = this.generateLoot(newLevel, config, occupied);
+        // Enemies — spawn using config.Enemy and config.enemies count
+        if (config.Enemy && config.enemies > 0) {
+            for (let i = 0; i < config.enemies; i++) {
+                const cell = newLevel.freeCells[Math.floor(Math.random() * newLevel.freeCells.length)];
+                if (!cell) continue;
+                const key = `${cell.x},${cell.y}`;
+                if (occupied.has(key)) continue;
+                occupied.add(key);
+                const enemyId = this.spawnEnemy(config.Enemy, cell.x, cell.y, {
+                    localMap: 0,
+                    dungeonId: String(dungeonId),
+                    depth: level
+                });
+                newLevel.enemies.push(enemyId);  // store enemy ID reference
+            }
+        }
         return newLevel;
     }
 
