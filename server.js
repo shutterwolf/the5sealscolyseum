@@ -312,18 +312,16 @@ type({ map: Schema })(MyRoomState.prototype, "dungeons");
 // --- Room ---
 class MyRoom extends Room {
     maxClients = 40;
-    placeEntrance(dungeon, level) {
-        const freeCells = dungeon.levels[level].freeCells;
+    placeEntrance(levelData) {
+        const freeCells = levelData.freeCells;
         if (!freeCells || freeCells.length === 0) return null;
-        // 🎲 scegli cella random
+    
         const cell = freeCells[Math.floor(Math.random() * freeCells.length)];
-        const entrance = {
+    
+        return {
             x: cell.x,
             y: cell.y
         };
-        // 🔥 salva nel livello
-        dungeon.levels[level].entrance = entrance;
-        return entrance;
     }
 
     placeExit(levelData, levelIndex, dungeonConfig) {
@@ -332,7 +330,7 @@ class MyRoom extends Room {
         // - dungeon con 1 solo livello
         // - siamo all'ultimo livello
         if (maxLevels <= 1) return null;
-        if (levelIndex >= maxLevels) return null;
+        if (levelIndex >= maxLevels-1) return null;
         const key = this.getRandomCellInRoom(levelData);
         if (!key) return null;
         const [x, y] = key.split(",").map(Number);
@@ -371,6 +369,123 @@ class MyRoom extends Room {
         }
     
         return doors;
+    }
+
+    generateFurnitures(levelData, config) {
+        const furnitures = [];
+        const occupied = new Set();
+    
+        const count = config.furnitureCount || 10;
+    
+        for (let i = 0; i < count; i++) {
+    
+            for (let attempt = 0; attempt < 10; attempt++) {
+    
+                const a = Math.floor(Math.random() * 5);
+    
+                let type = "table";
+                if (a === 1 || a === 4) type = "column";
+                if (a === 2) type = "bookcase";
+    
+                const key = this.getRandomCellInRoom(levelData);
+                if (!key) continue;
+    
+                if (occupied.has(key)) continue;
+                if (levelData.doors && levelData.doors[key]) continue;
+    
+                const [x, y] = key.split(",").map(Number);
+    
+                // controlli spazio
+                if (
+                    levelData.map[`${x},${y+1}`] !== 0 ||
+                    levelData.map[`${x},${y-1}`] !== 0 ||
+                    levelData.map[`${x+1},${y}`] !== 0 ||
+                    levelData.map[`${x-1},${y}`] !== 0
+                ) continue;
+    
+                let rotation = levelData.map[`${x},${y-1}`] === 0 ? 180 : 0;
+    
+                furnitures.push({
+                    x,
+                    y,
+                    type,
+                    rotation
+                });
+    
+                occupied.add(key);
+                break;
+            }
+        }
+    
+        return furnitures;
+    }
+
+    generateLoot(levelData, config, occupied = new Set()) {
+        const loots = [];
+        const count = config.lootCount || 5;
+    
+        for (let i = 0; i < count; i++) {
+    
+            for (let attempt = 0; attempt < 10; attempt++) {
+    
+                const key = this.getRandomCellInRoom(levelData);
+                if (!key) continue;
+    
+                if (occupied.has(key)) continue;
+                if (levelData.doors && levelData.doors[key]) continue;
+    
+                const [x, y] = key.split(",").map(Number);
+    
+                // opzionale: evita spawn vicino ai muri
+                if (
+                    levelData.map[`${x},${y+1}`] !== 0 ||
+                    levelData.map[`${x},${y-1}`] !== 0 ||
+                    levelData.map[`${x+1},${y}`] !== 0 ||
+                    levelData.map[`${x-1},${y}`] !== 0
+                ) continue;
+    
+                loots.push({
+                    x,
+                    y,
+                    type: "chest"
+                });
+    
+                occupied.add(key);
+                break;
+            }
+        }
+    
+        return loots;
+    }
+
+    getRandomCellInRoom(levelData) {
+        const rooms = levelData.rooms;
+        if (!rooms || rooms.length === 0) return null;
+    
+        for (let attempt = 0; attempt < 10; attempt++) {
+    
+            const room = rooms[Math.floor(Math.random() * rooms.length)];
+    
+            const minX = room.x + 1;
+            const maxX = room.x + room.width - 2;
+    
+            const minY = room.y + 1;
+            const maxY = room.y + room.height - 2;
+    
+            if (maxX < minX || maxY < minY) continue;
+    
+            const x = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
+            const y = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+    
+            const key = `${x},${y}`;
+    
+            if (levelData.map[key] !== 0) continue;
+            if (levelData.doors && levelData.doors[key]) continue;
+    
+            return key;
+        }
+    
+        return null;
     }
     
     generateUniformMap(dungeonConfig, seed) {
@@ -628,14 +743,16 @@ class MyRoom extends Room {
                 dungeon.levels[level] = this.createLevel(config, level);
                 dungeon.levels[level].entrance = this.placeEntrance(dungeon, level);
             }
-            const exit = this.placeExit(newLevel, levelIndex, dungeonConfig);
+            const levelData = dungeon.levels[level];
+            const exit = this.placeExit(levelData, level, config);
             if (exit) {
-                newLevel.exit = exit;
+                levelData.exit = exit;
             }
+            const levelData = dungeon.levels[level];
             if (config.Doors === true) {
-                newLevel.doors = this.generateDoors(newLevel, map, config);
+                levelData.doors = this.generateDoors(levelData, levelData.map, config);
             } else {
-                newLevel.doors = null;
+                levelData.doors = null;
             }
             // 3️⃣ Aggiorna player
             const player = this.state.players.get(playerId);
@@ -991,32 +1108,37 @@ class MyRoom extends Room {
         return dungeon;
     }
     
-    createLevel(dungeonConfig, level) {
-        // esempio di livello generato
+    createLevel(config, level) {
+        const generated = this.generateUniformMap(config, Date.now());
         const newLevel = {
+            map: generated.map,
+            freeCells: generated.freeCells,
+            rooms: generated.rooms,
+            doors: config.Doors ? this.generateDoors(generated, generated.map, config) : {},
             enemies: [],
             loot: [],
-            doors: dungeonConfig.Doors ? this.generateDoors(dungeonConfig) : [],
-            furnitures: this.generateFurnitures(dungeonConfig),
-            entrance: { x: 0, z: 0 },
-            exit: { x: dungeonConfig.dunWidth-1, z: dungeonConfig.dunHeight-1 },
-            dugMap: this.generateDugMap(dungeonConfig)
+            furnitures: [],
+            entrance: null,
+            exit: null
         };
-    
-        // spawn nemici
-        for (let i = 0; i < dungeonConfig.enemies; i++) {
-            const x = Math.floor(Math.random() * dungeonConfig.dunWidth);
-            const z = Math.floor(Math.random() * dungeonConfig.dunHeight);
-            const enemyId = this.spawnEnemy(
-                dungeonConfig.Enemy || "bandit",
-                x, z,
-                { dungeonId: dungeonConfig.id, depth: level }
-            );
-            newLevel.enemies.push(enemyId);
+        // 🚪 ENTRANCE (se ti serve già qui)
+        newLevel.entrance = this.placeEntrance(newLevel);
+        // 🚪 EXIT
+        const exit = this.placeExit(newLevel, level, config);
+        if (exit) {
+            newLevel.exit = exit;
         }
-    
-        // spawn loot e furniture simile...
-    
+        const occupied = new Set();
+        if (newLevel.entrance) {
+            occupied.add(`${newLevel.entrance.x},${newLevel.entrance.y}`);
+        }
+        if (newLevel.exit) {
+            occupied.add(`${newLevel.exit.x},${newLevel.exit.y}`);
+        }
+        // 🪑 FURNITURE (DOPO exit!)
+        newLevel.furnitures = this.generateFurnitures(newLevel, config, occupied);
+            // 💰 LOOT
+        newLevel.loot = this.generateLoot(newLevel, config, occupied);
         return newLevel;
     }
 
