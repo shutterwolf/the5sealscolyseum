@@ -344,30 +344,43 @@ class MyRoom extends Room {
 
     generateDoors(levelData, map, config) {
         const doors = {};
-        const occupied = new Set(); // ← ADD THIS
         let countDoor = 0;
-        for (const room of levelData.rooms) {
-            room.getDoors((x, y) => {
-                const key = `${x},${y}`;
-                // evita porte duplicate
-                if (doors[key]) return;
-                countDoor++;
-                const isLocked = (countDoor === 7);
-                if (isLocked) countDoor = 0;
-                // controlla orientamento (come facevi lato client)
-                let orientation = "horizontal";
-                if (map[`${x},${y+1}`] && map[`${x},${y-1}`]) {
-                    orientation = "vertical";
-                }
-                doors[key] = {
-                    x,
-                    y,
-                    type: isLocked ? "locked" : "normal",
-                    orientation: orientation,
-                    open: false
-                };
-                occupied.add(key);
-            });
+    
+        for (const key in map) {
+            const [x, y] = key.split(",").map(Number);
+    
+            // controlla se è una porta (tra due stanze)
+            if (map[key] !== ".") continue;
+    
+            const up = map[`${x},${y+1}`];
+            const down = map[`${x},${y-1}`];
+            const left = map[`${x-1},${y}`];
+            const right = map[`${x+1},${y}`];
+    
+            // esempio semplice: porta se collegata a corridoi
+            const isDoor =
+                (up === "." && down === "#") ||
+                (left === "." && right === "#");
+    
+            if (!isDoor) continue;
+    
+            countDoor++;
+    
+            const isLocked = (countDoor === 7);
+            if (isLocked) countDoor = 0;
+    
+            let orientation = "horizontal";
+            if (up === "." && down === ".") {
+                orientation = "vertical";
+            }
+    
+            doors[key] = {
+                x,
+                y,
+                type: isLocked ? "locked" : "normal",
+                orientation,
+                open: false
+            };
         }
     
         return doors;
@@ -818,7 +831,9 @@ class MyRoom extends Room {
             const dungeon = this.dungeons.get(dungeonId);
         
             // If level not in memory, try Firestore first
-            if (!dungeon.levels[level]) {
+            const lvlKey = String(level);
+
+            if (!dungeon.levels[lvlKey]) {
                 try {
                     const doc = await db.collection("dungeons").doc(docId).get();
                     if (doc.exists) {
@@ -833,13 +848,13 @@ class MyRoom extends Room {
                             });
                         
                         console.log(`Loaded dungeon ${docId} from Firestore`);
-                        dungeon.levels[level] = levelData;
+                        dungeon.levels[lvlKey] = levelData;
                     } else {
                         // Generate fresh
-                        dungeon.levels[level] = this.createLevel(config, level, dungeonId);
+                        dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId);
                         
                         // Strip freeCells before saving
-                        const toSave = { ...dungeon.levels[level] };
+                        const toSave = { ...dungeon.levels[lvlKey] };
                         delete toSave.freeCells;
                         
                         await db.collection("dungeons").doc(docId).set(toSave);
@@ -848,11 +863,11 @@ class MyRoom extends Room {
                 } catch (err) {
                     console.error("Firestore dungeon error:", err);
                     // Fallback: generate in memory without saving
-                    dungeon.levels[level] = this.createLevel(config, level, dungeonId);
+                    dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId);
                 }
             }
         
-            const levelData = dungeon.levels[level];
+            const levelData = dungeon.levels[lvlKey];
         
             const player = this.state.players.get(playerId);
             if (player) {
