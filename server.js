@@ -200,7 +200,7 @@ class PlayerState extends Schema {
         this.dungeonId = "";
         this.hp=0;
         this.inCombat = 0;
-        this.partyId = null;
+        this.partyId = "";
         this.equipped = new Equipped();
     }
 }
@@ -259,9 +259,12 @@ class EnemySchema extends Schema {
         this.destZ = 0;
         this.idleUntil = 0;
         this.targetPlayerId = "";
-
-        this.ownerId=null;
-        this.questId=null;
+        this.speed = 0;
+        this.radius = 0;
+        this.wRange = 0;
+        this.maxHealth = 0;
+        this.ownerId=0;
+        this.questId=0;
         this.isDead=false;
         this.lootReady=false;
     }
@@ -287,7 +290,7 @@ type("number")(EnemySchema.prototype, "speed");
 type("number")(EnemySchema.prototype, "radius");
 type("number")(EnemySchema.prototype, "wRange");
 type("number")(EnemySchema.prototype, "maxHealth");
-type("string")(EnemySchema.prototype, "ownerId");
+type("number")(EnemySchema.prototype, "ownerId");
 type("number")(EnemySchema.prototype, "questId");
 type("boolean")(EnemySchema.prototype, "isDead");
 type("boolean")(EnemySchema.prototype, "lootReady");
@@ -343,6 +346,7 @@ class MyRoom extends Room {
 
     generateDoors(levelData, map, config) {
         const doors = {};
+        const occupied = new Set(); // ← ADD THIS
         let countDoor = 0;
         for (const room of levelData.rooms) {
             room.getDoors((x, y) => {
@@ -371,7 +375,7 @@ class MyRoom extends Room {
         return doors;
     }
 
-    generateFurnitures(levelData, config) {
+    generateFurnitures(levelData, config, occupied = new Set()) {
         const furnitures = [];
         const occupied = new Set();
     
@@ -741,7 +745,7 @@ class MyRoom extends Room {
             // 2️⃣ Crea livello se non esiste
             if (!dungeon.levels[level]) {
                 dungeon.levels[level] = this.createLevel(config, level);
-                dungeon.levels[level].entrance = this.placeEntrance(dungeon, level);
+                dungeon.levels[level].entrance = this.placeEntrance(dungeon.levels[level]);
             }
             const levelData = dungeon.levels[level];
             const exit = this.placeExit(levelData, level, config);
@@ -830,12 +834,10 @@ class MyRoom extends Room {
         
         this.onMessage("lootEnemy", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
+            const player = this.state.players.get(playerId); // ← ADD THIS
             const enemy = this.state.enemies.get(data.enemyId);
             if (!enemy || !enemy.isDead || !enemy.lootReady) return;
-        
-            // solo chi è ownerId può lootare
-            if (enemy.ownerId !== playerId && enemy.ownerId !== player.partyId) return;
-        
+            if (enemy.ownerId !== playerId && enemy.ownerId !== player?.partyId) return;
             this.giveQuestLoot(playerId, enemy);
         
             // rimuovi body
