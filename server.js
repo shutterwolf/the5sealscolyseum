@@ -579,6 +579,7 @@ class MyRoom extends Room {
             // 2️⃣ Crea livello se non esiste
             if (!dungeon.levels[level]) {
                 dungeon.levels[level] = this.createLevel(config, level);
+                dungeon.levels[level].entrance = this.placeEntrance(dungeon, level);
             }
         
             // 3️⃣ Aggiorna player
