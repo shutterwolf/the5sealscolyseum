@@ -364,6 +364,7 @@ class MyRoom extends Room {
                     orientation: orientation,
                     open: false
                 };
+                occupied.add(key);
             });
         }
     
@@ -1112,7 +1113,7 @@ class MyRoom extends Room {
             map: generated.map,
             freeCells: generated.freeCells,
             rooms: generated.rooms,
-            doors: config.Doors ? this.generateDoors(newLevel, newLevel.map, config) : {},
+            doors: {},
             enemies: [],
             loot: [],
             furnitures: [],
@@ -1123,17 +1124,11 @@ class MyRoom extends Room {
         const entrance = this.placeEntrance(newLevel);
         if (entrance) {
             newLevel.entrance = entrance;
-        
-            const key = `${entrance.x},${entrance.y}`;
-            newLevel.map[key] = "<"; // oppure un codice per entrance
         }
         
         const exit = this.placeExit(newLevel, level, config);
         if (exit) {
             newLevel.exit = exit;
-        
-            const key = `${exit.x},${exit.y}`;
-            newLevel.map[key] = ">"; // codice exit
         }
         const occupied = new Set();
         if (newLevel.entrance) {
@@ -1141,6 +1136,9 @@ class MyRoom extends Room {
         }
         if (newLevel.exit) {
             occupied.add(`${newLevel.exit.x},${newLevel.exit.y}`);
+        }
+        if (config.Doors) {
+            newLevel.doors = this.generateDoors(newLevel, newLevel.map, config);
         }
         // 🪑 FURNITURE (DOPO exit!)
         newLevel.furnitures = this.generateFurnitures(newLevel, config, occupied);
