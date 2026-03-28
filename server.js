@@ -313,33 +313,32 @@ type({ map: Schema })(MyRoomState.prototype, "dungeons");
 class MyRoom extends Room {
     maxClients = 40;
     placeEntrance(levelData) {
-        const freeCells = levelData.freeCells;
-        if (!freeCells || freeCells.length === 0) return null;
+        const rooms = levelData.rooms;
+        if (!rooms || rooms.length === 0) return null;
     
-        const cell = freeCells[Math.floor(Math.random() * freeCells.length)];
+        const room = rooms[Math.floor(Math.random() * rooms.length)];
     
-        return {
-            x: cell.x,
-            y: cell.y
-        };
+        const x = Math.floor(Math.random() * (room.width - 2)) + room.x + 1;
+        const y = Math.floor(Math.random() * (room.height - 2)) + room.y + 1;
+    
+        return { x, y };
     }
 
     placeExit(levelData, levelIndex, dungeonConfig) {
-        const maxLevels = dungeonConfig.levels;
-        // ❌ nessuna exit se:
-        // - dungeon con 1 solo livello
-        // - siamo all'ultimo livello
+        const maxLevels = dungeonConfig.Levels;
+    
         if (maxLevels <= 1) return null;
-        if (levelIndex >= maxLevels-1) return null;
-        const key = this.getRandomCellInRoom(levelData);
-        if (!key) return null;
-        const [x, y] = key.split(",").map(Number);
-        // salva nella mappa (opzionale)
-        levelData.map.set(key, this.keyExit);
-        return {
-            x,
-            y
-        };
+        if (levelIndex >= maxLevels - 1) return null;
+    
+        const rooms = levelData.rooms;
+        if (!rooms || rooms.length === 0) return null;
+    
+        const room = rooms[Math.floor(Math.random() * rooms.length)];
+    
+        const x = Math.floor(Math.random() * (room.width - 2)) + room.x + 1;
+        const y = Math.floor(Math.random() * (room.height - 2)) + room.y + 1;
+    
+        return { x, y };
     }
 
     generateDoors(levelData, map, config) {
@@ -526,7 +525,7 @@ class MyRoom extends Room {
                 height: room.getBottom() - room.getTop() + 1
             });
             // 🚪 Gestione porte (solo se abilitate)
-            if (dungeonConfig.Doors === true) {
+            /*if (dungeonConfig.Doors === true) {
                 room.getDoors((x, y) => {
                     const key = `${x},${y}`;
                     // evita porte duplicate
@@ -541,7 +540,7 @@ class MyRoom extends Room {
                         }
                     }
                 });
-            }
+            }*/
         }
         // 🔥 risultato completo
         return {
@@ -748,7 +747,6 @@ class MyRoom extends Room {
             if (exit) {
                 levelData.exit = exit;
             }
-            const levelData = dungeon.levels[level];
             if (config.Doors === true) {
                 levelData.doors = this.generateDoors(levelData, levelData.map, config);
             } else {
@@ -1122,11 +1120,20 @@ class MyRoom extends Room {
             exit: null
         };
         // 🚪 ENTRANCE (se ti serve già qui)
-        newLevel.entrance = this.placeEntrance(newLevel);
-        // 🚪 EXIT
+        const entrance = this.placeEntrance(newLevel);
+        if (entrance) {
+            newLevel.entrance = entrance;
+        
+            const key = `${entrance.x},${entrance.y}`;
+            newLevel.map[key] = 2; // oppure un codice per entrance
+        }
+        
         const exit = this.placeExit(newLevel, level, config);
         if (exit) {
             newLevel.exit = exit;
+        
+            const key = `${exit.x},${exit.y}`;
+            newLevel.map[key] = 3; // codice exit
         }
         const occupied = new Set();
         if (newLevel.entrance) {
