@@ -402,7 +402,7 @@ class MyRoom extends Room {
                     levelData.map[`${x-1},${y}`] !== 0
                 ) continue;
     
-                let rotation = levelData.map[`${x},${y-1}`] === 0 ? 180 : 0;
+                let rotation = levelData.map[`${x},${y-1}`] === "." ? 180 : 0;
     
                 furnitures.push({
                     x,
@@ -478,7 +478,7 @@ class MyRoom extends Room {
     
             const key = `${x},${y}`;
     
-            if (levelData.map[key] !== 0) continue;
+            if (levelData.map[key] !== ".") continue;
             if (levelData.doors && levelData.doors[key]) continue;
     
             return key;
@@ -508,10 +508,10 @@ class MyRoom extends Room {
             const key = `${x},${y}`;
             // value: 0 = floor, 1 = wall
             if (value === 0) {
-                map[key] = 0;
+                map[key] = ".";
                 freeCells.push({ x, y });
             } else {
-                map[key] = 1;
+                map[key] = "#";
             }
         });
         // 🏠 Recupero stanze
@@ -1112,7 +1112,7 @@ class MyRoom extends Room {
             map: generated.map,
             freeCells: generated.freeCells,
             rooms: generated.rooms,
-            doors: config.Doors ? this.generateDoors(generated, generated.map, config) : {},
+            doors: config.Doors ? this.generateDoors(newLevel, newLevel.map, config) : {},
             enemies: [],
             loot: [],
             furnitures: [],
@@ -1125,7 +1125,7 @@ class MyRoom extends Room {
             newLevel.entrance = entrance;
         
             const key = `${entrance.x},${entrance.y}`;
-            newLevel.map[key] = 2; // oppure un codice per entrance
+            newLevel.map[key] = "<"; // oppure un codice per entrance
         }
         
         const exit = this.placeExit(newLevel, level, config);
@@ -1133,7 +1133,7 @@ class MyRoom extends Room {
             newLevel.exit = exit;
         
             const key = `${exit.x},${exit.y}`;
-            newLevel.map[key] = 3; // codice exit
+            newLevel.map[key] = ">"; // codice exit
         }
         const occupied = new Set();
         if (newLevel.entrance) {
