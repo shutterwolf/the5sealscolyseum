@@ -325,6 +325,35 @@ class MyRoom extends Room {
         dungeon.levels[level].entrance = entrance;
         return entrance;
     }
+
+    generateDoors(levelData, map, config) {
+        const doors = {};
+        let countDoor = 0;
+        for (const room of levelData.rooms) {
+            room.getDoors((x, y) => {
+                const key = `${x},${y}`;
+                // evita porte duplicate
+                if (doors[key]) return;
+                countDoor++;
+                const isLocked = (countDoor === 7);
+                if (isLocked) countDoor = 0;
+                // controlla orientamento (come facevi lato client)
+                let orientation = "horizontal";
+                if (map[`${x},${y+1}`] && map[`${x},${y-1}`]) {
+                    orientation = "vertical";
+                }
+                doors[key] = {
+                    x,
+                    y,
+                    type: isLocked ? "locked" : "normal",
+                    orientation: orientation,
+                    open: false
+                };
+            });
+        }
+    
+        return doors;
+    }
     
     generateUniformMap(dungeonConfig, seed) {
         const width = dungeonConfig.dunWidth;
@@ -581,7 +610,11 @@ class MyRoom extends Room {
                 dungeon.levels[level] = this.createLevel(config, level);
                 dungeon.levels[level].entrance = this.placeEntrance(dungeon, level);
             }
-        
+            if (config.Doors === true) {
+                newLevel.doors = this.generateDoors(newLevel, map, config);
+            } else {
+                newLevel.doors = null;
+            }
             // 3️⃣ Aggiorna player
             const player = this.state.players.get(playerId);
             player.dungeonId = dungeonId;
