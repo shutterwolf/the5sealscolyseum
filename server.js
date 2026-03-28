@@ -261,7 +261,7 @@ class EnemySchema extends Schema {
         this.targetPlayerId = "";
 
         this.ownerId=null;
-        this.questiId=null;
+        this.questId=null;
         this.isDead=false;
         this.lootReady=false;
     }
@@ -923,20 +923,18 @@ class MyRoom extends Room {
             const doc = await db.collection("characters").doc(playerId).get();
             if (doc.exists) {
                 const data = doc.data();
-                Object.assign(player, {
-                    user: data.user ?? player.user,
-                    email: data.email ?? player.email,
-                    name: data.name ?? player.name,
-                    race: data.race ?? player.race,
-                    sex: data.sex ?? player.sex,
-                    anim: data.anim ?? player.anim,
-                    speed: data.speed ?? player.speed,
-                    texTure: data.texTure ?? player.texTure,
-                    activeWeapon: data.activeWeapon ?? player.activeWeapon,
-                    localMap: data.localMap ?? 0,
-                    depth: data.depth ?? 0,
-                    dungeonId: data.dungeonId ?? ""
-                });
+                player.user = data.user ?? player.user;
+                player.email = data.email ?? player.email;
+                player.name = data.name ?? player.name;
+                player.race = data.race ?? player.race;
+                player.sex = data.sex ?? player.sex;
+                player.anim = data.anim ?? player.anim;
+                player.speed = data.speed ?? player.speed;
+                player.texTure = data.texTure ?? player.texTure;
+                player.activeWeapon = data.activeWeapon ?? player.activeWeapon;
+                player.localMap = data.localMap ?? 0;
+                player.depth = data.depth ?? 0;
+                player.dungeonId = data.dungeonId ?? "";
 
                 if (data.playerPos) Object.assign(player.playerPos, data.playerPos);
                 if (data.rotation) Object.assign(player.rotation, data.rotation);
