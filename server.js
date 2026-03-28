@@ -953,8 +953,25 @@ class MyRoom extends Room {
                 player.depth = data.depth ?? 0;
                 player.dungeonId = data.dungeonId ?? "";
 
-                if (data.playerPos) Object.assign(player.playerPos, data.playerPos);
-                if (data.rotation) Object.assign(player.rotation, data.rotation);
+                if (data.playerPos) {
+                    const quantize = (v) => Math.round(v * 10) / 10;
+                
+                    const x = quantize(data.playerPos.x);
+                    const z = quantize(data.playerPos.z);
+                
+                    if (Math.abs(player.playerPos.x - x) > 0.1) player.playerPos.x = x;
+                    if (Math.abs(player.playerPos.z - z) > 0.1) player.playerPos.z = z;
+                    player.playerPos.y = player.playerPos.y ?? 0;
+                }
+                
+                if (data.rotation) {
+                    const quantize = (v) => Math.round(v * 10) / 10;
+                    const y = quantize(data.rotation.y);
+                
+                    if (Math.abs(player.rotation.y - y) > 0.1) {
+                        player.rotation.y = y;
+                    }
+                }
 
                 if (data.equipped && Array.isArray(data.equipped)) {
                     data.equipped.forEach(raw => {
