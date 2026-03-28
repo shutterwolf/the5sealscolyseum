@@ -222,7 +222,7 @@ type("number")(PlayerState.prototype, "depth");
 type("string")(PlayerState.prototype, "dungeonId");
 type("number")(PlayerState.prototype, "hp");
 type("number")(PlayerState.prototype, "inCombat");
-type("number")(PlayerState.prototype, "partyId");
+type("string")(PlayerState.prototype, "partyId");
 type(Equipped)(PlayerState.prototype, "equipped");
 
 class ChatMessage extends Schema {
@@ -260,7 +260,7 @@ class EnemySchema extends Schema {
         this.idleUntil = 0;
         this.targetPlayerId = "";
 
-        this.oownerId=null;
+        this.ownerId=null;
         this.questiId=null;
         this.isDead=false;
         this.lootReady=false;
@@ -951,7 +951,7 @@ class MyRoom extends Room {
                         item.lootID = Number(raw.lootID) || 0;
                         item.damageValue = Number(raw.damageValue) || 0;
                         item.armourValue = Number(raw.armourValue) || 0;
-                        item.durability = Number(raw.durability) || 0;
+                        item.resistence = Number(raw.durability) || 0;
                         item.variable=Number(raw.variable) || 0;
                         item.obj = raw.obj ?? "";
                         item.slot = slotKey; // Colyseus vuole stringa
