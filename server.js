@@ -326,6 +326,24 @@ class MyRoom extends Room {
         return entrance;
     }
 
+    placeExit(levelData, levelIndex, dungeonConfig) {
+        const maxLevels = dungeonConfig.levels;
+        // ❌ nessuna exit se:
+        // - dungeon con 1 solo livello
+        // - siamo all'ultimo livello
+        if (maxLevels <= 1) return null;
+        if (levelIndex >= maxLevels) return null;
+        const key = this.getRandomCellInRoom(levelData);
+        if (!key) return null;
+        const [x, y] = key.split(",").map(Number);
+        // salva nella mappa (opzionale)
+        levelData.map.set(key, this.keyExit);
+        return {
+            x,
+            y
+        };
+    }
+
     generateDoors(levelData, map, config) {
         const doors = {};
         let countDoor = 0;
@@ -609,6 +627,10 @@ class MyRoom extends Room {
             if (!dungeon.levels[level]) {
                 dungeon.levels[level] = this.createLevel(config, level);
                 dungeon.levels[level].entrance = this.placeEntrance(dungeon, level);
+            }
+            const exit = this.placeExit(newLevel, levelIndex, dungeonConfig);
+            if (exit) {
+                newLevel.exit = exit;
             }
             if (config.Doors === true) {
                 newLevel.doors = this.generateDoors(newLevel, map, config);
