@@ -682,6 +682,81 @@ class MyRoom extends Room {
         this.activeQuestSpawns = new Map();
         this.dungeons = new Map();
         // --- IDLE LOGIC ---
+        setInterval(() => {
+            this.dungeons.forEach((dungeon, dungeonId) => {
+                Object.entries(dungeon.levels).forEach(([levelKey, levelData]) => {
+                    const config = dungeonConfig.Dungeons.find(d => d.id === dungeonId);
+                    if (!config || !config.Enemy) return;
+                    // Count enemies currently alive in this dungeon level
+                    let currentCount = 0;
+                    this.state.enemies.forEach((enemy) => {
+                        if (String(enemy.dungeonId) === String(dungeonId) &&
+                            enemy.depth === Number(levelKey) &&
+                            !enemy.isDead) {
+                            currentCount++;
+                        }
+                    });
+                    // Only respawn if below the max cap for this dungeon
+                    if (currentCount >= config.enemies) {
+                        console.log(`Dungeon ${dungeonId} level ${levelKey} already at max enemies (${config.enemies}), skipping respawn`);
+                        return;
+                    }
+                    // Pick a random free cell to respawn at
+                    const key = this.getRandomCellInRoom(levelData);
+                    if (!key) return;
+                    const [x, y] = key.split(",").map(Number);
+                    this.spawnEnemy(config.Enemy, x, y, {
+                        localMap: 0,
+                        dungeonId: String(dungeonId),
+                        depth: Number(levelKey)
+                    });
+                    console.log(`Respawned 1 ${config.Enemy} in dungeon ${dungeonId} level ${levelKey} (${currentCount + 1}/${config.enemies})`);
+                });
+            });
+        }, 30 * 60 * 1000);
+        // ─── Loot respawn: 1 chest per active dungeon level every hour ───
+        setInterval(async () => {
+            for (const [dungeonId, dungeon] of this.dungeons) {
+                for (const [levelKey, levelData] of Object.entries(dungeon.levels)) {
+                    // Find a free cell not already occupied by loot or doors
+                    let placed = false;
+                    for (let attempt = 0; attempt < 20; attempt++) {
+                        const key = this.getRandomCellInRoom(levelData);
+                        if (!key) continue;
+                        const alreadyLoot = levelData.loot.some(l => `${l.x},${l.y}` === key);
+                        if (alreadyLoot) continue;
+                        if (levelData.doors && levelData.doors[key]) continue;
+                        const [x, y] = key.split(",").map(Number);
+                        const newChest = {
+                            x, y,
+                            type: "chest",
+                            dungeonId: String(dungeonId),
+                            depth: Number(levelKey)
+                        };
+                        levelData.loot.push(newChest);
+                        placed = true;
+                        // Notify players currently in this dungeon level
+                        this.state.players.forEach((player, playerId) => {
+                            if (String(player.dungeonId) === String(dungeonId) && player.depth === Number(levelKey)) {
+                                const client = this.clients.find(c => this.sessionToPlayerId.get(c.sessionId) === playerId);
+                                if (client) client.send("lootSpawned", newChest);
+                            }
+                        });
+                        // Save updated loot list to Firestore
+                        try {
+                            await db.collection("dungeons").doc(`${dungeonId}_${levelKey}`).update({
+                                loot: levelData.loot
+                            });
+                            console.log(`New chest added to dungeon ${dungeonId} level ${levelKey}`);
+                        } catch (err) {
+                            console.error("Failed to save new loot:", err);
+                        }
+                        break;
+                    }
+                }
+            }
+        }, 60 * 60 * 1000); // 1 hour
+        
         
         this.onMessage("requestSpawnEnemies", (client, data) => {
             console.log("🔔 requestSpawnEnemies ricevuto");
@@ -722,34 +797,75 @@ class MyRoom extends Room {
             }
         });
 
-        this.onMessage("enterDungeon", (client, data) => {
+        this.onMessage("enterDungeon", async (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
+        
             const config = dungeonConfig.Dungeons.find(d => d.Name === data.name);
-            if (!config) return;
+            if (!config) {
+                console.warn("Dungeon not found:", data.name);
+                return;
+            }
+        
             const dungeonId = config.id;
             const level = data.level || 0;
-            // Get or create dungeon
+            const docId = `${dungeonId}_${level}`;
+        
+            // Get or create dungeon in memory
             if (!this.dungeons.has(dungeonId)) {
                 this.dungeons.set(dungeonId, { id: dungeonId, levels: {} });
             }
             const dungeon = this.dungeons.get(dungeonId);
-            // Get or create this level (generate once, reuse after)
+        
+            // If level not in memory, try Firestore first
             if (!dungeon.levels[level]) {
-                dungeon.levels[level] = this.createLevel(config, level, dungeonId);
+                try {
+                    const doc = await db.collection("dungeons").doc(docId).get();
+                    if (doc.exists) {
+                        const levelData = doc.data();
+                        
+                        // Rebuild freeCells from map since we didn't save them
+                        levelData.freeCells = Object.entries(levelData.map)
+                            .filter(([_, v]) => v === ".")
+                            .map(([key]) => {
+                                const [x, y] = key.split(",").map(Number);
+                                return { x, y };
+                            });
+                        
+                        console.log(`Loaded dungeon ${docId} from Firestore`);
+                        dungeon.levels[level] = levelData;
+                    } else {
+                        // Generate fresh
+                        dungeon.levels[level] = this.createLevel(config, level, dungeonId);
+                        
+                        // Strip freeCells before saving
+                        const toSave = { ...dungeon.levels[level] };
+                        delete toSave.freeCells;
+                        
+                        await db.collection("dungeons").doc(docId).set(toSave);
+                        console.log(`Saved dungeon ${docId} to Firestore`);
+                    }
+                } catch (err) {
+                    console.error("Firestore dungeon error:", err);
+                    // Fallback: generate in memory without saving
+                    dungeon.levels[level] = this.createLevel(config, level, dungeonId);
+                }
             }
+        
             const levelData = dungeon.levels[level];
+        
             const player = this.state.players.get(playerId);
             if (player) {
                 player.dungeonId = String(dungeonId);
                 player.depth = level;
             }
+        
             client.send("loadDungeon", {
                 dungeonId,
                 level,
                 state: levelData
             });
-        });
+        });;
         
         // Replace the broken client-side handlers with these server-side ones:
         this.onMessage("requestCombat", (client, message) => {
