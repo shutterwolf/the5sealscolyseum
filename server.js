@@ -765,8 +765,14 @@ class MyRoom extends Room {
             }
             // opzionale: fissa Y se non ti serve
             player.playerPos.y = player.playerPos.y ?? 0;
-            Object.assign(player.rotation, rot);
-
+            const newRotY = quantize(rot.y);
+            // aggiorna solo se cambia davvero
+            if (Math.abs(player.rotation.y - newRotY) > 0.1) {
+                player.rotation.x = rot.x; // opzionale, spesso non serve
+                player.rotation.y = newRotY;
+                player.rotation.z = rot.z; // opzionale
+                player.rotation.w = rot.w; // opzionale
+            }
             player.texTure = data.texTure ?? player.texTure;
             player.activeWeapon = data.activeWeapon ?? player.activeWeapon;
             if (typeof data.localMap === "number") player.localMap = data.localMap;
