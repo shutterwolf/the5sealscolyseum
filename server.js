@@ -857,7 +857,7 @@ class MyRoom extends Room {
                         const toSave = { ...dungeon.levels[lvlKey] };
                         delete toSave.freeCells;
                         
-                        await db.collection("dungeons").doc(docId).set(toSave);
+                        await db.collection("dungeons").doc(docId).set(toSave, { merge: true })
                         console.log(`Saved dungeon ${docId} to Firestore`);
                     }
                 } catch (err) {
