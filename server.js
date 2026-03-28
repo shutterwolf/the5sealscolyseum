@@ -312,6 +312,20 @@ type({ map: Schema })(MyRoomState.prototype, "dungeons");
 // --- Room ---
 class MyRoom extends Room {
     maxClients = 40;
+    placeEntrance(dungeon, level) {
+        const freeCells = dungeon.levels[level].freeCells;
+        if (!freeCells || freeCells.length === 0) return null;
+        // 🎲 scegli cella random
+        const cell = freeCells[Math.floor(Math.random() * freeCells.length)];
+        const entrance = {
+            x: cell.x,
+            y: cell.y
+        };
+        // 🔥 salva nel livello
+        dungeon.levels[level].entrance = entrance;
+        return entrance;
+    }
+    
     generateUniformMap(dungeonConfig, seed) {
         const width = dungeonConfig.dunWidth;
         const height = dungeonConfig.dunHeight;
