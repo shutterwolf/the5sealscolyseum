@@ -704,7 +704,7 @@ class MyRoom extends Room {
                     let currentCount = 0;
                     this.state.enemies.forEach((enemy) => {
                         if (String(enemy.dungeonId) === String(dungeonId) &&
-                            enemy.depth === Number(levelKey) &&
+                            enemy.depth === Number(levelKey)+1 &&
                             !enemy.isDead) {
                             currentCount++;
                         }
@@ -821,7 +821,8 @@ class MyRoom extends Room {
             }
         
             const dungeonId = config.id;
-            const level = data.level || 0;
+            const level = data.level ?? 0;
+            const depth = level + 1; // 🔥 FIX
             const docId = `${dungeonId}_${level}`;
         
             // Get or create dungeon in memory
@@ -878,6 +879,7 @@ class MyRoom extends Room {
             client.send("loadDungeon", {
                 dungeonId,
                 level,
+                depth,
                 state: levelData
             });
         });;
@@ -1226,7 +1228,7 @@ class MyRoom extends Room {
         const occupied = new Set();
         const newLevel = {
             dungeonId,          // ← explicitly linked
-            depth: level,       // ← explicitly linked
+            depth: level+1,       // ← explicitly linked
             map: generated.map,
             freeCells: generated.freeCells,
             rooms: generated.rooms,
@@ -1272,7 +1274,7 @@ class MyRoom extends Room {
                 const enemyId = this.spawnEnemy(config.Enemy, cell.x, cell.y, {
                     localMap: 0,
                     dungeonId: String(dungeonId),
-                    depth: level
+                    depth: level+1
                 });
                 newLevel.enemies.push(enemyId);  // store enemy ID reference
             }
