@@ -880,6 +880,7 @@ class MyRoom extends Room {
                 dungeonId,
                 level,
                 depth,
+                dungeonConfig,
                 state: levelData
             });
         });;
