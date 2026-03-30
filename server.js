@@ -813,7 +813,7 @@ class MyRoom extends Room {
         this.onMessage("enterDungeon", async (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
-            console.log("RAW DATA:", JSON.stringify(data));
+            //console.log("RAW DATA:", JSON.stringify(data));
             const config = dungeonConfig.Dungeons.find(d => d.Name === data.name);
             if (!config) {
                 console.warn("Dungeon not found:", data.name);
@@ -877,7 +877,7 @@ class MyRoom extends Room {
                 player.dungeonId = String(dungeonId);
                 player.depth = depth;
             }
-            console.log(levelData)
+            //console.log(levelData)
             client.send("loadDungeon", {
                 dungeonId,
                 level,
