@@ -822,7 +822,7 @@ class MyRoom extends Room {
         
             const dungeonId = config.id;
             const level = data.level ?? 0;
-            const depth = data.depth; // 🔥 FIX
+            const depth = levelData.depth; // 🔥 FIX
             const docId = `${dungeonId}_${level}`;
         
             // Get or create dungeon in memory
