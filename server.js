@@ -813,7 +813,7 @@ class MyRoom extends Room {
         this.onMessage("enterDungeon", async (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
-        
+            console.log("RAW DATA:", JSON.stringify(data));
             const config = dungeonConfig.Dungeons.find(d => d.Name === data.name);
             if (!config) {
                 console.warn("Dungeon not found:", data.name);
@@ -822,7 +822,9 @@ class MyRoom extends Room {
         
             const dungeonId = config.id;
             const level = data.level ?? 0;
-            const depth = levelData.depth; // 🔥 FIX
+            const depthFromData = data.depth;
+            
+            console.log("Depth FROM DATA:", depthFromData);
             const docId = `${dungeonId}_${level}`;
         
             // Get or create dungeon in memory
@@ -852,7 +854,7 @@ class MyRoom extends Room {
                         dungeon.levels[lvlKey] = levelData;
                     } else {
                         // Generate fresh
-                        dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId);
+                        dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId,depth);
                         
                         // Strip freeCells before saving
                         const toSave = { ...dungeon.levels[lvlKey] };
@@ -864,12 +866,12 @@ class MyRoom extends Room {
                 } catch (err) {
                     console.error("Firestore dungeon error:", err);
                     // Fallback: generate in memory without saving
-                    dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId);
+                    dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId,depth);
                 }
             }
         
             const levelData = dungeon.levels[lvlKey];
-        
+            const depth = levelData.depth ?? level; // 🔥 FIX
             const player = this.state.players.get(playerId);
             if (player) {
                 player.dungeonId = String(dungeonId);
