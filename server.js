@@ -822,7 +822,7 @@ class MyRoom extends Room {
         
             const dungeonId = config.id;
             const level = data.level ?? 0;
-            const depth = level + 1; // 🔥 FIX
+            const depth = depth; // 🔥 FIX
             const docId = `${dungeonId}_${level}`;
         
             // Get or create dungeon in memory
@@ -873,7 +873,7 @@ class MyRoom extends Room {
             const player = this.state.players.get(playerId);
             if (player) {
                 player.dungeonId = String(dungeonId);
-                player.depth = level;
+                player.depth = depth;
             }
             console.log(levelData)
             client.send("loadDungeon", {
@@ -1229,7 +1229,7 @@ class MyRoom extends Room {
         const occupied = new Set();
         const newLevel = {
             dungeonId,          // ← explicitly linked
-            depth: level+1,       // ← explicitly linked
+            depth: depth,       // ← explicitly linked
             map: generated.map,
             freeCells: generated.freeCells,
             rooms: generated.rooms,
@@ -1244,7 +1244,7 @@ class MyRoom extends Room {
         const entrance = this.placeEntrance(newLevel);
         if (entrance) {
             entrance.dungeonId = dungeonId;   // linked
-            entrance.depth = level;
+            entrance.depth = depth;
             newLevel.entrance = entrance;
             occupied.add(`${entrance.x},${entrance.y}`);
         }
@@ -1252,7 +1252,7 @@ class MyRoom extends Room {
         const exit = this.placeExit(newLevel, level, config);
         if (exit) {
             exit.dungeonId = dungeonId;       // linked
-            exit.depth = level;
+            exit.depth = depth;
             newLevel.exit = exit;
             occupied.add(`${exit.x},${exit.y}`);
         }
@@ -1275,7 +1275,7 @@ class MyRoom extends Room {
                 const enemyId = this.spawnEnemy(config.Enemy, cell.x, cell.y, {
                     localMap: 0,
                     dungeonId: String(dungeonId),
-                    depth: level+1
+                    depth: depth
                 });
                 newLevel.enemies.push(enemyId);  // store enemy ID reference
             }
