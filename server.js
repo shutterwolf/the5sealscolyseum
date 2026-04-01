@@ -845,8 +845,8 @@ class MyRoom extends Room {
                 try {
                     const doc = await db.collection("dungeons").doc(docId).get();
                     if (doc.exists) {
-                        const levelData = doc.data();
-                        
+                        const seed = levelData.seed;
+                        dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
                         // Rebuild freeCells from map since we didn't save them
                         levelData.freeCells = Object.entries(levelData.map)
                             .filter(([_, v]) => v === ".")
@@ -859,11 +859,17 @@ class MyRoom extends Room {
                         dungeon.levels[lvlKey] = levelData;
                     } else {
                         // Generate fresh
-                        dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId,depth);
+                        dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
                         
                         // Strip freeCells before saving
                         const toSave = { ...dungeon.levels[lvlKey] };
                         delete toSave.freeCells;
+                        
+                        await db.collection("dungeons").doc(docId).set({
+                            seed: toSave.seed,
+                            level: level,
+                            dungeonId: dungeonId
+                        }, { merge: true });
                         
                         await db.collection("dungeons").doc(docId).set(toSave, { merge: true })
                         console.log(`Saved dungeon ${docId} to Firestore`);
@@ -871,8 +877,8 @@ class MyRoom extends Room {
                 } catch (err) {
                     console.error("Firestore dungeon error:", err);
                     // Fallback: generate in memory without saving
-                    dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId,depth);
-                }
+                    const seed = Math.floor(Math.random() * 1e9);
+                    dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
             }
         
             const levelData = dungeon.levels[lvlKey];
@@ -1231,12 +1237,14 @@ class MyRoom extends Room {
         return dungeon;
     }
     
-    createLevel(config, level, dungeonId) {
-        const generated = this.generateUniformMap(config, Date.now());
+    createLevel(config, level, dungeonId, depth, seed) {
+        ROT.RNG.setSeed(seed);
+        const generated = this.generateUniformMap(config, seed);
         const occupied = new Set();
         const newLevel = {
             dungeonId,          // ← explicitly linked
-            depth: depth,       // ← explicitly linked
+            depth: depth,     
+            seed: seed,// ← explicitly linked
             map: generated.map,
             freeCells: generated.freeCells,
             rooms: generated.rooms,
@@ -1274,7 +1282,9 @@ class MyRoom extends Room {
         // Enemies — spawn using config.Enemy and config.enemies count
         if (config.Enemy && config.enemies > 0) {
             for (let i = 0; i < config.enemies; i++) {
-                const cell = newLevel.freeCells[Math.floor(Math.random() * newLevel.freeCells.length)];
+                const cell = newLevel.freeCells[
+                    Math.floor(ROT.RNG.getUniform() * newLevel.freeCells.length)
+                ];     
                 if (!cell) continue;
                 const key = `${cell.x},${cell.y}`;
                 if (occupied.has(key)) continue;
@@ -1284,7 +1294,7 @@ class MyRoom extends Room {
                     dungeonId: String(dungeonId),
                     depth: depth
                 });
-                newLevel.enemies.push(enemyId);  // store enemy ID reference
+                newLevel.enemies.push(enemyId);
             }
         }
         return newLevel;
