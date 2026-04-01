@@ -845,33 +845,22 @@ class MyRoom extends Room {
                 try {
                     const doc = await db.collection("dungeons").doc(docId).get();
                     if (doc.exists) {
-                        const seed = levelData.seed;
+                        const data = doc.data();
+                        const seed = data.seed;
+                        const depth = data.depth ?? level;
                         dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
-                        // Rebuild freeCells from map since we didn't save them
-                        levelData.freeCells = Object.entries(levelData.map)
-                            .filter(([_, v]) => v === ".")
-                            .map(([key]) => {
-                                const [x, y] = key.split(",").map(Number);
-                                return { x, y };
-                            });
-                        
                         console.log(`Loaded dungeon ${docId} from Firestore`);
-                        dungeon.levels[lvlKey] = levelData;
                     } else {
-                        // Generate fresh
+                        const seed = Math.floor(Math.random() * 1e9);
+                        const depth = level;
                         dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
-                        
-                        // Strip freeCells before saving
-                        const toSave = { ...dungeon.levels[lvlKey] };
-                        delete toSave.freeCells;
-                        
-                        await db.collection("dungeons").doc(docId).set({
-                            seed: toSave.seed,
-                            level: level,
-                            dungeonId: dungeonId
-                        }, { merge: true });
-                        
-                        await db.collection("dungeons").doc(docId).set(toSave, { merge: true })
+                        const toSave = {
+                            seed,
+                            dungeonId,
+                            level,
+                            depth
+                        };
+                        await db.collection("dungeons").doc(docId).set(toSave, { merge: true });
                         console.log(`Saved dungeon ${docId} to Firestore`);
                     }
                 } catch (err) {
@@ -879,8 +868,8 @@ class MyRoom extends Room {
                     // Fallback: generate in memory without saving
                     const seed = Math.floor(Math.random() * 1e9);
                     dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
+                }
             }
-        
             const levelData = dungeon.levels[lvlKey];
             const depth = levelData.depth ?? level; // 🔥 FIX
             const player = this.state.players.get(playerId);
