@@ -342,70 +342,58 @@ class MyRoom extends Room {
         return { x, y };
     }
 
-    generateDoors(levelData, map, config) {
-
-    const doors = {};
-    if (!config.Doors) return doors;
-
-    let count = 0;
-    const maxDoors = config.maxDoors || Math.floor(levelData.freeCells.length * 0.02);
-
-    const saveDoor = (x, y) => {
-
-        if (count >= maxDoors) return;
-
-        const key = `${x},${y}`;
-
-        // evita porte vicine
-        if (
-            doors[`${x+1},${y}`] ||
-            doors[`${x-1},${y}`] ||
-            doors[`${x},${y+1}`] ||
-            doors[`${x},${y-1}`]
-        ) return;
-
-        // deve essere pavimento
-        if (map[key] !== ".") return;
-
-        const up = map[`${x},${y+1}`];
-        const down = map[`${x},${y-1}`];
-        const left = map[`${x-1},${y}`];
-        const right = map[`${x+1},${y}`];
-
-        const vertical = (up === "#" && down === "#");
-        const horizontal = (left === "#" && right === "#");
-
-        // 👉 SOLO corridoi stretti (porta vera)
-        if (!(vertical || horizontal)) return;
-
-        // ❗ BLOCCA porte dentro stanze grandi
-        if (
-            map[`${x+1},${y}`] === "." &&
-            map[`${x-1},${y}`] === "." &&
-            map[`${x},${y+1}`] === "." &&
-            map[`${x},${y-1}`] === "."
-        ) {
-            return;
-        }
-
-        doors[key] = {
-            x,
-            y,
-            closed: true,
-            orientation: vertical ? "vertical" : "horizontal"
+    generateDoors(levelData, config) {
+        const doors = {};
+        if (!config.Doors) return doors;
+    
+        const rooms = levelData.rooms;
+        if (!rooms || rooms.length === 0) return doors;
+    
+        const maxDoors = config.maxDoors || 999;
+        let count = 0;
+    
+        const saveDoor = (x, y) => {
+            if (count >= maxDoors) return;
+    
+            const key = `${x},${y}`;
+    
+            // Skip if adjacent door already exists
+            if (
+                doors[`${x+1},${y}`] ||
+                doors[`${x-1},${y}`] ||
+                doors[`${x},${y+1}`] ||
+                doors[`${x},${y-1}`]
+            ) return;
+    
+            // Must be a floor cell
+            if (levelData.map[key] !== ".") return;
+    
+            const up    = levelData.map[`${x},${y+1}`];
+            const down  = levelData.map[`${x},${y-1}`];
+            const left  = levelData.map[`${x-1},${y}`];
+            const right = levelData.map[`${x+1},${y}`];
+    
+            const vertical   = (up === "#" && down === "#");
+            const horizontal = (left === "#" && right === "#");
+    
+            if (!(vertical || horizontal)) return;
+    
+            doors[key] = {
+                x,
+                y,
+                closed: true,
+                orientation: vertical ? "vertical" : "horizontal"
+            };
+            count++;
         };
-
-        count++;
-    };
-
-    // 🔥 NON usare getDoors → è quello che ti rompe tutto
-    for (const key in map) {
-        const [x, y] = key.split(",").map(Number);
-        saveDoor(x, y);
+    
+        // Use ROT.js room getDoors — guaranteed room/corridor intersections
+        for (const room of rooms) {
+            room.getDoors(saveDoor);
+        }
+    
+        return doors;
     }
-
-    return doors;
-}
     
     generateFurnitures(levelData, config, occupied = new Set()) {
     const furnitures = [];
@@ -523,25 +511,24 @@ class MyRoom extends Room {
     }
     
     generateUniformMap(dungeonConfig, seed) {
-        const width = dungeonConfig.dunWidth;
+        const width  = dungeonConfig.dunWidth;
         const height = dungeonConfig.dunHeight;
-        // 🔑 Seed deterministico
+    
         ROT.RNG.setSeed(seed);
-        const map = {};
+    
+        const map       = {};
         const freeCells = [];
         const roomsData = [];
-        const doors = {};
-        // 🗺️ Generatore
+    
         const mapGen = new ROT.Map.Digger(width, height, {
-            roomWidth: [dungeonConfig.xroom, dungeonConfig.xroom + 2],
-            roomHeight: [dungeonConfig.yroom, dungeonConfig.yroom + 2],
+            roomWidth:     [dungeonConfig.xroom, dungeonConfig.xroom + 2],
+            roomHeight:    [dungeonConfig.yroom, dungeonConfig.yroom + 2],
             corridorLength: [2, 10],
             dugPercentage: dungeonConfig.dug
         });
-        // 🧱 Creazione mappa
+    
         mapGen.create((x, y, value) => {
             const key = `${x},${y}`;
-            // value: 0 = floor, 1 = wall
             if (value === 0) {
                 map[key] = ".";
                 freeCells.push({ x, y });
@@ -549,47 +536,19 @@ class MyRoom extends Room {
                 map[key] = "#";
             }
         });
-        // 🏠 Recupero stanze
+    
+        // Store actual room objects so getDoors() is available
         const rooms = mapGen.getRooms();
-        let count = 0;
-        const saveDoor = (x, y) => {
-            const key = `${x},${y}`;
-            // evita porte adiacenti
-            if (
-                doors[`${x+1},${y}`] ||
-                doors[`${x-1},${y}`] ||
-                doors[`${x},${y+1}`] ||
-                doors[`${x},${y-1}`]
-            ) return;
-        
-            // stessa identica logica tua
-            if (
-                (map[`${x+1},${y}`] && map[`${x-1},${y}`]) ||
-                (map[`${x},${y+1}`] && map[`${x},${y-1}`])
-            ) {
-                doors[key] = {
-                    x,
-                    y,
-                    closed: true
-                };
-                count++;
-            }
-        };
-        
-        // 🔥 QUESTO È IL PEZZO CRUCIALE
-        for (let i = 0; i < rooms.length; i++) {
-            rooms[i].getDoors(saveDoor);
+        for (const room of rooms) {
+            roomsData.push(room);
         }
-        
-        levelData.doors = doors;
-        }
-        // 🔥 risultato completo
+    
         return {
             map,
             freeCells,
-            rooms: roomsData,
-            doors
+            rooms: roomsData   // ROT.js Room objects with getDoors()
         };
+        // Doors are generated separately via generateDoors() after this
     }
     
 
@@ -1284,7 +1243,7 @@ class MyRoom extends Room {
         }
         // Doors
         if (config.Doors) {
-            //newLevel.doors = this.generateDoors(newLevel, newLevel.map, config);
+            newLevel.doors = this.generateDoors(newLevel, newLevel.map, config);
         }
         // Furnitures — use config.furniture (not furnitureCount)
         newLevel.furnitures = this.generateFurnitures(newLevel, config, occupied);
