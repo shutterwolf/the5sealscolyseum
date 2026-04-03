@@ -343,57 +343,59 @@ class MyRoom extends Room {
     }
 
     generateDoors(levelData, map, config) {
+
         const doors = {};
+    
         if (!config.Doors) return doors;
+    
         let count = 0;
         const maxDoors = config.maxDoors || Math.floor(levelData.freeCells.length * 0.02);
+    
         const saveDoor = (x, y) => {
+    
             if (count >= maxDoors) return;
+    
             const key = `${x},${y}`;
+    
             // evita porte adiacenti
             if (
                 doors[`${x+1},${y}`] ||
                 doors[`${x-1},${y}`] ||
                 doors[`${x},${y+1}`] ||
                 doors[`${x},${y-1}`]
-            ) {
-                return;
-            }
-            // deve essere pavimento
-            if (map[key] !== ".") return;
-            // controllo muri attorno (stessa logica client)
+            ) return;
+    
+            // deve esistere la tile
+            if (!map[key]) return;
+    
             const up = map[`${x},${y+1}`];
             const down = map[`${x},${y-1}`];
             const left = map[`${x-1},${y}`];
             const right = map[`${x+1},${y}`];
+    
+            // stessa logica client
             if (
-                (up === "." || down === ".") &&
-                (left === "." || right === ".")
+                (up && down) ||
+                (left && right)
             ) {
-                return;
+                doors[key] = {
+                    x,
+                    y,
+                    closed: true
+                };
+    
+                count++;
             }
-            // stessa logica client: tra due muri opposti
-            const vertical = (up === "#" && down === "#");
-            const horizontal = (left === "#" && right === "#");
-            if (!(vertical || horizontal)) return;
-            doors[key] = {
-                x,
-                y,
-                closed: true,
-                orientation: vertical ? "vertical" : "horizontal"
-            };
-            count++;
         };
     
-        // 🔥 QUI LA DIFFERENZA FONDAMENTALE
         const rooms = levelData.rooms;
+    
         for (let i = 0; i < rooms.length; i++) {
             const room = rooms[i];
-            // ⚠️ importante: stesso sistema del client
+    
             if (room.getDoors) {
                 room.getDoors(saveDoor);
             } else {
-                // fallback manuale se serve
                 const minX = room.x + 1;
                 const maxX = room.x + room.width - 2;
                 const minY = room.y + 1;
