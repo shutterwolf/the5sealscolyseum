@@ -848,6 +848,7 @@ class MyRoom extends Room {
                     console.error("Firestore dungeon error:", err);
                     // Fallback: generate in memory without saving
                     const seed = Math.floor(Math.random() * 1e9);
+                    console.log("levelKey",lvlKey);
                     dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
                 }
             }
