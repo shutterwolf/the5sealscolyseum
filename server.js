@@ -861,6 +861,7 @@ class MyRoom extends Room {
                 player.dungeonId = String(dungeonId);
                 player.depth = depth;
             }
+            console.log("LEVEL DATA BEFORE SEND:", levelData);
             //console.log(levelData)
             client.send("loadDungeon", {
                 dungeonId,
