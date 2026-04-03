@@ -344,48 +344,65 @@ class MyRoom extends Room {
 
     generateDoors(levelData, map, config) {
         const doors = {};
-        // ❗ se il dungeon NON prevede porte → esci subito
-        if (!config.Doors) {
-            return doors;
-        }
-        // ❗ limite porte (da JSON o fallback)
-        const maxDoors = config.maxDoors || Math.floor(Object.keys(map).length * 0.02);
+        if (!config.Doors) return doors;
         let count = 0;
-        for (const key in map) {
-            if (count >= maxDoors) break;
-            const [x, y] = key.split(",").map(Number);
-            // deve essere pavimento
-            if (map[key] !== ".") continue;
+        const maxDoors = config.maxDoors || Math.floor(levelData.freeCells.length * 0.02);
+        const saveDoor = (x, y) => {
+            if (count >= maxDoors) return;
+            const key = `${x},${y}`;
             // evita porte adiacenti
             if (
                 doors[`${x+1},${y}`] ||
                 doors[`${x-1},${y}`] ||
                 doors[`${x},${y+1}`] ||
                 doors[`${x},${y-1}`]
-            ) continue;
-    
-            // 👉 muri attorno
-            const up = map[`${x},${y+1}`] === "#";
-            const down = map[`${x},${y-1}`] === "#";
-            const left = map[`${x-1},${y}`] === "#";
-            const right = map[`${x+1},${y}`] === "#";
-            // 👉 porte solo tra due muri opposti
-            const verticalDoor = up && down;
-            const horizontalDoor = left && right;
-            if (!(verticalDoor || horizontalDoor)) continue;
+            ) {
+                return;
+            }
+            // deve essere pavimento
+            if (map[key] !== ".") return;
+            // controllo muri attorno (stessa logica client)
+            const up = map[`${x},${y+1}`];
+            const down = map[`${x},${y-1}`];
+            const left = map[`${x-1},${y}`];
+            const right = map[`${x+1},${y}`];
+            if (
+                (up === "." || down === ".") &&
+                (left === "." || right === ".")
+            ) {
+                return;
+            }
+            // stessa logica client: tra due muri opposti
+            const vertical = (up === "#" && down === "#");
+            const horizontal = (left === "#" && right === "#");
+            if (!(vertical || horizontal)) return;
             doors[key] = {
                 x,
                 y,
                 closed: true,
-                orientation: verticalDoor ? "vertical" : "horizontal"
+                orientation: vertical ? "vertical" : "horizontal"
             };
             count++;
+        };
     
-            // rimuovi dalle freeCells se presenti
-            if (config.freeCells) {
-                const index = config.freeCells.indexOf(key);
-                if (index !== -1) {
-                    config.freeCells.splice(index, 1);
+        // 🔥 QUI LA DIFFERENZA FONDAMENTALE
+        const rooms = levelData.rooms;
+        for (let i = 0; i < rooms.length; i++) {
+            const room = rooms[i];
+            // ⚠️ importante: stesso sistema del client
+            if (room.getDoors) {
+                room.getDoors(saveDoor);
+            } else {
+                // fallback manuale se serve
+                const minX = room.x + 1;
+                const maxX = room.x + room.width - 2;
+                const minY = room.y + 1;
+                const maxY = room.y + room.height - 2;
+    
+                for (let x = minX; x <= maxX; x++) {
+                    for (let y = minY; y <= maxY; y++) {
+                        saveDoor(x, y);
+                    }
                 }
             }
         }
