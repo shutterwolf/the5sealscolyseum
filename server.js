@@ -531,7 +531,7 @@ class MyRoom extends Room {
             const key = `${x},${y}`;
             if (value === 0) {
                 map[key] = ".";
-                freeCells.push({ x, y });
+                freeCells.push(key);   // ← string key, not {x, y} object
             } else {
                 map[key] = "#";
             }
@@ -1243,7 +1243,7 @@ class MyRoom extends Room {
         }
         // Doors
         if (config.Doors) {
-            newLevel.doors = this.generateDoors(newLevel, newLevel.map, config);
+            newLevel.doors = this.generateDoors(newLevel, config);
         }
         // Furnitures — use config.furniture (not furnitureCount)
         newLevel.furnitures = this.generateFurnitures(newLevel, config, occupied);
