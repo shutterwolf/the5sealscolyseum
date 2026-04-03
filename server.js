@@ -344,73 +344,68 @@ class MyRoom extends Room {
 
     generateDoors(levelData, map, config) {
 
-        const doors = {};
-    
-        if (!config.Doors) return doors;
-    
-        let count = 0;
-        const maxDoors = config.maxDoors || Math.floor(levelData.freeCells.length * 0.02);
-    
-        const saveDoor = (x, y) => {
-    
-            if (count >= maxDoors) return;
-    
-            const key = `${x},${y}`;
-    
-            // evita porte adiacenti
-            if (
-                doors[`${x+1},${y}`] ||
-                doors[`${x-1},${y}`] ||
-                doors[`${x},${y+1}`] ||
-                doors[`${x},${y-1}`]
-            ) return;
-    
-            // deve esistere la tile
-            if (!map[key]) return;
-    
-            const up = map[`${x},${y+1}`];
-            const down = map[`${x},${y-1}`];
-            const left = map[`${x-1},${y}`];
-            const right = map[`${x+1},${y}`];
-    
-            // stessa logica client
-            if (
-                (up && down) ||
-                (left && right)
-            ) {
-                doors[key] = {
-                    x,
-                    y,
-                    closed: true
-                };
-    
-                count++;
-            }
-        };
-    
-        const rooms = levelData.rooms;
-    
-        for (let i = 0; i < rooms.length; i++) {
-            const room = rooms[i];
-    
-            if (room.getDoors) {
-                room.getDoors(saveDoor);
-            } else {
-                const minX = room.x + 1;
-                const maxX = room.x + room.width - 2;
-                const minY = room.y + 1;
-                const maxY = room.y + room.height - 2;
-    
-                for (let x = minX; x <= maxX; x++) {
-                    for (let y = minY; y <= maxY; y++) {
-                        saveDoor(x, y);
-                    }
-                }
-            }
+    const doors = {};
+    if (!config.Doors) return doors;
+
+    let count = 0;
+    const maxDoors = config.maxDoors || Math.floor(levelData.freeCells.length * 0.02);
+
+    const saveDoor = (x, y) => {
+
+        if (count >= maxDoors) return;
+
+        const key = `${x},${y}`;
+
+        // evita porte vicine
+        if (
+            doors[`${x+1},${y}`] ||
+            doors[`${x-1},${y}`] ||
+            doors[`${x},${y+1}`] ||
+            doors[`${x},${y-1}`]
+        ) return;
+
+        // deve essere pavimento
+        if (map[key] !== ".") return;
+
+        const up = map[`${x},${y+1}`];
+        const down = map[`${x},${y-1}`];
+        const left = map[`${x-1},${y}`];
+        const right = map[`${x+1},${y}`];
+
+        const vertical = (up === "#" && down === "#");
+        const horizontal = (left === "#" && right === "#");
+
+        // 👉 SOLO corridoi stretti (porta vera)
+        if (!(vertical || horizontal)) return;
+
+        // ❗ BLOCCA porte dentro stanze grandi
+        if (
+            map[`${x+1},${y}`] === "." &&
+            map[`${x-1},${y}`] === "." &&
+            map[`${x},${y+1}`] === "." &&
+            map[`${x},${y-1}`] === "."
+        ) {
+            return;
         }
-    
-        return doors;
+
+        doors[key] = {
+            x,
+            y,
+            closed: true,
+            orientation: vertical ? "vertical" : "horizontal"
+        };
+
+        count++;
+    };
+
+    // 🔥 NON usare getDoors → è quello che ti rompe tutto
+    for (const key in map) {
+        const [x, y] = key.split(",").map(Number);
+        saveDoor(x, y);
     }
+
+    return doors;
+}
     
     generateFurnitures(levelData, config, occupied = new Set()) {
     const furnitures = [];
