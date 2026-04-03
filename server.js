@@ -317,10 +317,10 @@ class MyRoom extends Room {
         const rooms = levelData.rooms;
         if (!rooms || rooms.length === 0) return null;
     
-        const room = rooms[Math.floor(Math.random() * rooms.length)];
+        const room = rooms[Math.floor(ROT.RNG.getUniform() * rooms.length)];
     
-        const x = Math.floor(Math.random() * (room.width - 2)) + room.x + 1;
-        const y = Math.floor(Math.random() * (room.height - 2)) + room.y + 1;
+        const x = Math.floor(ROT.RNG.getUniform() * (room.width - 2)) + room.x + 1;
+        const y = Math.floor(ROT.RNG.getUniform() * (room.height - 2)) + room.y + 1;
     
         return { x, y };
     }
@@ -334,10 +334,10 @@ class MyRoom extends Room {
         const rooms = levelData.rooms;
         if (!rooms || rooms.length === 0) return null;
     
-        const room = rooms[Math.floor(Math.random() * rooms.length)];
+        const room = rooms[Math.floor(ROT.RNG.getUniform() * rooms.length)];
     
-        const x = Math.floor(Math.random() * (room.width - 2)) + room.x + 1;
-        const y = Math.floor(Math.random() * (room.height - 2)) + room.y + 1;
+        const x = Math.floor(ROT.RNG.getUniform() * (room.width - 2)) + room.x + 1;
+        const y = Math.floor(ROT.RNG.getUniform() * (room.height - 2)) + room.y + 1;
     
         return { x, y };
     }
@@ -403,7 +403,7 @@ class MyRoom extends Room {
     
             for (let attempt = 0; attempt < 10; attempt++) {
     
-                const a = Math.floor(Math.random() * 5);
+                const a = Math.floor(ROT.RNG.getUniform() * 5);
     
                 let type = "table";
                 if (a === 1 || a === 4) type = "column";
@@ -486,7 +486,7 @@ class MyRoom extends Room {
     
         for (let attempt = 0; attempt < 10; attempt++) {
     
-            const room = rooms[Math.floor(Math.random() * rooms.length)];
+            const room = rooms[Math.floor(ROT.RNG.getUniform() * rooms.length)];
     
             const minX = room.x + 1;
             const maxX = room.x + room.width - 2;
