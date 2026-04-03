@@ -802,7 +802,7 @@ class MyRoom extends Room {
             //console.log("RAW DATA:", JSON.stringify(data));
             const config = dungeonConfig.Dungeons.find(d => d.Name === data.name || d.id == data.name);
             if (!config) {
-                console.warn("Dungeon not found:", data.name);
+                console.warn("Dungeon not found:", data, client);
                 return;
             }
         
