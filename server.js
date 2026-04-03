@@ -343,53 +343,46 @@ class MyRoom extends Room {
     }
 
     generateDoors(levelData, map, config) {
-        const doors = {};
-    
-        for (const key in map) {
-            const [x, y] = key.split(",").map(Number);
-            const lev = levelData.depth;
-    
-            // evita se già esiste una porta vicina
-            if (
-                doors[`${x+1},${y}`] ||
-                doors[`${x-1},${y}`] ||
-                doors[`${x},${y+1}`] ||
-                doors[`${x},${y-1}`]
-            ) {
-                continue;
-            }
-    
-            const up = map[`${x},${y+1}`];
-            const down = map[`${x},${y-1}`];
-            const left = map[`${x-1},${y}`];
-            const right = map[`${x+1},${y}`];
-    
-            // logica identica al client
-            const isBetweenHorizontal = (left && right);
-            const isBetweenVertical = (up && down);
-    
-            if (!isBetweenHorizontal && !isBetweenVertical) {
-                continue;
-            }
-    
-            // evita angoli strani (stessa logica implicita)
-            doors[key] = {
-                x,
-                y,
-                closed: true
-            };
-    
-            // opzionale: se vuoi bloccare spawn
-            if (config.freeCells) {
-                const index = config.freeCells.indexOf(key);
-                if (index !== -1) {
-                    config.freeCells.splice(index, 1);
-                }
+    const doors = {};
+
+    for (const key in map) {
+        const [x, y] = key.split(",").map(Number);
+
+        // evita se già esiste una porta vicina
+        if (
+            doors[`${x+1},${y}`] ||
+            doors[`${x-1},${y}`] ||
+            doors[`${x},${y+1}`] ||
+            doors[`${x},${y-1}`]
+        ) continue;
+
+        // ✅ SOLO celle walkable
+        const up = map[`${x},${y+1}`] === ".";
+        const down = map[`${x},${y-1}`] === ".";
+        const left = map[`${x-1},${y}`] === ".";
+        const right = map[`${x+1},${y}`] === ".";
+
+        const isBetweenHorizontal = (left && right);
+        const isBetweenVertical = (up && down);
+
+        if (!isBetweenHorizontal && !isBetweenVertical) continue;
+
+        doors[key] = {
+            x,
+            y,
+            closed: true
+        };
+
+        if (config.freeCells) {
+            const index = config.freeCells.indexOf(key);
+            if (index !== -1) {
+                config.freeCells.splice(index, 1);
             }
         }
-    
-        return doors;
     }
+
+    return doors;
+}
     
     generateFurnitures(levelData, config, occupied = new Set()) {
     const furnitures = [];
