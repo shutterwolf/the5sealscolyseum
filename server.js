@@ -343,46 +343,55 @@ class MyRoom extends Room {
     }
 
     generateDoors(levelData, map, config) {
-    const doors = {};
-
-    for (const key in map) {
-        const [x, y] = key.split(",").map(Number);
-
-        // evita se già esiste una porta vicina
-        if (
-            doors[`${x+1},${y}`] ||
-            doors[`${x-1},${y}`] ||
-            doors[`${x},${y+1}`] ||
-            doors[`${x},${y-1}`]
-        ) continue;
-
-        // ✅ SOLO celle walkable
-        const up = map[`${x},${y+1}`] === ".";
-        const down = map[`${x},${y-1}`] === ".";
-        const left = map[`${x-1},${y}`] === ".";
-        const right = map[`${x+1},${y}`] === ".";
-
-        const isBetweenHorizontal = (left && right);
-        const isBetweenVertical = (up && down);
-
-        if (!isBetweenHorizontal && !isBetweenVertical) continue;
-
-        doors[key] = {
-            x,
-            y,
-            closed: true
-        };
-
-        if (config.freeCells) {
-            const index = config.freeCells.indexOf(key);
-            if (index !== -1) {
-                config.freeCells.splice(index, 1);
+        const doors = {};
+        // ❗ se il dungeon NON prevede porte → esci subito
+        if (!config.Doors) {
+            return doors;
+        }
+        // ❗ limite porte (da JSON o fallback)
+        const maxDoors = config.maxDoors || Math.floor(Object.keys(map).length * 0.02);
+        let count = 0;
+        for (const key in map) {
+            if (count >= maxDoors) break;
+            const [x, y] = key.split(",").map(Number);
+            // deve essere pavimento
+            if (map[key] !== ".") continue;
+            // evita porte adiacenti
+            if (
+                doors[`${x+1},${y}`] ||
+                doors[`${x-1},${y}`] ||
+                doors[`${x},${y+1}`] ||
+                doors[`${x},${y-1}`]
+            ) continue;
+    
+            // 👉 muri attorno
+            const up = map[`${x},${y+1}`] === "#";
+            const down = map[`${x},${y-1}`] === "#";
+            const left = map[`${x-1},${y}`] === "#";
+            const right = map[`${x+1},${y}`] === "#";
+            // 👉 porte solo tra due muri opposti
+            const verticalDoor = up && down;
+            const horizontalDoor = left && right;
+            if (!(verticalDoor || horizontalDoor)) continue;
+            doors[key] = {
+                x,
+                y,
+                closed: true,
+                orientation: verticalDoor ? "vertical" : "horizontal"
+            };
+            count++;
+    
+            // rimuovi dalle freeCells se presenti
+            if (config.freeCells) {
+                const index = config.freeCells.indexOf(key);
+                if (index !== -1) {
+                    config.freeCells.splice(index, 1);
+                }
             }
         }
+    
+        return doors;
     }
-
-    return doors;
-}
     
     generateFurnitures(levelData, config, occupied = new Set()) {
     const furnitures = [];
