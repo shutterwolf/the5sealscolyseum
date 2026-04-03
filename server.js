@@ -551,31 +551,37 @@ class MyRoom extends Room {
         });
         // 🏠 Recupero stanze
         const rooms = mapGen.getRooms();
+        let count = 0;
+        const saveDoor = (x, y) => {
+            const key = `${x},${y}`;
+            // evita porte adiacenti
+            if (
+                doors[`${x+1},${y}`] ||
+                doors[`${x-1},${y}`] ||
+                doors[`${x},${y+1}`] ||
+                doors[`${x},${y-1}`]
+            ) return;
+        
+            // stessa identica logica tua
+            if (
+                (map[`${x+1},${y}`] && map[`${x-1},${y}`]) ||
+                (map[`${x},${y+1}`] && map[`${x},${y-1}`])
+            ) {
+                doors[key] = {
+                    x,
+                    y,
+                    closed: true
+                };
+                count++;
+            }
+        };
+        
+        // 🔥 QUESTO È IL PEZZO CRUCIALE
         for (let i = 0; i < rooms.length; i++) {
-            const room = rooms[i];
-            roomsData.push({
-                x: room.getLeft(),
-                y: room.getTop(),
-                width: room.getRight() - room.getLeft() + 1,
-                height: room.getBottom() - room.getTop() + 1
-            });
-            // 🚪 Gestione porte (solo se abilitate)
-            /*if (dungeonConfig.Doors === true) {
-                room.getDoors((x, y) => {
-                    const key = `${x},${y}`;
-                    // evita porte duplicate
-                    if (!doors[key]) {
-                        doors[key] = { closed: true };
-                        // rimuovi dalle freeCells
-                        for (let i = 0; i < freeCells.length; i++) {
-                            if (freeCells[i].x === x && freeCells[i].y === y) {
-                                freeCells.splice(i, 1);
-                                break;
-                            }
-                        }
-                    }
-                });
-            }*/
+            rooms[i].getDoors(saveDoor);
+        }
+        
+        levelData.doors = doors;
         }
         // 🔥 risultato completo
         return {
@@ -1278,7 +1284,7 @@ class MyRoom extends Room {
         }
         // Doors
         if (config.Doors) {
-            newLevel.doors = this.generateDoors(newLevel, newLevel.map, config);
+            //newLevel.doors = this.generateDoors(newLevel, newLevel.map, config);
         }
         // Furnitures — use config.furniture (not furnitureCount)
         newLevel.furnitures = this.generateFurnitures(newLevel, config, occupied);
