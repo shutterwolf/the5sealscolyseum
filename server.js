@@ -319,8 +319,13 @@ class MyRoom extends Room {
     
         const room = rooms[Math.floor(ROT.RNG.getUniform() * rooms.length)];
     
-        const x = Math.floor(ROT.RNG.getUniform() * (room.width - 2)) + room.x + 1;
-        const y = Math.floor(ROT.RNG.getUniform() * (room.height - 2)) + room.y + 1;
+        const x1 = room.getLeft();
+        const x2 = room.getRight();
+        const y1 = room.getTop();
+        const y2 = room.getBottom();
+    
+        const x = Math.floor(ROT.RNG.getUniform() * (x2 - x1 - 1)) + x1 + 1;
+        const y = Math.floor(ROT.RNG.getUniform() * (y2 - y1 - 1)) + y1 + 1;
     
         return { x, y };
     }
