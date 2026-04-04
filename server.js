@@ -835,7 +835,7 @@ class MyRoom extends Room {
                     } else {
                         const seed = Math.floor(Math.random() * 1e9);
                         const dungeonLevel = level+1;
-                        const level=dungeonLevel;
+                        level=dungeonLevel;
                         const depth=dungeonLevel;
                         dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
                         const toSave = {
