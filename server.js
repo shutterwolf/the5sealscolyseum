@@ -800,7 +800,7 @@ class MyRoom extends Room {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
             //console.log("RAW DATA:", JSON.stringify(data));
-            const config = dungeonConfig.Dungeons.find(d => d.id === data.name);
+            const config = dungeonConfig.Dungeons.find(d => d.Name === data.name);
             if (!config) {
                 console.warn("Dungeon not found:", data, client);
                 return;
