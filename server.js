@@ -797,6 +797,7 @@ class MyRoom extends Room {
         });
 
         this.onMessage("enterDungeon", async (client, data) => {
+            console.log("Sending loadDungeon:", { level, depth, hasEntrance: !!levelData.entrance });
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
             //console.log("RAW DATA:", JSON.stringify(data));
