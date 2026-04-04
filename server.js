@@ -807,7 +807,7 @@ class MyRoom extends Room {
             }
             console.log("ENTER DUNGEON DATA:", data);
             const dungeonId = config.id;
-            const level = (data.level ?? 0) + 1;
+            const level = data.level ?? 1;
             const depthFromData = data.depth;
             
             console.log("Depth FROM DATA:", depthFromData);
@@ -833,10 +833,16 @@ class MyRoom extends Room {
                         console.log(`Loaded dungeon ${docId} from Firestore`);
                     } else {
                         const seed = Math.floor(Math.random() * 1e9);
-                        const dungeonLevel = level+1;
+                        const dungeonLevel = level;
                         level=dungeonLevel;
                         const depth=dungeonLevel;
+                        
                         dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
+                        console.log("ENTER DUNGEON DATA:", data);
+                        console.log("FOUND CONFIG:", config);
+                        console.log("LEVEL:", level);
+                        console.log("dungeonLevel:", dungeonLevel);
+                        console.log("depth:", depth);
                         const toSave = {
                             seed,
                             dungeonId,
