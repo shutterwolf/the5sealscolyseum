@@ -805,9 +805,9 @@ class MyRoom extends Room {
                 console.warn("Dungeon not found:", data, client);
                 return;
             }
-        
+            console.log("ENTER DUNGEON DATA:", data);
             const dungeonId = config.id;
-            const level = data.level+1 ?? 1;
+            const level = (data.level ?? 0) + 1;
             const depthFromData = data.depth;
             
             console.log("Depth FROM DATA:", depthFromData);
