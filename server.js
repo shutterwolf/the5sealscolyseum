@@ -359,9 +359,8 @@ class MyRoom extends Room {
     
         const saveDoor = (x, y) => {
             if (count >= maxDoors) return;
-    
-            const [x, y] = cell.split(",").map(Number);
-            const key = cell;
+            const [dx, dy] = cell.split(",").map(Number);
+            const key = `${dx},${dy}`;
     
             // Skip if adjacent door already exists
             if (
