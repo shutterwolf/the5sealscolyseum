@@ -360,7 +360,8 @@ class MyRoom extends Room {
         const saveDoor = (x, y) => {
             if (count >= maxDoors) return;
     
-            const key = `${x},${y}`;
+            const [x, y] = cell.split(",").map(Number);
+            const key = cell;
     
             // Skip if adjacent door already exists
             if (
@@ -1273,10 +1274,11 @@ class MyRoom extends Room {
                     Math.floor(ROT.RNG.getUniform() * newLevel.freeCells.length)
                 ];     
                 if (!cell) continue;
-                const key = `${cell.x},${cell.y}`;
+                const [x, y] = cell.split(",").map(Number);
+                const key = cell;
                 if (occupied.has(key)) continue;
                 occupied.add(key);
-                const enemyId = this.spawnEnemy(config.Enemy, cell.x, cell.y, {
+                const enemyId = this.spawnEnemy(config.Enemy, x, y, {
                     localMap: 0,
                     dungeonId: String(dungeonId),
                     depth: depth
