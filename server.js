@@ -841,7 +841,6 @@ class MyRoom extends Room {
                     } else {
                         const seed = Math.floor(Math.random() * 1e9);
                         const dungeonLevel = level;
-                        level=dungeonLevel;
                         depth=dungeonLevel;
                         dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
                         console.log("ENTER DUNGEON DATA:", data);
@@ -868,7 +867,7 @@ class MyRoom extends Room {
                 }
             }
             const levelData = dungeon.levels[lvlKey];
-            const depth = levelData.depth ?? level; // 🔥 FIX
+            //const depth = levelData.depth ?? level; // 🔥 FIX
             const player = this.state.players.get(playerId);
             if (player) {
                 player.dungeonId = String(dungeonId);
@@ -1272,10 +1271,10 @@ class MyRoom extends Room {
             for (let i = 0; i < config.enemies; i++) {
                 const cell = newLevel.freeCells[
                     Math.floor(ROT.RNG.getUniform() * newLevel.freeCells.length)
-                ];     
+                ];
                 if (!cell) continue;
                 const [x, y] = cell.split(",").map(Number);
-                const key = cell;
+                const key = `${x},${y}`;
                 if (occupied.has(key)) continue;
                 occupied.add(key);
                 const enemyId = this.spawnEnemy(config.Enemy, x, y, {
