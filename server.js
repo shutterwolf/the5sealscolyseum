@@ -359,9 +359,9 @@ class MyRoom extends Room {
     
         const saveDoor = (x, y) => {
             if (count >= maxDoors) return;
-            const [dx, dy] = cell.split(",").map(Number);
-            const key = `${dx},${dy}`;
-    
+        
+            const key = `${x},${y}`; // ✅ usa x,y direttamente
+        
             // Skip if adjacent door already exists
             if (
                 doors[`${x+1},${y}`] ||
@@ -369,26 +369,27 @@ class MyRoom extends Room {
                 doors[`${x},${y+1}`] ||
                 doors[`${x},${y-1}`]
             ) return;
-    
+        
             // Must be a floor cell
             if (levelData.map[key] !== ".") return;
-    
+        
             const up    = levelData.map[`${x},${y+1}`];
             const down  = levelData.map[`${x},${y-1}`];
             const left  = levelData.map[`${x-1},${y}`];
             const right = levelData.map[`${x+1},${y}`];
-    
+        
             const vertical   = (up === "#" && down === "#");
             const horizontal = (left === "#" && right === "#");
-    
+        
             if (!(vertical || horizontal)) return;
-    
+        
             doors[key] = {
                 x,
                 y,
                 closed: true,
                 orientation: vertical ? "vertical" : "horizontal"
             };
+        
             count++;
         };
     
@@ -812,7 +813,8 @@ class MyRoom extends Room {
             }
             console.log("ENTER DUNGEON DATA:", data);
             const dungeonId = config.id;
-            const level = data.level ?? 1;
+            let level = data.level ?? 1; // 👈 let
+            let depth = data.depth ?? level;
             const depthFromData = data.depth;
             
             console.log("Depth FROM DATA:", depthFromData);
@@ -840,8 +842,7 @@ class MyRoom extends Room {
                         const seed = Math.floor(Math.random() * 1e9);
                         const dungeonLevel = level;
                         level=dungeonLevel;
-                        const depth=dungeonLevel;
-                        
+                        depth=dungeonLevel;
                         dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
                         console.log("ENTER DUNGEON DATA:", data);
                         console.log("FOUND CONFIG:", config);
