@@ -1285,6 +1285,11 @@ class MyRoom extends Room {
                 newLevel.enemies.push(enemyId);
             }
         }
+        console.log("MAP:", newLevel.map);
+        console.log("FREE CELLS:", newLevel.freeCells.length);
+        console.log("ROOMS:", newLevel.rooms);
+        console.log("ENTRANCE:", newLevel.entrance);
+        console.log("EXIT:", newLevel.exit);
         return newLevel;
     }
 
