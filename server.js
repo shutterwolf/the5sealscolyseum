@@ -884,6 +884,14 @@ class MyRoom extends Room {
                 state: levelData
             });
         });;
+
+        this.onMessage("openDoor", (client, data) => {
+            const door = this.state.doors.get(data.key);
+            if (door && door.closed) {
+                door.closed = false;
+                door.open = true;
+            }
+        });
         
         // Replace the broken client-side handlers with these server-side ones:
         this.onMessage("requestCombat", (client, message) => {
