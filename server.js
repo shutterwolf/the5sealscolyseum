@@ -900,23 +900,16 @@ class MyRoom extends Room {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             const player = this.state.players.get(playerId);
             if (!player) return;
-        
             const dungeon = this.dungeons.get(player.dungeonId);
             if (!dungeon) return;
-        
             const level = dungeon.levels[String(player.depth)];
             if (!level || !level.doors) return;
-        
-            const door = level.doors[data.key];
-        
-            if (door && door.closed) {
-                door.closed = false;
-        
-                // 🔥 broadcast a tutti nella stessa stanza
+            const doorState = this.state.doors.get(data.key);
+            if (doorState && doorState.closed) {
+                doorState.closed = false;
+                console.log("Door opened:", data.key);
                 this.broadcast("doorOpened", {
-                    key: data.key,
-                    dungeonId: player.dungeonId,
-                    depth: player.depth
+                    key: data.key
                 });
             }
         });
@@ -1296,7 +1289,17 @@ class MyRoom extends Room {
         }
         // Doors
         if (config.Doors) {
-            newLevel.doors = this.generateDoors(newLevel, config);
+            const generatedDoors = this.generateDoors(newLevel, config);
+            newLevel.doors = {};
+            for (const key in generatedDoors) {
+                const d = generatedDoors[key];
+                const doorState = new DoorState();
+                doorState.closed = d.closed;
+                // 👉 QUESTO è il punto chiave
+                this.state.doors.set(key, doorState);
+                // (opzionale) tieni anche il reference locale
+                newLevel.doors[key] = d;
+            }
         }
         // Furnitures — use config.furniture (not furnitureCount)
         newLevel.furnitures = this.generateFurnitures(newLevel, config, occupied);
