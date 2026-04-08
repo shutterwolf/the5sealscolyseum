@@ -71,6 +71,15 @@ type("number")(Quat.prototype, "y");
 type("number")(Quat.prototype, "z");
 type("number")(Quat.prototype, "w");
 
+class DoorState extends Schema {
+    constructor() {
+        super();
+        this.closed = true;
+    }
+}
+
+type("boolean")(DoorState.prototype, "closed");
+
 class WorldState extends Schema {
     constructor() {
         super();
@@ -302,6 +311,7 @@ class MyRoomState extends Schema {
         this.enemies = new MapSchema(); // 👈
         this.world = new WorldState();
         this.chat = new ArraySchema();
+        this.doors = new MapSchema();
     }
 }
 
@@ -309,6 +319,7 @@ type({ map: PlayerState })(MyRoomState.prototype, "players");
 type({ map: EnemySchema })(MyRoomState.prototype, "enemies"); // 👈
 type(WorldState)(MyRoomState.prototype, "world");
 type([ChatMessage])(MyRoomState.prototype, "chat");
+type({ map: DoorState })(MyRoomState.prototype, "doors");
 
 // --- Room ---
 class MyRoom extends Room {
