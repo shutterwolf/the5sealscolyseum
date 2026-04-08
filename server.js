@@ -886,10 +886,27 @@ class MyRoom extends Room {
         });;
 
         this.onMessage("openDoor", (client, data) => {
-            const door = this.state.doors.get(data.key);
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            const player = this.state.players.get(playerId);
+            if (!player) return;
+        
+            const dungeon = this.dungeons.get(player.dungeonId);
+            if (!dungeon) return;
+        
+            const level = dungeon.levels[String(player.depth)];
+            if (!level || !level.doors) return;
+        
+            const door = level.doors[data.key];
+        
             if (door && door.closed) {
                 door.closed = false;
-                door.open = true;
+        
+                // 🔥 broadcast a tutti nella stessa stanza
+                this.broadcast("doorOpened", {
+                    key: data.key,
+                    dungeonId: player.dungeonId,
+                    depth: player.depth
+                });
             }
         });
         
