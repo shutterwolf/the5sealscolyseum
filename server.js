@@ -1315,8 +1315,6 @@ class MyRoom extends Room {
             for (const key in generatedDoors) {
                 const d = generatedDoors[key];
                 const doorState = new DoorState();
-                doorState.closed = d.closed;
-                const doorState = new DoorState();
                 doorState.x = d.x;
                 doorState.y = d.y;
                 doorState.closed = d.closed;
