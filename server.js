@@ -74,10 +74,14 @@ type("number")(Quat.prototype, "w");
 class DoorState extends Schema {
     constructor() {
         super();
+        this.x = 0;
+        this.y = 0;
         this.closed = true;
     }
 }
 
+type("number")(DoorState.prototype, "x");
+type("number")(DoorState.prototype, "y");
 type("boolean")(DoorState.prototype, "closed");
 
 class WorldState extends Schema {
@@ -904,11 +908,16 @@ class MyRoom extends Room {
             if (!dungeon) return;
             const level = dungeon.levels[String(player.depth)];
             if (!level || !level.doors) return;
-            const doorState = this.state.doors.get(data.key);
+            const dungeon = this.dungeons.get(player.dungeonId);
+            if (!dungeon) return;
+            const level = dungeon.levels[String(player.depth)];
+            if (!level || !level.doors) return;
+            const doorState = level.doors[data.key];
             if (doorState && doorState.closed) {
                 doorState.closed = false;
-                console.log("Door opened:", data.key);
                 this.broadcast("doorOpened", {
+                    dungeonId: player.dungeonId,
+                    depth: player.depth,
                     key: data.key
                 });
             }
@@ -1295,8 +1304,11 @@ class MyRoom extends Room {
                 const d = generatedDoors[key];
                 const doorState = new DoorState();
                 doorState.closed = d.closed;
-                // 👉 QUESTO è il punto chiave
-                this.state.doors.set(key, doorState);
+                const doorState = new DoorState();
+                doorState.x = d.x;
+                doorState.y = d.y;
+                doorState.closed = d.closed;
+                newLevel.doors[key] = doorState;
                 // (opzionale) tieni anche il reference locale
                 newLevel.doors[key] = d;
             }
