@@ -832,7 +832,7 @@ class MyRoom extends Room {
             let depth = data.depth ?? level;
             const depthFromData = data.depth;
             
-            console.log("Depth FROM DATA:", depthFromData);
+            //console.log("Depth FROM DATA:", depthFromData);
             const docId = `${dungeonId}_${level}`;
         
             // Get or create dungeon in memory
@@ -877,7 +877,7 @@ class MyRoom extends Room {
                     // Fallback: generate in memory without saving
                     const seed = Math.floor(Math.random() * 1e9);
                     let depth = level;
-                    console.log("levelKey",lvlKey);
+                    //console.log("levelKey",lvlKey);
                     dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
                 }
             }
@@ -888,8 +888,8 @@ class MyRoom extends Room {
                 player.dungeonId = String(dungeonId);
                 player.depth = depth;
             }
-            console.log("LEVEL DATA BEFORE SEND:", levelData);
-            console.log("Sending loadDungeon:", { level, depth, hasEntrance: !!levelData.entrance });
+            //console.log("LEVEL DATA BEFORE SEND:", levelData);
+            //console.log("Sending loadDungeon:", { level, depth, hasEntrance: !!levelData.entrance });
             //console.log(levelData)
             client.send("loadDungeon", {
                 dungeonId,
@@ -1348,11 +1348,11 @@ class MyRoom extends Room {
                 newLevel.enemies.push(enemyId);
             }
         }
-        console.log("MAP:", newLevel.map);
-        console.log("FREE CELLS:", newLevel.freeCells.length);
-        console.log("ROOMS:", newLevel.rooms);
-        console.log("ENTRANCE:", newLevel.entrance);
-        console.log("EXIT:", newLevel.exit);
+        //console.log("MAP:", newLevel.map);
+        //console.log("FREE CELLS:", newLevel.freeCells.length);
+        //console.log("ROOMS:", newLevel.rooms);
+        //console.log("ENTRANCE:", newLevel.entrance);
+        //console.log("EXIT:", newLevel.exit);
         return newLevel;
     }
 
