@@ -1097,7 +1097,7 @@ class MyRoom extends Room {
                     world.weather = "snow";
                 }
             }
-        }, 1000);
+        }, 10000);
 
         this.onMessage("enemyTarget", (client, data) => {
             const enemy = this.enemyInstances.get(data.enemyId);
