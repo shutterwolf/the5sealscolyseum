@@ -940,39 +940,34 @@ class MyRoom extends Room {
         });;
 
         this.onMessage("openDoor", (client, data) => {
-    const playerId = this.sessionToPlayerId.get(client.sessionId);
-    const player = this.state.players.get(playerId);
-    if (!player) return;
-
-    const dungeon = this.dungeons.get(player.dungeonId);
-    if (!dungeon) return;
-
-    const level = dungeon.levels[String(player.depth)];
-    if (!level || !level.doors) return;
-
-    const doorState = level.doors[data.key];
-
-    if (doorState && doorState.closed) {
-        doorState.closed = false;
-
-        this.clients.forEach(c => {
-            const pid = this.sessionToPlayerId.get(c.sessionId);
-            const p = this.state.players.get(pid);
-            if (!p) return;
-
-            if (
-                p.dungeonId === player.dungeonId &&
-                p.depth === player.depth
-            ) {
-                c.send("doorOpened", {
-                    dungeonId: player.dungeonId,
-                    depth: player.depth,
-                    key: data.key
-                });
-            }
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            const player = this.state.players.get(playerId);
+            if (!player) return;
+        
+            const dungeon = this.dungeons.get(player.dungeonId);
+            if (!dungeon) return;
+        
+            const level = dungeon.levels[String(player.depth)];
+            if (!level || !level.doors) return;
+        
+            const doorState = level.doors[data.key];
+        
+            console.log("[OPEN DOOR REQUEST]", data.key, doorState);
+        
+            if (!doorState) return;
+        
+            if (!doorState.closed) return;
+        
+            doorState.closed = false;
+        
+            this.broadcast("doorOpened", {
+                dungeonId: player.dungeonId,
+                depth: player.depth,
+                key: data.key,
+                closed: false
+            });
         });
-    }
-});
+
         
         // Replace the broken client-side handlers with these server-side ones:
         this.onMessage("requestCombat", (client, message) => {
