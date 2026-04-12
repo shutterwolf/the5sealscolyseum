@@ -692,7 +692,7 @@ class MyRoom extends Room {
         this.setState(new MyRoomState());
         this.dayDuration = 30 * 60 * 1000;    // 30 min
         this.nightDuration = 15 * 60 * 1000;  // 15 min
-        this.weatherInterval = 10 * 60 * 1000;
+        this.weatherInterval = 1 * 60 * 1000;
         this.lastWeatherChange = Date.now();
         this.activeCombats = new Map(); // combatId -> CombatCore instance
         this.nextCombatId = 1;    
