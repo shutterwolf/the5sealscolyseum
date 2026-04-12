@@ -77,12 +77,33 @@ class DoorState extends Schema {
         this.x = 0;
         this.y = 0;
         this.closed = true;
+        this.state = "closed"; // closed | opening | open | broken
+        // 🔐 type of door logic
+        this.lockType = "key"; // key | puzzle | trigger
+        // 🔑 key system
+        this.keyNumber = 0;
+        // 🧩 puzzle / lockpick system
+        this.openProgress = 0; // 0-100
+        // ⚡ trigger system
+        this.triggerId = 0;
+        // 💥 optional break system
+        this.resistance = 100;
+        // 🧭 visuals
+        this.orientation = "vertical";
+        this.material = "wood";
     }
 }
 
 type("number")(DoorState.prototype, "x");
 type("number")(DoorState.prototype, "y");
 type("boolean")(DoorState.prototype, "closed");
+type("string")(DoorState.prototype, "lockType");
+type("number")(DoorState.prototype, "triggerId");
+type("number")(DoorState.prototype, "keyNumber");
+type("number")(DoorState.prototype, "openProgress");
+type("number")(DoorState.prototype, "resistance");
+type("string")(DoorState.prototype, "orientation");
+type("string")(DoorState.prototype, "material");
 
 class WorldState extends Schema {
     constructor() {
@@ -372,43 +393,61 @@ class MyRoom extends Room {
         const maxDoors = config.maxDoors || 999;
         let count = 0;
     
+        let doorIndex = 0; // 👈 per ratio locked
+    
         const saveDoor = (x, y) => {
             if (count >= maxDoors) return;
-        
-            const key = `${x},${y}`; // ✅ usa x,y direttamente
-        
-            // Skip if adjacent door already exists
+    
+            const key = `${x},${y}`;
+    
+            // skip adjacent doors
             if (
                 doors[`${x+1},${y}`] ||
                 doors[`${x-1},${y}`] ||
                 doors[`${x},${y+1}`] ||
                 doors[`${x},${y-1}`]
             ) return;
-        
-            // Must be a floor cell
+    
+            // must be floor
             if (levelData.map[key] !== ".") return;
-        
+    
             const up    = levelData.map[`${x},${y+1}`];
             const down  = levelData.map[`${x},${y-1}`];
             const left  = levelData.map[`${x-1},${y}`];
             const right = levelData.map[`${x+1},${y}`];
-        
+    
             const vertical   = (up === "#" && down === "#");
             const horizontal = (left === "#" && right === "#");
-        
+    
             if (!(vertical || horizontal)) return;
-        
+    
+            doorIndex++;
+    
+            // 🔥 1 ogni 10 è locked
+            const isLocked = (doorIndex % 10 === 0);
+    
             doors[key] = {
                 x,
                 y,
+    
                 closed: true,
-                orientation: vertical ? "vertical" : "horizontal"
+    
+                // 🔐 ONLY key system for now
+                lockType: isLocked ? "key" : "none",
+                keyNumber: isLocked ? 1 : 0,
+    
+                triggerId: 0,
+    
+                // unused for now but safe
+                resistance: 100,
+    
+                orientation: vertical ? "vertical" : "horizontal",
+                material: "wood"
             };
-        
+    
             count++;
         };
     
-        // Use ROT.js room getDoors — guaranteed room/corridor intersections
         for (const room of rooms) {
             room.getDoors(saveDoor);
         }
