@@ -1182,9 +1182,6 @@ class MyRoom extends Room {
             }
             player.texTure = data.texTure ?? player.texTure;
             player.activeWeapon = data.activeWeapon ?? player.activeWeapon;
-            if (typeof data.localMap === "number") player.localMap = data.localMap;
-            if (typeof data.depth === "number") player.depth = data.depth;
-            if (typeof data.dungeonId === "string") player.dungeonId = data.dungeonId;
             if (typeof data.anim === "string") player.anim = data.anim;
             if (typeof data.speed === "number") player.speed = data.speed;
         });
