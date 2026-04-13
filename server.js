@@ -940,32 +940,20 @@ class MyRoom extends Room {
 
         this.onMessage("openDoor", (client, data) => {
             console.log("🔥 openDoor HIT");
-            const dungeon = this.dungeons.get(data.dungeonId);
-            const level = dungeon?.levels[String(data.depth)];
             const playerId = this.sessionToPlayerId.get(client.sessionId);
-            console.log("playerId:", playerId);
-        
             const player = this.state.players.get(playerId);
-            console.log("player:", !!player);
-        
             if (!player) return;
-        
-            console.log("dungeonId:", player.dungeonId);
-            console.log("dungeon exists:", !!dungeon);
-        
+            const dungeon = this.dungeons.get(player.dungeonId);
             if (!dungeon) return;
-        
-            console.log("depth:", player.depth);
-
-            console.log("level exists:", !!level);
-        
-            if (!level || !level.doors) return;
-        
-            console.log("doors exists:", !!level.doors);
-        
+            const level = dungeon.levels[String(player.depth)];
+            if (!level?.doors) return;
             const doorState = level.doors[data.key];
-        
-            console.log("[OPEN DOOR REQUEST]", data.key, doorState);
+            if (!doorState) return;
+            console.log("[OPEN DOOR]", data.key, doorState.state);
+            if (doorState.state === "closed") {
+                doorState.state = "open";
+                doorState.closed = false; // opzionale
+            }
         });
 
         
