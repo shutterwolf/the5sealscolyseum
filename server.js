@@ -940,7 +940,8 @@ class MyRoom extends Room {
 
         this.onMessage("openDoor", (client, data) => {
             console.log("🔥 openDoor HIT");
-        
+            const dungeon = this.dungeons.get(data.dungeonId);
+            const level = dungeon?.levels[String(data.depth)];
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             console.log("playerId:", playerId);
         
@@ -950,13 +951,12 @@ class MyRoom extends Room {
             if (!player) return;
         
             console.log("dungeonId:", player.dungeonId);
-            const dungeon = this.dungeons.get(player.dungeonId);
             console.log("dungeon exists:", !!dungeon);
         
             if (!dungeon) return;
         
             console.log("depth:", player.depth);
-            const level = dungeon.levels[String(player.depth)];
+
             console.log("level exists:", !!level);
         
             if (!level || !level.doors) return;
