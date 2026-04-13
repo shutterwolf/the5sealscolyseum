@@ -1353,7 +1353,7 @@ class MyRoom extends Room {
                 doorState.closed = d.closed;
                 newLevel.doors[key] = doorState;
                 // (opzionale) tieni anche il reference locale
-                newLevel.doors[key] = d;
+                //newLevel.doors[key] = d;
             }
         }
         // Furnitures — use config.furniture (not furnitureCount)
