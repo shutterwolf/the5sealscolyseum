@@ -939,22 +939,88 @@ class MyRoom extends Room {
         });;
 
         this.onMessage("openDoor", (client, data) => {
-            console.log("🔥 openDoor HIT");
-            const playerId = this.sessionToPlayerId.get(client.sessionId);
-            const player = this.state.players.get(playerId);
-            if (!player) return;
-            const dungeon = this.dungeons.get(player.dungeonId);
-            if (!dungeon) return;
-            const level = dungeon.levels[String(player.depth)];
-            if (!level?.doors) return;
-            const doorState = level.doors[data.key];
-            if (!doorState) return;
-            console.log("[OPEN DOOR]", data.key, doorState.state);
-            if (doorState.state === "closed") {
-                doorState.state = "open";
-                doorState.closed = false; // opzionale
-            }
-        });
+    console.log("🔥🔥🔥 openDoor HIT");
+
+    console.log("📦 RAW DATA:", data);
+    console.log("🔑 Door key:", data?.key);
+    console.log("🏰 DungeonId (client state NON data):");
+
+    const playerId = this.sessionToPlayerId.get(client.sessionId);
+    console.log("👤 playerId:", playerId);
+
+    if (!playerId) {
+        console.log("❌ STOP: playerId non trovato in sessionToPlayerId");
+        return;
+    }
+
+    const player = this.state.players.get(playerId);
+    console.log("🧍 player exists:", !!player);
+
+    if (!player) {
+        console.log("❌ STOP: player non trovato in state.players");
+        return;
+    }
+
+    console.log("📍 player.dungeonId:", player.dungeonId);
+    console.log("📊 player.depth:", player.depth);
+
+    const dungeon = this.dungeons.get(player.dungeonId);
+    console.log("🏰 dungeon exists:", !!dungeon);
+    console.log("🏰 all dungeons keys:", [...this.dungeons.keys()]);
+
+    if (!dungeon) {
+        console.log("❌ STOP: dungeon NON trovato");
+        return;
+    }
+
+    const levelKey = String(player.depth);
+    console.log("🗺️ levelKey:", levelKey);
+    console.log("🗺️ dungeon.levels keys:", Object.keys(dungeon.levels));
+
+    const level = dungeon.levels[levelKey];
+    console.log("🗺️ level exists:", !!level);
+
+    if (!level) {
+        console.log("❌ STOP: level NON trovato");
+        return;
+    }
+
+    console.log("🚪 level.doors exists:", !!level.doors);
+    console.log("🚪 doors count:", level.doors ? Object.keys(level.doors).length : 0);
+
+    if (!level?.doors) {
+        console.log("❌ STOP: doors mancanti");
+        return;
+    }
+
+    const doorState = level.doors[data.key];
+    console.log("🚪 requested door:", data.key);
+    console.log("🚪 doorState found:", !!doorState);
+
+    if (!doorState) {
+        console.log("❌ STOP: door NON trovata");
+        console.log("🚪 available doors:", Object.keys(level.doors));
+        return;
+    }
+
+    console.log("📌 DOOR STATE BEFORE:", {
+        state: doorState.state,
+        closed: doorState.closed,
+        x: doorState.x,
+        y: doorState.y
+    });
+
+    if (doorState.state === "closed") {
+        console.log("🔓 Opening door...");
+        doorState.state = "open";
+        doorState.closed = false;
+        console.log("✅ DOOR OPENED");
+    } else {
+        console.log("⚠️ Door already not closed:", doorState.state);
+    }
+
+    console.log("🏁 openDoor FINISHED SUCCESSFULLY");
+});
 
         
         // Replace the broken client-side handlers with these server-side ones:
