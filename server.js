@@ -964,20 +964,18 @@ class MyRoom extends Room {
     console.log("📍 player.dungeonId:", player.dungeonId);
     console.log("📊 player.depth:", player.depth);
 
-    const dungeon = this.dungeons.get(player.dungeonId);
-    console.log("🏰 dungeon exists:", !!dungeon);
-    console.log("🏰 all dungeons keys:", [...this.dungeons.keys()]);
-
+    const dungeon = this.dungeons.get(String(player.dungeonId));
     if (!dungeon) {
-        console.log("❌ STOP: dungeon NON trovato");
+        console.log("❌ dungeon missing, expected key:", String(player.dungeonId));
         return;
     }
 
+    
     const levelKey = String(player.depth);
     console.log("🗺️ levelKey:", levelKey);
     console.log("🗺️ dungeon.levels keys:", Object.keys(dungeon.levels));
 
-    const level = dungeon.levels[levelKey];
+    const level = dungeon.levels[String(player.depth)];
     console.log("🗺️ level exists:", !!level);
 
     if (!level) {
