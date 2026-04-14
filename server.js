@@ -947,7 +947,7 @@ class MyRoom extends Room {
 
     const playerId = this.sessionToPlayerId.get(client.sessionId);
     console.log("👤 playerId:", playerId);
-
+    console.log("this dungeons",this.dungeons);
     if (!playerId) {
         console.log("❌ STOP: playerId non trovato in sessionToPlayerId");
         return;
