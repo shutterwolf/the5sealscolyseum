@@ -963,13 +963,12 @@ class MyRoom extends Room {
 
     console.log("📍 player.dungeonId:", player.dungeonId);
     console.log("📊 player.depth:", player.depth);
-
-    const dungeon = this.dungeons.get(String(player.dungeonId));
+    const dungeonKey = `${player.dungeonId}_${player.depth}`;
+    const dungeon = this.dungeons.get(SdungeonKey));
     if (!dungeon) {
-        console.log("❌ dungeon missing, expected key:", String(player.dungeonId));
+        console.log("❌ dungeon missing, expected key:", dungeonKey));
         return;
     }
-
     
     const levelKey = String(player.depth);
     console.log("🗺️ levelKey:", levelKey);
