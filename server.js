@@ -719,7 +719,7 @@ class MyRoom extends Room {
         }
         this.activeQuestSpawns.get(ownerId).set(questId, id);
     
-        console.log("▶ spawnQuestEnemy chiamato:", id, config.type);
+        //console.log("▶ spawnQuestEnemy chiamato:", id, config.type);
     
         return id;
     }
@@ -756,7 +756,7 @@ class MyRoom extends Room {
                     });
                     // Only respawn if below the max cap for this dungeon
                     if (currentCount >= config.enemies) {
-                        console.log(`Dungeon ${dungeonId} level ${levelKey} already at max enemies (${config.enemies}), skipping respawn`);
+                        //console.log(`Dungeon ${dungeonId} level ${levelKey} already at max enemies (${config.enemies}), skipping respawn`);
                         return;
                     }
                     // Pick a random free cell to respawn at
@@ -768,7 +768,7 @@ class MyRoom extends Room {
                         dungeonId: String(dungeonId),
                         depth: Number(levelKey)
                     });
-                    console.log(`Respawned 1 ${config.Enemy} in dungeon ${dungeonId} level ${levelKey} (${currentCount + 1}/${config.enemies})`);
+                    //console.log(`Respawned 1 ${config.Enemy} in dungeon ${dungeonId} level ${levelKey} (${currentCount + 1}/${config.enemies})`);
                 });
             });
         }, 30 * 60 * 1000);
@@ -817,15 +817,8 @@ class MyRoom extends Room {
         
         
         this.onMessage("requestSpawnEnemies", (client, data) => {
-            console.log("🔔 requestSpawnEnemies ricevuto");
-            console.log("Client sessionId:", client.sessionId);
-            console.log("Data ricevuta:", data);
         
             const { questID, enemyType, startPos, num } = data;
-            console.log("Parsed questID:", questID);
-            console.log("Parsed enemyType:", enemyType);
-            console.log("Parsed startPos:", startPos);
-            console.log("Parsed num:", num);
         
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) {
@@ -890,17 +883,11 @@ class MyRoom extends Room {
                         const seed = data.seed;
                         let depth = data.depth ?? level;
                         dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
-                        console.log(`Loaded dungeon ${docId} from Firestore`);
                     } else {
                         const seed = Math.floor(Math.random() * 1e9);
                         const dungeonLevel = level;
                         depth=dungeonLevel;
                         dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
-                        console.log("ENTER DUNGEON DATA:", data);
-                        console.log("FOUND CONFIG:", config);
-                        console.log("LEVEL:", level);
-                        console.log("dungeonLevel:", dungeonLevel);
-                        console.log("depth:", depth);
                         const toSave = {
                             seed,
                             dungeonId,
@@ -939,67 +926,39 @@ class MyRoom extends Room {
         });;
 
         this.onMessage("openDoor", (client, data) => {
-    console.log("🔥🔥🔥 openDoor HIT");
-
-    console.log("📦 RAW DATA:", data);
-    console.log("🔑 Door key:", data?.key);
-    console.log("🏰 DungeonId (client state NON data):");
 
     const playerId = this.sessionToPlayerId.get(client.sessionId);
-    console.log("👤 playerId:", playerId);
-    console.log("this dungeons",this.dungeons);
     if (!playerId) {
-        console.log("❌ STOP: playerId non trovato in sessionToPlayerId");
         return;
     }
 
     const player = this.state.players.get(playerId);
-    console.log("🧍 player exists:", !!player);
 
     if (!player) {
-        console.log("❌ STOP: player non trovato in state.players");
         return;
     }
-
-    console.log("📍 player.dungeonId:", player.dungeonId);
-    console.log("📊 player.depth:", player.depth);
     const dungeon = this.dungeons.get(player.dungeonId);
     if (!dungeon) {
-        console.log("❌ dungeon missing, expected key:", dungeonKey);
         return;
     }
     
     const levelKey = String(player.depth);
-    console.log("🗺️ levelKey:", levelKey);
-    console.log("🗺️ dungeon.levels keys:", Object.keys(dungeon.levels));
 
     const level = dungeon.levels[String(player.depth)];
-    console.log("🗺️ level exists:", !!level);
 
     if (!level) {
-        console.log("❌ STOP: level NON trovato");
         return;
     }
 
-    console.log("🚪 level.doors exists:", !!level.doors);
-    console.log("🚪 doors count:", level.doors ? Object.keys(level.doors).length : 0);
-
     if (!level?.doors) {
-        console.log("❌ STOP: doors mancanti");
         return;
     }
 
     const doorState = level.doors[data.key];
-    console.log("🚪 requested door:", data.key);
-    console.log("🚪 doorState found:", !!doorState);
 
     if (!doorState) {
-        console.log("❌ STOP: door NON trovata");
-        console.log("🚪 available doors:", Object.keys(level.doors));
         return;
     }
-
-    console.log("📌 DOOR STATE BEFORE:", {
         state: doorState.state,
         closed: doorState.closed,
         x: doorState.x,
@@ -1007,15 +966,11 @@ class MyRoom extends Room {
     });
 
     if (doorState.state === "closed") {
-        console.log("🔓 Opening door...");
         doorState.state = "open";
         doorState.closed = false;
-        console.log("✅ DOOR OPENED");
     } else {
-        console.log("⚠️ Door already not closed:", doorState.state);
     }
 
-    console.log("🏁 openDoor FINISHED SUCCESSFULLY");
 });
 
         
@@ -1137,6 +1092,14 @@ class MyRoom extends Room {
                 const schemaEnemy = this.state.enemies.get(id);
                 if (!schemaEnemy) return;
                 if (schemaEnemy.inCombat === 1) return; 
+                let hasNearbyPlayer = false;
+                this.state.players.forEach((p) => {
+                    if (String(p.dungeonId) === String(schemaEnemy.dungeonId) &&
+                        p.depth === schemaEnemy.depth) {
+                        hasNearbyPlayer = true;
+                    }
+                });
+                if (!hasNearbyPlayer) return;
                 const result = logic.update(playersMap, deltaTime / 1000, this);
                 if (!result) return;
             
@@ -1427,11 +1390,6 @@ class MyRoom extends Room {
                 newLevel.enemies.push(enemyId);
             }
         }
-        //console.log("MAP:", newLevel.map);
-        //console.log("FREE CELLS:", newLevel.freeCells.length);
-        //console.log("ROOMS:", newLevel.rooms);
-        //console.log("ENTRANCE:", newLevel.entrance);
-        //console.log("EXIT:", newLevel.exit);
         return newLevel;
     }
 
