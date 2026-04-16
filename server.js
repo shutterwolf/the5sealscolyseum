@@ -960,6 +960,7 @@ class MyRoom extends Room {
     if (!doorState) {
         return;
     }
+    client.send("doorUpdate",
         state: doorState.state,
         closed: doorState.closed,
         x: doorState.x,
