@@ -96,6 +96,7 @@ class DoorState extends Schema {
 type("number")(DoorState.prototype, "x");
 type("number")(DoorState.prototype, "y");
 type("boolean")(DoorState.prototype, "closed");
+type("string")(DoorState.prototype, "state");
 type("string")(DoorState.prototype, "lockType");
 type("number")(DoorState.prototype, "triggerId");
 type("number")(DoorState.prototype, "keyNumber");
