@@ -927,53 +927,27 @@ class MyRoom extends Room {
         });;
 
         this.onMessage("openDoor", (client, data) => {
-
-    const playerId = this.sessionToPlayerId.get(client.sessionId);
-    if (!playerId) {
-        return;
-    }
-
-    const player = this.state.players.get(playerId);
-
-    if (!player) {
-        return;
-    }
-    const dungeon = this.dungeons.get(player.dungeonId);
-    if (!dungeon) {
-        return;
-    }
-    
-    const levelKey = String(player.depth);
-
-    const level = dungeon.levels[String(player.depth)];
-
-    if (!level) {
-        return;
-    }
-
-    if (!level?.doors) {
-        return;
-    }
-
-    const doorState = level.doors[data.key];
-
-    if (!doorState) {
-        return;
-    }
-    client.send("doorUpdate", {
-        state: doorState.state,
-        closed: doorState.closed,
-        x: doorState.x,
-        y: doorState.y
-    });
-
-    if (doorState.state === "closed") {
-        doorState.state = "open";
-        doorState.closed = false;
-    } else {
-    }
-
-});
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            if (!playerId) return;
+            const player = this.state.players.get(playerId);
+            if (!player) return;
+            const dungeon = this.dungeons.get(player.dungeonId);
+            if (!dungeon) return;
+            const level = dungeon.levels[String(player.depth)];
+            if (!level?.doors) return;
+            const doorState = level.doors[data.key];
+            if (!doorState) return;
+            if (doorState.state === "closed") {
+                doorState.state = "open";
+                doorState.closed = false;
+            }
+            client.send("doorUpdate", {
+                state: doorState.state,
+                closed: doorState.closed,
+                x: doorState.x,
+                y: doorState.y
+            });
+        });
 
         
         // Replace the broken client-side handlers with these server-side ones:
