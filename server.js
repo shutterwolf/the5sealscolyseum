@@ -927,6 +927,7 @@ class MyRoom extends Room {
         });;
 
         this.onMessage("openDoor", (client, data) => {
+            console.log("openDoor received key:", data.key);
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
             const player = this.state.players.get(playerId);
