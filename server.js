@@ -942,6 +942,9 @@ class MyRoom extends Room {
                 doorState.closed = false;
             }
             client.send("doorUpdate", {
+                key: data.key,
+                dungeonId: player.dungeonId,
+                depth: player.depth,
                 state: doorState.state,
                 closed: doorState.closed,
                 x: doorState.x,
