@@ -731,7 +731,7 @@ class MyRoom extends Room {
         this.setState(new MyRoomState());
         this.dayDuration = 30 * 60 * 1000;    // 30 min
         this.nightDuration = 15 * 60 * 1000;  // 15 min
-        this.weatherInterval = 1 * 60 * 1000;
+        this.weatherInterval = 10 * 60 * 1000;
         this.lastWeatherChange = Date.now();
         this.activeCombats = new Map(); // combatId -> CombatCore instance
         this.nextCombatId = 1;    
@@ -1118,15 +1118,13 @@ class MyRoom extends Room {
             if (nowDay !== world.isDay) {
                 world.isDay = nowDay;
             }
-        
             // WEATHER (ogni 10 min)
             if (Date.now() - this.lastWeatherChange > this.weatherInterval) {
                 this.lastWeatherChange = Date.now();
-        
-                const roll = Math.random();
-                if (roll < 0.5) {
+                const roll = Math.floor(Math.random() * 10) + 1;
+                if (roll <= 5) {
                     world.weather = "sunny";
-                } else if (roll < 0.8) {
+                } else if (roll <= 8) {
                     world.weather = "rain";
                 } else {
                     world.weather = "snow";
