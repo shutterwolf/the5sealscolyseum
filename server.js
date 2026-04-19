@@ -936,6 +936,7 @@ class MyRoom extends Room {
             const level = dungeon.levels[String(player.depth)];
             if (!level?.doors) return;
             const doorState = level.doors[data.key];
+            console.log("matched doorState:", doorState);
             if (!doorState) return;
             if (doorState.state === "closed") {
                 doorState.state = "open";
