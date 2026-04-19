@@ -928,19 +928,20 @@ class MyRoom extends Room {
 
         this.onMessage("openDoor", (client, data) => {
             console.log("openDoor received key:", data.key);
-            console.log("PLAYER:", playerId);
-            console.log("dungeonId:", player.dungeonId);
-            console.log("depth:", player.depth);
-            console.log("dungeon exists:", !!dungeon);
-            console.log("levels:", Object.keys(dungeon.levels));
+            
             const playerId = this.sessionToPlayerId.get(client.sessionId);
+            console.log("PLAYER:", playerId);
             if (!playerId) return;
             const player = this.state.players.get(playerId);
+            console.log("dungeonId:", player.dungeonId);
             if (!player) return;
             const dungeon = this.dungeons.get(player.dungeonId);
+            console.log("depth:", player.depth);
+            console.log("dungeon exists:", !!dungeon);
             if (!dungeon) return;
             const level = dungeon.levels[String(player.depth)];
             if (!level?.doors) return;
+            console.log("levels:", Object.keys(dungeon.levels));
             const doorState = level.doors[data.key];
             console.log("matched doorState:", doorState);
             if (!doorState) return;
