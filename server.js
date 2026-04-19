@@ -936,7 +936,7 @@ class MyRoom extends Room {
             console.log("dungeonId:", player.dungeonId);
             console.log("DUNGEONS KEYS:", [...this.dungeons.keys()]);
             if (!player) return;
-            const dungeon = this.dungeons.get(player.dungeonId);
+            const dungeon = this.dungeons.get(Number(player.dungeonId));
             console.log("depth:", player.depth);
             console.log("dungeon exists:", !!dungeon);
             if (!dungeon) return;
