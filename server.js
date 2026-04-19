@@ -1348,6 +1348,7 @@ class MyRoom extends Room {
                 doorState.x = d.x;
                 doorState.y = d.y;
                 doorState.closed = d.closed;
+                doorState.orientation = d.orientation;
                 newLevel.doors[key] = doorState;
                 // (opzionale) tieni anche il reference locale
                 //newLevel.doors[key] = d;
