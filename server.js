@@ -479,12 +479,11 @@ class MyRoom extends Room {
     
                 // controlli spazio
                 if (
-                    levelData.map[`${x},${y+1}`] !== 0 ||
-                    levelData.map[`${x},${y-1}`] !== 0 ||
-                    levelData.map[`${x+1},${y}`] !== 0 ||
-                    levelData.map[`${x-1},${y}`] !== 0
+                    levelData.map[`${x},${y+1}`] !== "." ||
+                    levelData.map[`${x},${y-1}`] !== "." ||
+                    levelData.map[`${x+1},${y}`] !== "." ||
+                    levelData.map[`${x-1},${y}`] !== "."
                 ) continue;
-    
                 let rotation = levelData.map[`${x},${y-1}`] === "." ? 180 : 0;
     
                 furnitures.push({
@@ -520,12 +519,11 @@ class MyRoom extends Room {
     
                 // opzionale: evita spawn vicino ai muri
                 if (
-                    levelData.map[`${x},${y+1}`] !== 0 ||
-                    levelData.map[`${x},${y-1}`] !== 0 ||
-                    levelData.map[`${x+1},${y}`] !== 0 ||
-                    levelData.map[`${x-1},${y}`] !== 0
+                    levelData.map[`${x},${y+1}`] !== "." ||
+                    levelData.map[`${x},${y-1}`] !== "." ||
+                    levelData.map[`${x+1},${y}`] !== "." ||
+                    levelData.map[`${x-1},${y}`] !== "."
                 ) continue;
-    
                 loots.push({
                     x,
                     y,
