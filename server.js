@@ -456,7 +456,7 @@ class MyRoom extends Room {
     }
     
     generateFurnitures(levelData, config, occupied = new Set()) {
-    const furnitures = {};
+        const furnitures = {};
         const count = config.furniture || 10;
     
         for (let i = 0; i < count; i++) {
@@ -477,22 +477,20 @@ class MyRoom extends Room {
     
                 const [x, y] = key.split(",").map(Number);
     
-                // controlli spazio
                 if (
                     levelData.map[`${x},${y+1}`] !== "." ||
                     levelData.map[`${x},${y-1}`] !== "." ||
                     levelData.map[`${x+1},${y}`] !== "." ||
                     levelData.map[`${x-1},${y}`] !== "."
                 ) continue;
+    
                 let rotation = levelData.map[`${x},${y-1}`] === "." ? 180 : 0;
     
-                const key = `${x},${y}`;
-
                 furnitures[key] = {
                     x,
                     y,
-                    type: "chest",
-                    orientation : 0
+                    type,
+                    rotation
                 };
     
                 occupied.add(key);
@@ -502,7 +500,7 @@ class MyRoom extends Room {
     
         return furnitures;
     }
-
+    
     generateLoot(levelData, config, occupied = new Set()) {
         const loots = {};
         const count = config.loot || 5;
@@ -519,19 +517,19 @@ class MyRoom extends Room {
     
                 const [x, y] = key.split(",").map(Number);
     
-                // opzionale: evita spawn vicino ai muri
                 if (
                     levelData.map[`${x},${y+1}`] !== "." ||
                     levelData.map[`${x},${y-1}`] !== "." ||
                     levelData.map[`${x+1},${y}`] !== "." ||
                     levelData.map[`${x-1},${y}`] !== "."
                 ) continue;
-                const key = `${x},${y}`;
+    
                 loots[key] = {
                     x,
                     y,
                     type: "chest"
                 };
+    
                 occupied.add(key);
                 break;
             }
@@ -539,7 +537,7 @@ class MyRoom extends Room {
     
         return loots;
     }
-
+    
     getRandomCellInRoom(levelData) {
         const rooms = levelData.rooms;
         if (!rooms || rooms.length === 0) return null;
