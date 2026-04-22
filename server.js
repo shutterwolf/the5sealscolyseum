@@ -919,8 +919,13 @@ class MyRoom extends Room {
                 dungeonId,
                 level,
                 depth,
-                dungeonConfig,
-                state: levelData
+                map: levelData.map,
+                rooms: levelData.rooms,
+                doors: levelData.doors,
+                furnitures: levelData.furnitures,
+                loot: levelData.loot,
+                entrance: levelData.entrance,
+                exit: levelData.exit
             });
         });;
 
