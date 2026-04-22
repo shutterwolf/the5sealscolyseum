@@ -456,7 +456,7 @@ class MyRoom extends Room {
     }
     
     generateFurnitures(levelData, config, occupied = new Set()) {
-    const furnitures = [];
+    const furnitures = {};
         const count = config.furniture || 10;
     
         for (let i = 0; i < count; i++) {
@@ -486,12 +486,14 @@ class MyRoom extends Room {
                 ) continue;
                 let rotation = levelData.map[`${x},${y-1}`] === "." ? 180 : 0;
     
-                furnitures.push({
+                const key = `${x},${y}`;
+
+                furnitures[key] = {
                     x,
                     y,
-                    type,
-                    rotation
-                });
+                    type: "chest",
+                    orientation : 0
+                };
     
                 occupied.add(key);
                 break;
@@ -502,7 +504,7 @@ class MyRoom extends Room {
     }
 
     generateLoot(levelData, config, occupied = new Set()) {
-        const loots = [];
+        const loots = {};
         const count = config.loot || 5;
     
         for (let i = 0; i < count; i++) {
@@ -524,12 +526,12 @@ class MyRoom extends Room {
                     levelData.map[`${x+1},${y}`] !== "." ||
                     levelData.map[`${x-1},${y}`] !== "."
                 ) continue;
-                loots.push({
+                const key = `${x},${y}`;
+                loots[key] = {
                     x,
                     y,
                     type: "chest"
-                });
-    
+                };
                 occupied.add(key);
                 break;
             }
