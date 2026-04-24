@@ -731,6 +731,7 @@ class MyRoom extends Room {
         this.nightDuration = 15 * 60 * 1000;  // 15 min
         this.weatherInterval = 10 * 60 * 1000;
         this.lastWeatherChange = Date.now();
+        this.start=true;
         this.activeCombats = new Map(); // combatId -> CombatCore instance
         this.nextCombatId = 1;    
         this.enemyLogic = new Map();
@@ -1115,7 +1116,8 @@ class MyRoom extends Room {
                 world.isDay = nowDay;
             }
             // WEATHER (ogni 10 min)
-            if (Date.now() - this.lastWeatherChange > this.weatherInterval) {
+            if (Date.now() - this.lastWeatherChange > this.weatherInterval || this.start===true) {
+                this.start=false;
                 this.lastWeatherChange = Date.now();
                 const roll = Math.floor(Math.random() * 10) + 1;
                 if (roll <= 5) {
