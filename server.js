@@ -1128,6 +1128,11 @@ class MyRoom extends Room {
                     world.weather = "snow";
                 }
                 console.log(world.weather);
+                this.broadcast("weatherUpdate", {
+                    weather: world.weather,
+                    timeOfDay: world.timeOfDay,
+                    isDay: world.isDay
+                });
             }
         }, 10000);
 
