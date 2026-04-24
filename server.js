@@ -1125,6 +1125,7 @@ class MyRoom extends Room {
                 } else {
                     world.weather = "snow";
                 }
+                console.log(world.weather);
             }
         }, 10000);
 
