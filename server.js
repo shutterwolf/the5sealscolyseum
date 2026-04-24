@@ -793,21 +793,14 @@ class MyRoom extends Room {
                         levelData.loot.push(newChest);
                         placed = true;
                         // Notify players currently in this dungeon level
-                        this.state.players.forEach((player, playerId) => {
+                        /*this.state.players.forEach((player, playerId) => {
                             if (String(player.dungeonId) === String(dungeonId) && player.depth === Number(levelKey)) {
                                 const client = this.clients.find(c => this.sessionToPlayerId.get(c.sessionId) === playerId);
                                 if (client) client.send("lootSpawned", newChest);
                             }
-                        });
+                        });*/
                         // Save updated loot list to Firestore
-                        try {
-                            await db.collection("dungeons").doc(`${dungeonId}_${levelKey}`).update({
-                                loot: levelData.loot
-                            });
-                            console.log(`New chest added to dungeon ${dungeonId} level ${levelKey}`);
-                        } catch (err) {
-                            console.error("Failed to save new loot:", err);
-                        }
+                        this.broadcastToLevel(dungeonId, levelKey, "lootSpawned", newChest);
                         break;
                     }
                 }
