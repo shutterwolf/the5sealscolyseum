@@ -1128,6 +1128,7 @@ class MyRoom extends Room {
                     world.weather = "snow";
                 }
                 console.log(world.weather);
+                this.broadcast("network:world:update", this.state.world);
                 this.broadcast("weatherUpdate", {
                     weather: world.weather,
                     timeOfDay: world.timeOfDay,
