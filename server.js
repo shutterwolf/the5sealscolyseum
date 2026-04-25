@@ -895,13 +895,15 @@ class MyRoom extends Room {
                     // Fallback: generate in memory without saving
                     const seed = Math.floor(Math.random() * 1e9);
                     let depth = level;
-                    //console.log("levelKey",lvlKey);
+                    console.log("levelKey",lvlKey);
+                    console.log("Depth:",depth);
                     dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
                 }
             }
             const levelData = dungeon.levels[lvlKey];
             //const depth = levelData.depth ?? level; // 🔥 FIX
             const player = this.state.players.get(playerId);
+            console.log("Dati player",dungeonId,depth);
             if (player) {
                 player.dungeonId = String(dungeonId);
                 player.depth = depth;
