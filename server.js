@@ -912,6 +912,7 @@ class MyRoom extends Room {
             //console.log("Sending loadDungeon:", { level, depth, hasEntrance: !!levelData.entrance });
             //console.log(levelData)
             client.send("loadDungeon", {
+                dungeonConfig: config,
                 dungeonId,
                 level,
                 depth,
