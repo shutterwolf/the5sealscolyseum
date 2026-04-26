@@ -377,9 +377,8 @@ class MyRoom extends Room {
     
         const room = rooms[Math.floor(ROT.RNG.getUniform() * rooms.length)];
     
-        const x = Math.floor(ROT.RNG.getUniform() * (room.width - 2)) + room.x + 1;
-        const y = Math.floor(ROT.RNG.getUniform() * (room.height - 2)) + room.y + 1;
-    
+        const x = Math.floor(ROT.RNG.getUniform() * (room.getRight() - room.getLeft() - 1)) + room.getLeft() + 1;
+        const y = Math.floor(ROT.RNG.getUniform() * (room.getBottom() - room.getTop() - 1)) + room.getTop() + 1;
         return { x, y };
     }
 
@@ -546,11 +545,11 @@ class MyRoom extends Room {
     
             const room = rooms[Math.floor(ROT.RNG.getUniform() * rooms.length)];
     
-            const minX = room.x + 1;
-            const maxX = room.x + room.width - 2;
+            const minX = room.getLeft() + 1;
+            const maxX = room.getRight() - 1;
     
-            const minY = room.y + 1;
-            const maxY = room.y + room.height - 2;
+            const minY = room.getTop() + 1;
+            const maxY = room.getBottom() - 1;
     
             if (maxX < minX || maxY < minY) continue;
     
@@ -936,11 +935,12 @@ class MyRoom extends Room {
             console.log("dungeonId:", player.dungeonId);
             console.log("DUNGEONS KEYS:", [...this.dungeons.keys()]);
             if (!player) return;
-            const dungeon = this.dungeons.get(Number(player.dungeonId));
+            const dungeon = this.dungeons.get(player.dungeonId) ?? this.dungeons.get(Number(player.dungeonId));
             console.log("depth:", player.depth);
             console.log("dungeon exists:", !!dungeon);
             if (!dungeon) return;
-            const level = dungeon.levels[String(player.depth)];
+            const level = dungeon.levels[String(player.depth)] 
+                   ?? dungeon.levels[Object.keys(dungeon.levels).find(k => dungeon.levels[k].depth === player.depth)];
             if (!level?.doors) return;
             console.log("levels:", Object.keys(dungeon.levels));
             const doorState = level.doors[data.key];
