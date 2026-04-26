@@ -946,6 +946,17 @@ class MyRoom extends Room {
             const doorState = level.doors[data.key];
             console.log("matched doorState:", doorState);
             if (!doorState) return;
+            
+            if (doorState.lockType === "key" && doorState.keyNumber > 0) {
+                if (!data.hasKey) {
+                    client.send("doorLocked", {
+                        key: data.key,
+                        keyNumber: doorState.keyNumber
+                    });
+                    return;
+                }
+            }
+            
             if (doorState.state === "closed") {
                 doorState.state = "open";
                 doorState.closed = false;
