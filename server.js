@@ -834,6 +834,7 @@ class MyRoom extends Room {
             if (!level?.loot) return;
         
             const idx = level.loot.findIndex(l => `${l.x},${l.y}` === data.key);
+            console.log("idx found:", idx);
             if (idx === -1) return;
         
             level.loot.splice(idx, 1);
