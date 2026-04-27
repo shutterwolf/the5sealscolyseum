@@ -789,14 +789,15 @@ class MyRoom extends Room {
         setInterval(async () => {
             for (const [dungeonId, dungeon] of this.dungeons) {
                 for (const [levelKey, levelData] of Object.entries(dungeon.levels)) {
-                    // Find a free cell not already occupied by loot or doors
                     let placed = false;
                     for (let attempt = 0; attempt < 20; attempt++) {
                         const key = this.getRandomCellInRoom(levelData);
                         if (!key) continue;
-                        const alreadyLoot = levelData.loot.some(l => `${l.x},${l.y}` === key);
+        
+                        const alreadyLoot = key in levelData.loot;   // ← CHANGED
                         if (alreadyLoot) continue;
                         if (levelData.doors && levelData.doors[key]) continue;
+        
                         const [x, y] = key.split(",").map(Number);
                         const newChest = {
                             x, y,
@@ -804,22 +805,16 @@ class MyRoom extends Room {
                             dungeonId: String(dungeonId),
                             depth: Number(levelKey)
                         };
-                        levelData.loot.push(newChest);
+        
+                        levelData.loot[key] = newChest;              // ← CHANGED
+        
                         placed = true;
-                        // Notify players currently in this dungeon level
-                        /*this.state.players.forEach((player, playerId) => {
-                            if (String(player.dungeonId) === String(dungeonId) && player.depth === Number(levelKey)) {
-                                const client = this.clients.find(c => this.sessionToPlayerId.get(c.sessionId) === playerId);
-                                if (client) client.send("lootSpawned", newChest);
-                            }
-                        });*/
-                        // Save updated loot list to Firestore
                         this.broadcastToLevel(dungeonId, levelKey, "lootSpawned", newChest);
                         break;
                     }
                 }
             }
-        }, 60 * 60 * 1000); // 1 hour
+        }, 60 * 60 * 1000);
         
         this.onMessage("openChest", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -833,11 +828,8 @@ class MyRoom extends Room {
             const level = dungeon.levels[String(player.depth)];
             if (!level?.loot) return;
         
-            const idx = level.loot.findIndex(l => `${l.x},${l.y}` === data.key);
-            console.log("idx found:", idx);
-            if (idx === -1) return;
-        
-            level.loot.splice(idx, 1);
+            if (!(data.key in level.loot)) return;   
+            delete level.loot[data.key];           
         
             this.broadcastToLevel(player.dungeonId, String(player.depth), "chestOpened", {
                 key: data.key
