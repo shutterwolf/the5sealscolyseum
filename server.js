@@ -754,8 +754,10 @@ class MyRoom extends Room {
         setInterval(() => {
             this.dungeons.forEach((dungeon, dungeonId) => {
                 Object.entries(dungeon.levels).forEach(([levelKey, levelData]) => {
-                    const config = dungeonConfig.Dungeons.find(d => d.id === dungeonId);
-                    if (!config || !config.Enemy) return;
+                    const config = dungeonConfig.Dungeons.find(d => String(d.id) === String(dungeonId));
+                    if (!config) return;
+                    const enemyTypes = Object.keys(enemyStats);
+                    const enemyType = config.Enemy || enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
                     // Count enemies currently alive in this dungeon level
                     let currentCount = 0;
                     this.state.enemies.forEach((enemy) => {
@@ -774,7 +776,7 @@ class MyRoom extends Room {
                     const key = this.getRandomCellInRoom(levelData);
                     if (!key) return;
                     const [x, y] = key.split(",").map(Number);
-                    this.spawnEnemy(config.Enemy, x, y, {
+                    this.spawnEnemy(enemyType, x, y, {
                         localMap: 0,
                         dungeonId: String(dungeonId),
                         depth: Number(levelKey)
@@ -1412,17 +1414,17 @@ class MyRoom extends Room {
         // Loot — use config.loot (not lootCount)
         newLevel.loot = this.generateLoot(newLevel, config, occupied);
         // Enemies — spawn using config.Enemy and config.enemies count
-        if (config.Enemy && config.enemies > 0) {
+        if (config.enemies > 0) {
+            const enemyTypes = Object.keys(enemyStats);
             for (let i = 0; i < config.enemies; i++) {
-                const cell = newLevel.freeCells[
-                    Math.floor(ROT.RNG.getUniform() * newLevel.freeCells.length)
-                ];
+                const enemyType = config.Enemy || enemyTypes[Math.floor(ROT.RNG.getUniform() * enemyTypes.length)];
+                const cell = this.getRandomCellInRoom(newLevel);
                 if (!cell) continue;
                 const [x, y] = cell.split(",").map(Number);
                 const key = `${x},${y}`;
                 if (occupied.has(key)) continue;
                 occupied.add(key);
-                const enemyId = this.spawnEnemy(config.Enemy, x, y, {
+                const enemyId = this.spawnEnemy(enemyType, x, y, {
                     localMap: 0,
                     dungeonId: String(dungeonId),
                     depth: depth
