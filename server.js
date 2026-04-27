@@ -638,7 +638,7 @@ class MyRoom extends Room {
         enemy.currentAnim = "idle";
         enemy.inCombat = 0;
         enemy.localMap = config.localMap ?? 0;
-        enemy.dungeonId = config.dungeonId ?? "";
+        enemy.dungeonId = config.dungeonId ?? -1;
         enemy.depth = config.depth ?? 0;
         enemy.speed = stats.enemyspeed;
         enemy.radius = stats.radius;
@@ -647,7 +647,7 @@ class MyRoom extends Room {
     
         // NON ha ownerId → loot libero o null
         enemy.ownerId = "";
-        enemy.questId = "";
+        enemy.questId = config.questId ?? -1;
     
         enemy.isDead = false;
         enemy.lootReady = false;
@@ -700,7 +700,7 @@ class MyRoom extends Room {
     
         // zone / map
         enemy.localMap = config.localMap ?? 0;
-        enemy.dungeonId = config.dungeonId ?? "";
+        enemy.dungeonId = config.dungeonId ?? -1;
         enemy.depth = config.depth ?? 0;
     
         // quest / owner
