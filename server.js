@@ -828,13 +828,22 @@ class MyRoom extends Room {
             const level = dungeon.levels[String(player.depth)];
             if (!level?.loot) return;
         
-            if (!(data.key in level.loot)) return;   
+            console.log(`[CHEST] Player trying to open chest at key: ${data.key}`);
+        
+            if (!(data.key in level.loot)) {
+                console.log(`[CHEST ERROR] Key ${data.key} not found! Available keys:`, Object.keys(level.loot));
+                return; 
+            }
+            
+            // Delete it from server state
             delete level.loot[data.key];           
         
+            console.log(`[CHEST] Success! Broadcasting chestOpened for key: ${data.key}`);
             this.broadcastToLevel(player.dungeonId, String(player.depth), "chestOpened", {
                 key: data.key
             });
         });
+
         
         this.onMessage("requestSpawnEnemies", (client, data) => {
         
