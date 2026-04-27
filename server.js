@@ -453,6 +453,18 @@ class MyRoom extends Room {
     
         return doors;
     }
+
+    broadcastToLevel(dungeonId, levelKey, type, data) {
+        this.state.players.forEach((player, playerId) => {
+            if (String(player.dungeonId) === String(dungeonId) &&
+                String(player.depth) === String(levelKey)) {
+                const client = this.clients.find(c =>
+                    this.sessionToPlayerId.get(c.sessionId) === playerId
+                );
+                if (client) client.send(type, data);
+            }
+        });
+    }
     
     generateFurnitures(levelData, config, occupied = new Set()) {
         const furnitures = {};
@@ -553,8 +565,8 @@ class MyRoom extends Room {
     
             if (maxX < minX || maxY < minY) continue;
     
-            const x = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
-            const y = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+            const x = Math.floor(ROT.RNG.getUniform() * (maxX - minX + 1)) + minX;
+            const y = Math.floor(ROT.RNG.getUniform() * (maxY - minY + 1)) + minY;
     
             const key = `${x},${y}`;
     
@@ -807,6 +819,27 @@ class MyRoom extends Room {
             }
         }, 60 * 60 * 1000); // 1 hour
         
+        this.onMessage("openChest", (client, data) => {
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            if (!playerId) return;
+            const player = this.state.players.get(playerId);
+            if (!player) return;
+        
+            const dungeon = this.dungeons.get(player.dungeonId) ?? this.dungeons.get(Number(player.dungeonId));
+            if (!dungeon) return;
+        
+            const level = dungeon.levels[String(player.depth)];
+            if (!level?.loot) return;
+        
+            const idx = level.loot.findIndex(l => `${l.x},${l.y}` === data.key);
+            if (idx === -1) return;
+        
+            level.loot.splice(idx, 1);
+        
+            this.broadcastToLevel(player.dungeonId, String(player.depth), "chestOpened", {
+                key: data.key
+            });
+        });
         
         this.onMessage("requestSpawnEnemies", (client, data) => {
         
@@ -1371,6 +1404,7 @@ class MyRoom extends Room {
                 doorState.lockType = d.lockType;    // ← add this
                 doorState.keyNumber = d.keyNumber;  // ← add this
                 newLevel.doors[key] = doorState;
+                occupied.add(key);
             }
         }
         // Furnitures — use config.furniture (not furnitureCount)
