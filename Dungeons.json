@@ -1,5 +1,5 @@
 { "Dungeons": [
     {"id":0,"Name":"Sewers of Leas'Bones","Levels":1,"Enemy":"bandit","Doors":false, "dunWidth":40,"dunHeight":40,"xroom":6,"yroom":12,"dug":0.4,"enemies":16,"loot":9,"furniture":5},
-    {"id":1,"Name":"Ruins","Levels":5,"Enemy":null,"Doors":true, "dunWidth":40,"dunHeight":40,"xroom":8,"yroom":8,"dug":0.5,"enemies":20,"loot":12,"furniture":12},
+    {"id":1,"Name":"Ruins","Levels":5,"Enemy":null,"Doors":true, "dunWidth":40,"dunHeight":40,"xroom":8,"yroom":8,"dug":0.4,"enemies":20,"loot":12,"furniture":12},
     {"id":2,"Name":"Caves of Rekdar","Levels":2,"Enemy":"goblin","Doors":false, "dunWidth":40,"dunHeight":40,"xroom":8,"yroom":8,"dug":0.4,"enemies":16,"loot":10,"furniture":5}
 ] }
