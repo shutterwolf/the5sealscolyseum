@@ -762,7 +762,7 @@ class MyRoom extends Room {
                     let currentCount = 0;
                     this.state.enemies.forEach((enemy) => {
                         if (String(enemy.dungeonId) === String(dungeonId) &&
-                            enemy.depth === Number(levelKey)+1 &&
+                            enemy.depth === Number(levelKey) &&
                             !enemy.isDead) {
                             currentCount++;
                         }
