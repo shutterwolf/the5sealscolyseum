@@ -1365,16 +1365,16 @@ class MyRoom extends Room {
         const generated = this.generateUniformMap(config, seed);
         const occupied = new Set();
         const newLevel = {
-            dungeonId,          // ← explicitly linked
-            depth: depth,     
-            seed: seed,// ← explicitly linked
+            dungeonId,
+            depth: depth,
+            seed: seed,
             map: generated.map,
             freeCells: generated.freeCells,
             rooms: generated.rooms,
             doors: {},
             enemies: [],
-            loot: [],
-            furnitures: [],
+            loot: {},
+            furnitures: {},
             entrance: null,
             exit: null
         };
