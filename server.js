@@ -775,6 +775,8 @@ class MyRoom extends Room {
                     // Pick a random free cell to respawn at
                     const key = this.getRandomCellInRoom(levelData);
                     if (!key) return;
+                    if (key in levelData.loot) return;       // skip chest cells
+                    if (key in levelData.furnitures) return;
                     const [x, y] = key.split(",").map(Number);
                     this.spawnEnemy(enemyType, x, y, {
                         localMap: 0,
