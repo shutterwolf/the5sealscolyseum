@@ -982,7 +982,7 @@ class MyRoom extends Room {
                 level,
                 depth,
                 map: levelData.map,
-                rooms: levelData.rooms,
+                //rooms: levelData.rooms,
                 doors: levelData.doors,
                 furnitures: levelData.furnitures,
                 loot: levelData.loot,
