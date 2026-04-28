@@ -355,28 +355,55 @@ class MyRoom extends Room {
     
         const room = rooms[Math.floor(ROT.RNG.getUniform() * rooms.length)];
     
-        const x1 = room.getLeft();
-        const x2 = room.getRight();
-        const y1 = room.getTop();
-        const y2 = room.getBottom();
-    
-        const x = Math.floor(ROT.RNG.getUniform() * (x2 - x1 - 1)) + x1 + 1;
-        const y = Math.floor(ROT.RNG.getUniform() * (y2 - y1 - 1)) + y1 + 1;
+        const x = Math.floor(ROT.RNG.getUniform() * (room.getRight() - room.getLeft() - 1)) + room.getLeft() + 1;
+        const y = Math.floor(ROT.RNG.getUniform() * (room.getBottom() - room.getTop() - 1)) + room.getTop() + 1;
     
         return { x, y };
     }
-
-    placeExit(levelData, levelIndex, dungeonConfig) {
-        const maxLevels = dungeonConfig.Levels;
     
+    placeExit(levelData, levelIndex, dungeonConfig, entrance) {
+        const maxLevels = dungeonConfig.Levels;
         if (maxLevels <= 1) return null;
         if (levelIndex >= maxLevels - 1) return null;
     
         const rooms = levelData.rooms;
         if (!rooms || rooms.length === 0) return null;
     
-        const room = rooms[Math.floor(ROT.RNG.getUniform() * rooms.length)];
+        const MIN_DIST = 15;
     
+        if (entrance && rooms.length > 1) {
+            let bestRoom = null;
+            let bestDist = -1;
+    
+            for (const room of rooms) {
+                const cx = (room.getLeft() + room.getRight()) / 2;
+                const cy = (room.getTop() + room.getBottom()) / 2;
+                const dist = Math.sqrt(Math.pow(cx - entrance.x, 2) + Math.pow(cy - entrance.y, 2));
+                if (dist > bestDist) {
+                    bestDist = dist;
+                    bestRoom = room;
+                }
+            }
+    
+            if (bestRoom) {
+                const x = Math.floor(ROT.RNG.getUniform() * (bestRoom.getRight() - bestRoom.getLeft() - 1)) + bestRoom.getLeft() + 1;
+                const y = Math.floor(ROT.RNG.getUniform() * (bestRoom.getBottom() - bestRoom.getTop() - 1)) + bestRoom.getTop() + 1;
+                return { x, y };
+            }
+        }
+    
+        // fallback: try random rooms until one is far enough
+        for (let attempt = 0; attempt < 20; attempt++) {
+            const room = rooms[Math.floor(ROT.RNG.getUniform() * rooms.length)];
+            const x = Math.floor(ROT.RNG.getUniform() * (room.getRight() - room.getLeft() - 1)) + room.getLeft() + 1;
+            const y = Math.floor(ROT.RNG.getUniform() * (room.getBottom() - room.getTop() - 1)) + room.getTop() + 1;
+            if (!entrance) return { x, y };
+            const dist = Math.sqrt(Math.pow(x - entrance.x, 2) + Math.pow(y - entrance.y, 2));
+            if (dist >= MIN_DIST) return { x, y };
+        }
+    
+        // last resort
+        const room = rooms[Math.floor(ROT.RNG.getUniform() * rooms.length)];
         const x = Math.floor(ROT.RNG.getUniform() * (room.getRight() - room.getLeft() - 1)) + room.getLeft() + 1;
         const y = Math.floor(ROT.RNG.getUniform() * (room.getBottom() - room.getTop() - 1)) + room.getTop() + 1;
         return { x, y };
@@ -1383,13 +1410,13 @@ class MyRoom extends Room {
         // Entrance
         const entrance = this.placeEntrance(newLevel);
         if (entrance) {
-            entrance.dungeonId = dungeonId;   // linked
+            entrance.dungeonId = dungeonId;
             entrance.depth = depth;
             newLevel.entrance = entrance;
             occupied.add(`${entrance.x},${entrance.y}`);
         }
         // Exit
-        const exit = this.placeExit(newLevel, level, config);
+        const exit = this.placeExit(newLevel, level, config, entrance); 
         if (exit) {
             exit.dungeonId = dungeonId;       // linked
             exit.depth = depth;
