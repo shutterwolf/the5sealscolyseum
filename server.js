@@ -1224,6 +1224,19 @@ class MyRoom extends Room {
             enemy.setTarget(data.playerId, data.pos);
         });
 
+        this.onMessage("enemyAggro", (client, data) => {
+            const schemaEnemy = this.state.enemies.get(data.enemyId);
+            const logic = this.enemyInstances.get(data.enemyId);
+            if (!schemaEnemy || !logic) return;
+        
+            schemaEnemy.destX = data.destX;
+            schemaEnemy.destZ = data.destZ;
+            schemaEnemy.aiState = "aggro";
+        
+            logic.leaderId = this.sessionToPlayerId.get(client.sessionId);
+            logic.destination = { x: data.destX, z: data.destZ };
+        });
+
         this.onMessage("spawnEnemy", (client, data) => {
             this.spawnEnemy(
                 data.type,
