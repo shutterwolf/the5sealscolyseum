@@ -10,7 +10,7 @@ class Enemy {
             z: enemyData.posZ
         };
 
-        this.enabled = enemyData.dungeon ? false : true;
+        this.enabled = true;
         this.state = 'IDLE';
         this.destination = null;
 
