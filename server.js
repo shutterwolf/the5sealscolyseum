@@ -687,7 +687,12 @@ class MyRoom extends Room {
             posX: x,
             posY: enemy.pos.y,
             posZ: z,
-            dungeon: !!config.dungeonId
+            dungeon: !!config.dungeonId,
+            localMap: config.localMap ?? 0,
+            depth: config.depth ?? 0,
+            aggroRange: enemyStats[type]?.radius ?? 5,
+            speed: enemyStats[type]?.enemyspeed ?? 1,
+            radius: enemyStats[type]?.radius ?? 5
         });
     
         this.enemyInstances.set(id, logic);
@@ -746,7 +751,12 @@ class MyRoom extends Room {
             posX: config.x,
             posY: 3,
             posZ: config.z,
-            dungeon: !!config.dungeonId
+            dungeon: !!config.dungeonId,
+            localMap: config.localMap ?? 0,     // ← add
+            depth: config.depth ?? 0,           // ← add
+            aggroRange: enemyStats[config.type]?.radius ?? 5,  // ← add
+            speed: enemyStats[config.type]?.enemyspeed ?? 1,   // ← add
+            radius: enemyStats[config.type]?.radius ?? 5        // ← add
         });
         this.enemyInstances.set(id, logic);
     
