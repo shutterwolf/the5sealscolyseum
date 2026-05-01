@@ -895,18 +895,14 @@ class MyRoom extends Room {
             }
         
             for (let i = 0; i < num; i++) {
-                const enemyID = this.spawnQuestEnemy(
-                    playerId,
-                    questID,
-                    {
-                        type: enemyType,
-                        x: startPos.x + i, // offset per non sovrapporre
-                        z: startPos.z,
-                        localMap: 0,
-                        dungeonId: "",
-                        depth: 0
-                    }
-                );
+               this.spawnQuestEnemy(playerId, questId, {
+                    type: enemyType,
+                    x: startPos.x + i,
+                    z: startPos.z,
+                    localMap: player.localMap ?? 0,
+                    dungeonId: player.dungeonId ?? "",
+                    depth: player.depth ?? 0
+                });
         
                 if (!enemyID) {
                     console.error("Spawn fallito per enemyType:", enemyType);
