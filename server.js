@@ -885,6 +885,7 @@ class MyRoom extends Room {
 
         
        this.onMessage("requestSpawnEnemies", (client, data) => {
+           console.log(">>> requestSpawnEnemies raw data:", JSON.stringify(data));
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
         
