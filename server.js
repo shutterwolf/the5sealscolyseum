@@ -742,31 +742,27 @@ class MyRoom extends Room {
         enemy.isDead = false;
         enemy.lootReady = false;
     
-        this.state.enemies.set(id, enemy);
+        this.enemyInstances.set(id, logic);
     
-        // 2️⃣ Logica server (EnemyHandler)
-        const logic = new EnemyServer({
-            id: id,
-            enemy: config.type,
-            posX: config.x,
-            posY: 3,
-            posZ: config.z,
-            dungeon: !!config.dungeonId,
-            localMap: config.localMap ?? 0,     // ← add
-            depth: config.depth ?? 0,           // ← add
-            aggroRange: enemyStats[config.type]?.radius ?? 5,  // ← add
-            speed: enemyStats[config.type]?.enemyspeed ?? 1,   // ← add
-            radius: enemyStats[config.type]?.radius ?? 5        // ← add
-        });
-         this.enemyInstances.set(id, logic);
-
         if (!this.activeQuestSpawns.has(ownerId)) {
             this.activeQuestSpawns.set(ownerId, new Map());
         }
         this.activeQuestSpawns.get(ownerId).set(questId, id);
     
-        console.log(`[spawnQuestEnemy] CREATO id=${id} type=${config.type} owner=${ownerId} questId=${questId} pos=(${config.x},${config.z}) dungeon=${config.dungeonId} depth=${config.depth}`);
-        console.log(`[spawnQuestEnemy] Total enemies in state: ${this.state.enemies.size}`);
+        // manda enemySpawn diretto al client owner
+        const ownerSessionId = [...this.sessionToPlayerId.entries()]
+            .find(([, pid]) => pid === ownerId)?.[0];
+        const ownerClient = this.clients.find(c => c.sessionId === ownerSessionId);
+        if (ownerClient) {
+            ownerClient.send("enemySpawn", {
+                id: enemy.id,
+                type: enemy.type,
+                pos: { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z }
+            });
+            console.log(`[spawnQuestEnemy] enemySpawn inviato a ${ownerId} per ${enemy.id}`);
+        } else {
+            console.warn(`[spawnQuestEnemy] client owner ${ownerId} non trovato`);
+        }
     
         return id;
     }
