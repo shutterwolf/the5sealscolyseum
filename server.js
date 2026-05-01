@@ -884,18 +884,25 @@ class MyRoom extends Room {
         });
 
         
-        this.onMessage("requestSpawnEnemies", (client, data) => {
-        
-            const { questID, enemyType, startPos, num } = data;
-        
+       this.onMessage("requestSpawnEnemies", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
-            if (!playerId) {
-                console.warn("Player non trovato per session:", client.sessionId);
+            if (!playerId) return;
+        
+            const player = this.state.players.get(playerId);
+            if (!player) return;
+        
+            const questId = data.questID ?? data.questId ?? 0;
+            const enemyType = data.enemyType;
+            const startPos = data.startPos || {};
+            const num = Number.isFinite(data.num) && data.num > 0 ? Math.floor(data.num) : 1;
+        
+            if (!enemyType || !Number.isFinite(startPos.x) || !Number.isFinite(startPos.z)) {
+                console.warn("[requestSpawnEnemies] Invalid payload:", data);
                 return;
             }
         
             for (let i = 0; i < num; i++) {
-               this.spawnQuestEnemy(playerId, questId, {
+                const enemyID = this.spawnQuestEnemy(playerId, questId, {
                     type: enemyType,
                     x: startPos.x + i,
                     z: startPos.z,
@@ -905,12 +912,11 @@ class MyRoom extends Room {
                 });
         
                 if (!enemyID) {
-                    console.error("Spawn fallito per enemyType:", enemyType);
-                } else {
-                    console.log("✅ Enemy spawnato:", enemyType, enemyID);
+                    console.error("Spawn failed for enemyType:", enemyType);
                 }
             }
         });
+
 
         this.onMessage("enterDungeon", async (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
