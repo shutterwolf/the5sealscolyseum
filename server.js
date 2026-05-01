@@ -683,19 +683,39 @@ class MyRoom extends Room {
     
         const logic = new EnemyServer({
             id: id,
-            enemy: type,
-            posX: x,
-            posY: enemy.pos.y,
-            posZ: z,
+            enemy: config.type,
+            posX: config.x,
+            posY: 3,
+            posZ: config.z,
             dungeon: !!config.dungeonId,
             localMap: config.localMap ?? 0,
             depth: config.depth ?? 0,
-            aggroRange: enemyStats[type]?.radius ?? 5,
-            speed: enemyStats[type]?.enemyspeed ?? 1,
-            radius: enemyStats[type]?.radius ?? 5
+            aggroRange: enemyStats[config.type]?.radius ?? 5,
+            speed: enemyStats[config.type]?.enemyspeed ?? 1,
+            radius: enemyStats[config.type]?.radius ?? 5
         });
-    
         this.enemyInstances.set(id, logic);
+    
+        // 3️⃣ Salva riferimento
+        if (!this.activeQuestSpawns.has(ownerId)) {
+            this.activeQuestSpawns.set(ownerId, new Map());
+        }
+        this.activeQuestSpawns.get(ownerId).set(questId, id);
+    
+        // 4️⃣ Notifica client owner  ← VA QUI, dopo tutto il resto
+        const ownerSessionId = [...this.sessionToPlayerId.entries()]
+            .find(([, pid]) => pid === ownerId)?.[0];
+        const ownerClient = this.clients.find(c => c.sessionId === ownerSessionId);
+        if (ownerClient) {
+            ownerClient.send("enemySpawn", {
+                id: enemy.id,
+                type: enemy.type,
+                pos: { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z }
+            });
+            console.log(`[spawnQuestEnemy] enemySpawn inviato a ${ownerId} per ${enemy.id}`);
+        } else {
+            console.warn(`[spawnQuestEnemy] client owner ${ownerId} non trovato`);
+        }
     
         return id;
     }
