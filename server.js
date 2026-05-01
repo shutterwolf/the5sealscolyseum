@@ -758,15 +758,15 @@ class MyRoom extends Room {
             speed: enemyStats[config.type]?.enemyspeed ?? 1,   // ← add
             radius: enemyStats[config.type]?.radius ?? 5        // ← add
         });
-        this.enemyInstances.set(id, logic);
-    
-        // 3️⃣ Salva riferimento per cleanup / respawn
+         this.enemyInstances.set(id, logic);
+
         if (!this.activeQuestSpawns.has(ownerId)) {
             this.activeQuestSpawns.set(ownerId, new Map());
         }
         this.activeQuestSpawns.get(ownerId).set(questId, id);
     
-        //console.log("▶ spawnQuestEnemy chiamato:", id, config.type);
+        console.log(`[spawnQuestEnemy] CREATO id=${id} type=${config.type} owner=${ownerId} questId=${questId} pos=(${config.x},${config.z}) dungeon=${config.dungeonId} depth=${config.depth}`);
+        console.log(`[spawnQuestEnemy] Total enemies in state: ${this.state.enemies.size}`);
     
         return id;
     }
