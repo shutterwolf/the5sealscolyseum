@@ -721,71 +721,77 @@ class MyRoom extends Room {
     }
 
     spawnQuestEnemy(ownerId, questId, config) {
-        // ownerId: singolo playerId o partyId (es. "P-00014")
-        // questId: id della quest
-        // config: { type, x, z, localMap, dungeonId, depth }
+    const id = "E" + this.enemyIdCounter++;
 
-        const id = "E" + this.enemyIdCounter++;
-
-        const stats = enemyStats[config.type];
-        if (!stats) {
-            console.error("Enemy type non trovato in enemyStats:", config.type);
-            return null;
-        }
-        const enemy = new EnemySchema();
-        enemy.id = id;
-        enemy.type = config.type;
-        enemy.typeId = stats.id;         // ✅ derivato dal server
-        enemy.pos.x = config.x;
-        enemy.pos.y = 3;                 // altezza sicura
-        enemy.pos.z = config.z;
-        enemy.rot = new Vec3(0, 0, 0);
-        enemy.health = stats.maxHealth;
-        enemy.maxHealth = stats.maxHealth;
-        enemy.speed = stats.enemyspeed;
-        enemy.radius = stats.radius;
-        enemy.wRange = stats.wRange;
-    
-        enemy.aiState = "idle";
-        enemy.currentAnim = "idle";
-        enemy.inCombat = 0;
-    
-        // zone / map
-        enemy.localMap = config.localMap ?? 0;
-        enemy.dungeonId = config.dungeonId ?? "";
-        enemy.depth = config.depth ?? 0;
-    
-        // quest / owner
-        enemy.ownerId = ownerId;
-        enemy.questId = questId;
-    
-        enemy.isDead = false;
-        enemy.lootReady = false;
-    
-        this.enemyInstances.set(id, logic);
-    
-        if (!this.activeQuestSpawns.has(ownerId)) {
-            this.activeQuestSpawns.set(ownerId, new Map());
-        }
-        this.activeQuestSpawns.get(ownerId).set(questId, id);
-    
-        // manda enemySpawn diretto al client owner
-        const ownerSessionId = [...this.sessionToPlayerId.entries()]
-            .find(([, pid]) => pid === ownerId)?.[0];
-        const ownerClient = this.clients.find(c => c.sessionId === ownerSessionId);
-        if (ownerClient) {
-            ownerClient.send("enemySpawn", {
-                id: enemy.id,
-                type: enemy.type,
-                pos: { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z }
-            });
-            console.log(`[spawnQuestEnemy] enemySpawn inviato a ${ownerId} per ${enemy.id}`);
-        } else {
-            console.warn(`[spawnQuestEnemy] client owner ${ownerId} non trovato`);
-        }
-    
-        return id;
+    const stats = enemyStats[config.type];
+    if (!stats) {
+        console.error("Enemy type non trovato in enemyStats:", config.type);
+        return null;
     }
+
+    const enemy = new EnemySchema();
+    enemy.id = id;
+    enemy.type = config.type;
+    enemy.typeId = stats.id;
+    enemy.pos.x = config.x;
+    enemy.pos.y = 3;
+    enemy.pos.z = config.z;
+    enemy.rot = new Vec3(0, 0, 0);
+    enemy.health = stats.maxHealth;
+    enemy.maxHealth = stats.maxHealth;
+    enemy.speed = stats.enemyspeed;
+    enemy.radius = stats.radius;
+    enemy.wRange = stats.wRange;
+    enemy.aiState = "idle";
+    enemy.currentAnim = "idle";
+    enemy.inCombat = 0;
+    enemy.localMap = config.localMap ?? 0;
+    enemy.dungeonId = config.dungeonId ?? "";
+    enemy.depth = config.depth ?? 0;
+    enemy.ownerId = ownerId;
+    enemy.questId = questId;
+    enemy.isDead = false;
+    enemy.lootReady = false;
+
+    this.state.enemies.set(id, enemy);
+
+    const logic = new EnemyServer({
+        id: id,
+        enemy: config.type,
+        posX: config.x,
+        posY: 3,
+        posZ: config.z,
+        dungeon: !!config.dungeonId,
+        localMap: config.localMap ?? 0,
+        depth: config.depth ?? 0,
+        aggroRange: stats.radius ?? 5,
+        speed: stats.enemyspeed ?? 1,
+        radius: stats.radius ?? 5
+    });
+    this.enemyInstances.set(id, logic);
+
+    if (!this.activeQuestSpawns.has(ownerId)) {
+        this.activeQuestSpawns.set(ownerId, new Map());
+    }
+    this.activeQuestSpawns.get(ownerId).set(questId, id);
+
+    const ownerSessionId = [...this.sessionToPlayerId.entries()]
+        .find(([, pid]) => pid === ownerId)?.[0];
+    const ownerClient = this.clients.find(c => c.sessionId === ownerSessionId);
+    if (ownerClient) {
+        ownerClient.send("enemySpawn", {
+            id: enemy.id,
+            type: enemy.type,
+            pos: { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z }
+        });
+        console.log(`[spawnQuestEnemy] OK id=${id} type=${config.type} owner=${ownerId}`);
+    } else {
+        console.warn(`[spawnQuestEnemy] client owner ${ownerId} non trovato`);
+    }
+
+    return id;
+}
+
     
     onCreate() {
         console.log("Room created");
