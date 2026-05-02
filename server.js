@@ -710,6 +710,7 @@ class MyRoom extends Room {
             ownerClient.send("enemySpawn", {
                 id: enemy.id,
                 type: enemy.type,
+                typeId: enemy.typeId,
                 pos: { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z }
             });
             console.log(`[spawnQuestEnemy] enemySpawn inviato a ${ownerId} per ${enemy.id}`);
