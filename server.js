@@ -732,8 +732,8 @@ class MyRoom extends Room {
 
     const enemy = new EnemySchema();
     enemy.id = id;
-    enemy.type = config.type;
     enemy.typeId = stats.id;
+    enemy.type = config.type;
     enemy.pos.x = config.x;
     enemy.pos.y = 3;
     enemy.pos.z = config.z;
@@ -783,6 +783,7 @@ class MyRoom extends Room {
         ownerClient.send("enemySpawn", {
             id: enemy.id,
             type: enemy.type,
+            typeId: enemy.typeId,
             pos: { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z }
         });
         console.log(`[spawnQuestEnemy] OK id=${id} type=${config.type} owner=${ownerId}`);
