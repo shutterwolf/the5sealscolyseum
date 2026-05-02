@@ -202,59 +202,135 @@ class CombatCore {
     }
 
     resolveHit(attacker, defender) {
+        console.log("===== resolveHit START =====");
+        console.log("ATTACKER:", attacker);
+        console.log("DEFENDER:", defender);
+    
         let attackerSkill = 0;
         let defenderSkill = 0;
+    
         const isPlayerAttacker = attacker.equipped !== undefined;
         const isPlayerDefender = defender.equipped !== undefined;
-        // ===== Determina abilità attacker =====
+    
+        console.log("isPlayerAttacker:", isPlayerAttacker);
+        console.log("isPlayerDefender:", isPlayerDefender);
+    
+        // ===== Attacker skill =====
         if (isPlayerAttacker) {
-            const weaponType = attacker.equipped.WEAPON?.type;
+            const weaponType = attacker.equipped?.WEAPON?.type;
+            console.log("Attacker weaponType:", weaponType);
+    
             if (weaponType) {
                 attackerSkill = attacker[weaponType.toLowerCase()] || 0;
             }
+    
+            console.log("attackerSkill (player):", attackerSkill);
         } else {
             attackerSkill = attacker.attack;
+            console.log("attackerSkill (enemy):", attackerSkill);
         }
-        // ===== Determina abilità difensore =====
+    
+        // ===== Defender skill =====
         if (isPlayerDefender) {
-            if (defender.equipped.SHIELD && defender.equipped.SHIELD !== 0) {
-                defenderSkill = defender.aShield; // usa scudo
+            console.log("Defender equipped:", defender.equipped);
+    
+            if (defender.equipped?.SHIELD && defender.equipped.SHIELD !== 0) {
+                defenderSkill = defender.aShield;
+                console.log("Defender uses SHIELD -> aShield:", defenderSkill);
             } else {
-                const weaponType = defender.equipped.WEAPON?.type;
-                defenderSkill = weaponType ? defender[weaponType.toLowerCase()] : 0; // usa arma se a due mani
+                const weaponType = defender.equipped?.WEAPON?.type;
+                console.log("Defender weaponType:", weaponType);
+    
+                defenderSkill = weaponType ? defender[weaponType.toLowerCase()] : 0;
+                console.log("Defender skill (weapon fallback):", defenderSkill);
             }
         } else {
             defenderSkill = defender.defense;
+            console.log("defenderSkill (enemy):", defenderSkill);
         }
-        // ===== Tiri casuali =====
+    
+        // ===== Roll =====
         const attackRoll = attackerSkill + Math.floor(Math.random() * 10) + 1;
         const defenseRoll = defenderSkill + Math.floor(Math.random() * 10) + 1;
+    
+        console.log("attackRoll:", attackRoll, "defenseRoll:", defenseRoll);
+    
         const diff = attackRoll - defenseRoll;
-        // ===== Controllo hit/scudo =====
-        if (diff <= 0) return {hit: false, shieldDamage: 0, wound: 0};
-        if (isPlayerDefender && defender.equipped.SHIELD && defender.equipped.SHIELD !== 0 && diff <= defender.shield.protection) {
-            const shieldDamage = diff * (Math.floor(Math.random() * 4) + 1);
-            return {hit: false, shieldDamage, wound: 0};
+    
+        console.log("diff:", diff);
+    
+        // ===== miss =====
+        if (diff <= 0) {
+            console.log("MISS -> returning early");
+            return { hit: false, shieldDamage: 0, wound: 0 };
         }
-        // ===== Calcolo danno =====
-        const wound = diff * (Math.floor(Math.random() * 4) + 1);
+    
+        // ===== shield check =====
+        let shieldDamage = 0;
+    
+        if (isPlayerDefender && defender.equipped?.SHIELD && defender.equipped.SHIELD !== 0) {
+    
+            const shieldProt = defender.shield?.protection ?? 0;
+    
+            console.log("Shield protection:", shieldProt);
+    
+            if (diff <= shieldProt) {
+                shieldDamage = diff * (Math.floor(Math.random() * 4) + 1);
+    
+                console.log("BLOCKED BY SHIELD -> shieldDamage:", shieldDamage);
+    
+                return { hit: false, shieldDamage, wound: 0 };
+            }
+        }
+    
+        // ===== damage =====
+        const roll = Math.floor(Math.random() * 4) + 1;
+        const wound = diff * roll;
+    
+        console.log("raw wound:", wound, "roll multiplier:", roll);
+    
+        // ===== armor =====
         let armorAbsorb = 0;
+    
         if (isPlayerDefender && defender.armor) {
+    
             const locRoll = Math.floor(Math.random() * 12) + 1;
+    
+            console.log("armor locRoll:", locRoll);
+    
             let location;
+    
             if (locRoll <= 6) location = 'ARMOUR';
             else if (locRoll <= 8) location = 'GLOVES';
             else if (locRoll <= 10) location = 'BOOTS';
             else location = 'HELM';
-            const armorProt = defender.equipped[location]?.armourValue+defender.equipped[location].variable || 0;
-            armorAbsorb = armorProt > 0 ? Math.floor(Math.random() * armorProt) + 1 : 0;
+    
+            console.log("armor location:", location);
+    
+            const armorPiece = defender.equipped?.[location];
+    
+            const armorProt = (armorPiece?.armourValue ?? 0) + (armorPiece?.variable ?? 0);
+    
+            console.log("armor piece:", armorPiece, "armorProt:", armorProt);
+    
+            armorAbsorb = armorProt > 0
+                ? Math.floor(Math.random() * armorProt) + 1
+                : 0;
+    
+            console.log("armorAbsorb:", armorAbsorb);
         }
+    
         const finalWound = Math.max(0, wound - armorAbsorb);
+    
+        console.log("FINAL wound:", finalWound);
+    
+        console.log("===== resolveHit END =====");
+    
         return {
             hit: true,
             shieldDamage: shieldDamage,
             wound: finalWound,
-            armorAbsorb: armorAbsorb 
+            armorAbsorb: armorAbsorb
         };
     }
 
