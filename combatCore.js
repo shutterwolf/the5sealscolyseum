@@ -106,17 +106,20 @@ class CombatCore {
             this.broadcastToCombat("disengage", { id: actorId });
             return;
         }*/
-
-        const damage = this.resolveHit(actor, target);
-        if (damage > 0) {
-            target.hp -= damage;
+        const result = this.resolveHit(actor, target);
+        const damage = result.wound;
+        if (result.hit && result.wound > 0) {
+            target.hp -= result.wound;
             this.updateEntityHP(target.id, target.type, target.hp);
         }
 
         this.broadcastToCombat("damage", {
             attackerId: actorId,
             targetId: actor.targetId,
-            damage
+            damage: result.wound,
+            shieldDamage: result.shieldDamage,
+            armorAbsorb: result.armorAbsorb,
+            hit: result.hit
         });
         
         if (target.hp <= 0) {
