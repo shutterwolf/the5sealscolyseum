@@ -109,7 +109,7 @@ class CombatCore {
         const result = this.resolveHit(actor, target);
         const damage = result.wound;
         if (result.hit && result.wound > 0) {
-            target.hp -= result.wound;
+            target.hp -= damage;
             this.updateEntityHP(target.id, target.type, target.hp);
         }
 
@@ -252,7 +252,7 @@ class CombatCore {
         const finalWound = Math.max(0, wound - armorAbsorb);
         return {
             hit: true,
-            shieldDamage: 0,
+            shieldDamage: shieldDamage,
             wound: finalWound,
             armorAbsorb: armorAbsorb 
         };
