@@ -253,37 +253,45 @@ class CombatCore {
         
             const weaponType = entity?.equipped?.WEAPON?.type?.toLowerCase();
         
-            console.log("Attacker weaponType (SERVER STATE):", weaponType);
+            console.log("Attacker weaponType:", weaponType);
         
-            if (weaponType) {
-                attackerSkill = entity?.[weaponType] ?? entity?.combat ?? 0;
+            if (weaponType && entity?.[weaponType] != null) {
+                attackerSkill = entity[weaponType];
             } else {
                 attackerSkill = entity?.combat ?? 0;
             }
         
             console.log("attackerSkill FINAL:", attackerSkill);
+        } else {
+            attackerSkill = attacker.combat ?? attacker.attack ?? 0;
         }
     
         // ===== Defender skill =====
         if (isPlayerDefender) {
             const entity = this.getEntity(defender.id, "player");
         
-            console.log("Defender equipped (SERVER STATE):", entity?.equipped);
+            console.log("Defender equipped:", entity?.equipped);
         
-            if (entity?.equipped?.SHIELD) {
+            if (entity?.shield > 0) {
                 defenderSkill = entity?.aShield ?? entity?.defence ?? 0;
             } else {
                 const weaponType = entity?.equipped?.WEAPON?.type?.toLowerCase();
         
-                defenderSkill = entity?.[weaponType] ?? entity?.defence ?? 0;
+                if (weaponType && entity?.[weaponType] != null) {
+                    defenderSkill = entity[weaponType];
+                } else {
+                    defenderSkill = entity?.defence ?? 0;
+                }
             }
         
             console.log("defenderSkill FINAL:", defenderSkill);
+        } else {
+            defenderSkill = defender.defence ?? defender.defense ?? 0;
         }
     
         // ===== Roll =====
-        const attackRoll = safe(attackerSkill) + Math.floor(Math.random() * 10) + 1;
-        const defenseRoll = safe(defenderSkill) + Math.floor(Math.random() * 10) + 1;
+        const attackRoll = (attackerSkill || 0) + Math.floor(Math.random() * 10) + 1;
+        const defenseRoll = (defenderSkill || 0) + Math.floor(Math.random() * 10) + 1;
     
         console.log("attackRoll:", attackRoll, "defenseRoll:", defenseRoll);
     
@@ -300,9 +308,9 @@ class CombatCore {
         // ===== shield check =====
         let shieldDamage = 0;
     
-        if (isPlayerDefender && defender.equipped?.SHIELD && defender.equipped.SHIELD !== 0) {
+        if (isPlayerDefender && defender.shield > 0) {
     
-            const shieldProt = defender.shield?.protection ?? 0;
+            const shieldProt = defender.shield ?? 0;
     
             console.log("Shield protection:", shieldProt);
     
