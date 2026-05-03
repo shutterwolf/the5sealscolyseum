@@ -1588,26 +1588,40 @@ class MyRoom extends Room {
                     }
                 }
 
-                if (data.equipped && Array.isArray(data.equipped)) {
+                if (data.equipped && typeof data.equipped === "object" && !Array.isArray(data.equipped)) {
+                    Object.entries(data.equipped).forEach(([slot, raw]) => {
+                        if (!raw || raw === 0) return;
+                        const item = new EquippedItem();
+                        item.name        = raw.name        ?? "";
+                        item.lootID      = Number(raw.lootID)      || 0;
+                        item.damageValue = Number(raw.damageValue)  || 0;
+                        item.armourValue = Number(raw.armourValue)  || 0;
+                        item.resistence  = Number(raw.resistence)   || 0;
+                        item.variable    = Number(raw.variable)     || 0;
+                        item.obj         = raw.obj         ?? "";
+                        item.slot        = slot;
+                        item.twohand     = !!raw.twohand;
+                        item.type        = raw.type        ?? "";
+                        item.value       = Number(raw.value)        || 0;
+                        item.special     = raw.special     ?? "";
+                        player.equipped.slots.set(slot, item);
+                    });
+                } else if (data.equipped && Array.isArray(data.equipped)) {
                     data.equipped.forEach(raw => {
                         const item = new EquippedItem();
-                
-                        // ❌ Chiave dello slot: usa type se esiste
-                        const slotKey = raw.type?.toUpperCase() || `SLOT_${raw.slot}`;
-                        item.name= raw.name;
-                        item.lootID = Number(raw.lootID) || 0;
-                        item.damageValue = Number(raw.damageValue) || 0;
-                        item.armourValue = Number(raw.armourValue) || 0;
-                        item.resistence = Number(raw.durability) || 0;
-                        item.variable=Number(raw.variable) || 0;
-                        item.obj = raw.obj ?? "";
-                        item.slot = slotKey; // Colyseus vuole stringa
-                        item.twohand = !!raw.twohand;
-                        item.type = raw.type ?? "";
-                        item.value = Number(raw.value) || 0;
-                        item.special = raw.special ?? "";
-                
-                        // 🔹 Inserisce nell’equipped MapSchema
+                        const slotKey = raw.slot?.toUpperCase() || raw.type?.toUpperCase() || "ITEM";
+                        item.name        = raw.name        ?? "";
+                        item.lootID      = Number(raw.lootID)      || 0;
+                        item.damageValue = Number(raw.damageValue)  || 0;
+                        item.armourValue = Number(raw.armourValue)  || 0;
+                        item.resistence  = Number(raw.resistence || raw.durability) || 0;
+                        item.variable    = Number(raw.variable)     || 0;
+                        item.obj         = raw.obj         ?? "";
+                        item.slot        = slotKey;
+                        item.twohand     = !!raw.twohand;
+                        item.type        = raw.type        ?? "";
+                        item.value       = Number(raw.value)        || 0;
+                        item.special     = raw.special     ?? "";
                         player.equipped.slots.set(slotKey, item);
                     });
                 }
