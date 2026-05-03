@@ -251,7 +251,8 @@ class CombatCore {
         if (isPlayerAttacker) {
             const entity = this.getEntity(attacker.id, "player");
         
-            const weaponType = entity?.equipped?.WEAPON?.type?.toLowerCase();
+            const weaponType =
+                entity?.equipped?.slots?.WEAPON?.type?.toLowerCase();
         
             console.log("Attacker weaponType:", weaponType);
         
@@ -262,8 +263,6 @@ class CombatCore {
             }
         
             console.log("attackerSkill FINAL:", attackerSkill);
-        } else {
-            attackerSkill = attacker.combat ?? attacker.attack ?? 0;
         }
     
         // ===== Defender skill =====
