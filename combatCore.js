@@ -209,8 +209,8 @@ class CombatCore {
         let attackerSkill = 0;
         let defenderSkill = 0;
     
-        const isPlayerAttacker = attacker.equipped !== undefined;
-        const isPlayerDefender = defender.equipped !== undefined;
+        const isPlayerAttacker = attacker.type === "player";
+        const isPlayerDefender = defender.type === "player";
     
         console.log("isPlayerAttacker:", isPlayerAttacker);
         console.log("isPlayerDefender:", isPlayerDefender);
