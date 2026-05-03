@@ -249,41 +249,41 @@ class CombatCore {
     
         // ===== Attacker skill =====
         if (isPlayerAttacker) {
-            const weaponType = attacker.equipped?.WEAPON?.type;
-            console.log("Attacker weaponType:", weaponType);
-    
+            const entity = this.getEntity(attacker.id, "player");
+        
+            const weaponType = entity?.equipped?.WEAPON?.type?.toLowerCase();
+        
+            console.log("Attacker weaponType (SERVER STATE):", weaponType);
+        
             if (weaponType) {
-                attackerSkill = attacker[weaponType.toLowerCase()] || 0;
+                attackerSkill = entity?.[weaponType] ?? entity?.combat ?? 0;
+            } else {
+                attackerSkill = entity?.combat ?? 0;
             }
-    
-            console.log("attackerSkill (player):", attackerSkill);
-        } else {
-            attackerSkill = attacker.attack;
-            console.log("attackerSkill (enemy):", attackerSkill);
+        
+            console.log("attackerSkill FINAL:", attackerSkill);
         }
     
         // ===== Defender skill =====
         if (isPlayerDefender) {
-            console.log("Defender equipped:", defender.equipped);
-    
-            if (defender.equipped?.SHIELD && defender.equipped.SHIELD !== 0) {
-                defenderSkill = defender.aShield;
-                console.log("Defender uses SHIELD -> aShield:", defenderSkill);
+            const entity = this.getEntity(defender.id, "player");
+        
+            console.log("Defender equipped (SERVER STATE):", entity?.equipped);
+        
+            if (entity?.equipped?.SHIELD) {
+                defenderSkill = entity?.aShield ?? entity?.defence ?? 0;
             } else {
-                const weaponType = defender.equipped?.WEAPON?.type;
-                console.log("Defender weaponType:", weaponType);
-    
-                defenderSkill = weaponType ? defender[weaponType.toLowerCase()] : 0;
-                console.log("Defender skill (weapon fallback):", defenderSkill);
+                const weaponType = entity?.equipped?.WEAPON?.type?.toLowerCase();
+        
+                defenderSkill = entity?.[weaponType] ?? entity?.defence ?? 0;
             }
-        } else {
-            defenderSkill = defender.defense;
-            console.log("defenderSkill (enemy):", defenderSkill);
+        
+            console.log("defenderSkill FINAL:", defenderSkill);
         }
     
         // ===== Roll =====
-        const attackRoll = attackerSkill + Math.floor(Math.random() * 10) + 1;
-        const defenseRoll = defenderSkill + Math.floor(Math.random() * 10) + 1;
+        const attackRoll = safe(attackerSkill) + Math.floor(Math.random() * 10) + 1;
+        const defenseRoll = safe(defenderSkill) + Math.floor(Math.random() * 10) + 1;
     
         console.log("attackRoll:", attackRoll, "defenseRoll:", defenseRoll);
     
