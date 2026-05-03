@@ -1080,17 +1080,34 @@ class MyRoom extends Room {
         this.onMessage("requestCombat", (client, message) => {
             console.log("⚔️ requestCombat received:", message);
             const { attackerId, targetId } = message;
+        
             const combatId = `${attackerId}_${targetId}_${Date.now()}`;
             const combat = new CombatCore(this, combatId);
             this.activeCombats.set(combatId, combat);
+        
             const playerState = this.state.players.get(attackerId);
             const enemyState  = this.state.enemies.get(targetId);
-            if (enemyState) enemyState.inCombat = 1;   // ← add here, after the existing declaration
+            if (enemyState) enemyState.inCombat = 1;
+        
+            const weaponSlot = playerState?.equipped?.slots?.get("WEAPON");
+            const weaponType = weaponSlot?.type ?? "";
+            const wDamage    = weaponSlot?.damageValue ?? 2;
+        
+            const shieldSlot  = playerState?.equipped?.slots?.get("SHIELD");
+            const shieldValue = shieldSlot?.armourValue ?? 0;
+        
+            const helmSlot   = playerState?.equipped?.slots?.get("HELM");
+            const armourSlot = playerState?.equipped?.slots?.get("ARMOUR");
+            const armourValue = (helmSlot?.armourValue ?? 0) + (armourSlot?.armourValue ?? 0);
+        
             combat.addActor(attackerId, {
-                combat:   playerState?.combat   ?? 5,
-                defence:  playerState?.defence  ?? 5,
-                strength: playerState?.strength ?? 3,
-                wDamage:  playerState?.wDamage  ?? 2
+                combat:     message.playerCombat   ?? 5,
+                defence:    message.playerDefence  ?? 5,
+                strength:   message.playerStrength ?? 3,
+                wDamage:    wDamage,
+                weaponType: weaponType,
+                shield:     shieldValue,
+                armour:     armourValue
             }, "player");
         
             combat.addActor(targetId, {
@@ -1103,7 +1120,7 @@ class MyRoom extends Room {
             combat.setTarget(attackerId, targetId);
             combat.setTarget(targetId, attackerId);
             combat.startCombat();
-        });;
+        });
         
         this.onMessage("combatActionFinished", (client, msg) => {
             const actorId = msg.actorId;
