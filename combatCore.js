@@ -26,15 +26,47 @@ class CombatCore {
             if (entity && typeof entity.health === "number") initialHP = entity.health;
             else if (typeof stats.hp === "number") initialHP = stats.hp;
         }
-    
+        let attackSkill = stats.combat ?? 5;
+
+        if (type === "player") {
+        
+            const weaponType = stats.equipped?.WEAPON?.type?.toLowerCase();
+        
+            switch (weaponType) {
+                case "blades":
+                    attackSkill = stats.blades ?? stats.combat ?? 5;
+                    break;
+        
+                case "maces":
+                    attackSkill = stats.maces ?? stats.combat ?? 5;
+                    break;
+        
+                case "axes":
+                    attackSkill = stats.axes ?? stats.combat ?? 5;
+                    break;
+        
+                case "polearms":
+                    attackSkill = stats.polearms ?? stats.combat ?? 5;
+                    break;
+            }
+        }
+        
+        let defenseSkill = stats.defence ?? 5;
+        let shieldProtection = 0;
+        
+        if (type === "player" && stats.equipped?.SHIELD) {
+            defenseSkill = stats.aShield ?? defenseSkill;
+            shieldProtection = stats.shield?.protection ?? 0;
+        }
         this.actors.set(id, {
             id,
             type,
             hp: initialHP,
-            combat: stats.combat ?? 5,
-            defence: stats.defence ?? 5,
+            combat: attackSkill ?? 5,
+            defence: defenseSkill ?? 5,
             strength: stats.strength ?? 3,
             wDamage: stats.wDamage ?? 2,
+            shield: shieldProtection ?? 0,
             targetId: null
         });
     
