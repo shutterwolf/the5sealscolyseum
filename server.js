@@ -1088,33 +1088,23 @@ class MyRoom extends Room {
             const playerState = this.state.players.get(attackerId);
             const enemyState  = this.state.enemies.get(targetId);
             if (enemyState) enemyState.inCombat = 1;
-        
-            const weaponSlot = playerState?.equipped?.slots?.get("WEAPON");
-            const weaponType = weaponSlot?.type ?? "";
-            const wDamage    = weaponSlot?.damageValue ?? 2;
-        
-            const shieldSlot  = playerState?.equipped?.slots?.get("SHIELD");
-            const shieldValue = shieldSlot?.armourValue ?? 0;
-        
-            const helmSlot   = playerState?.equipped?.slots?.get("HELM");
-            const armourSlot = playerState?.equipped?.slots?.get("ARMOUR");
-            const armourValue = (helmSlot?.armourValue ?? 0) + (armourSlot?.armourValue ?? 0);
+
         
             combat.addActor(attackerId, {
-                combat:     message.playerCombat   ?? 5,
-                defence:    message.playerDefence  ?? 5,
-                strength:   message.playerStrength ?? 3,
-                wDamage:    wDamage,
-                weaponType: weaponType,
-                shield:     shieldValue,
-                armour:     armourValue
+                combat:    message.playerSnapshot.combat,
+                defence:  message.playerSnapshot.defence,
+                strength: message.playerSnapshot.strength,
+                wDamage:  message.playerSnapshot.wDamage,
+                weaponType: message.playerSnapshot.weaponType,
+                shieldValue:   message.playerSnapshot.shieldArmor,
+                armour:   message.playerSnapshot.armour
             }, "player");
         
-            combat.addActor(targetId, {
-                combat:   enemyState?.combat   ?? 5,
-                defence:  enemyState?.defence  ?? 5,
+           combat.addActor(targetId, {
+                combat:    enemyState?.attac ?? 5,
+                defence:  enemyState?.defence ?? 5,
                 strength: enemyState?.strength ?? 3,
-                wDamage:  enemyState?.wDamage  ?? 2
+                wDamage:  enemyState?.wDamage ?? 2
             }, "enemy");
         
             combat.setTarget(attackerId, targetId);
