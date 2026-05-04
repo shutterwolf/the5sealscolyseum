@@ -1104,7 +1104,8 @@ class MyRoom extends Room {
                 combat:    enemyState?.attac ?? 5,
                 defence:  enemyState?.defence ?? 5,
                 strength: enemyState?.strength ?? 3,
-                wDamage:  enemyState?.wDamage ?? 2
+                wDamage:  enemyState?.wDamage ?? 2,
+                armour:   enemyState.armour
             }, "enemy");
         
             combat.setTarget(attackerId, targetId);
