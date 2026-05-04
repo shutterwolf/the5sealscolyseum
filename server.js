@@ -992,6 +992,10 @@ class MyRoom extends Room {
             this.activeCombats.set(combatId, combat);
             const playerState = this.state.players.get(attackerId);
             const enemyState  = this.state.enemies.get(targetId);
+            if (!playerState || !enemyState) {
+                console.warn("[requestCombat] missing actor", { attackerId, targetId, hasPlayer: !!playerState, hasEnemy: !!enemyState });
+                return;
+            }
             if (enemyState) enemyState.inCombat = 1;
             combat.addActor(attackerId, {
                 combat:    message.playerSnapshot.combat,
