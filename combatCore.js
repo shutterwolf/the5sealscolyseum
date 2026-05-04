@@ -79,12 +79,23 @@ class CombatCore {
 
     removeActor(id) {
         if (!this.actors.has(id)) return;
-        const indexRemoved = this.turnOrder.indexOf(id);
+        const wasCurrent = this.turnOrder[this.currentIndex] === id;
         this.actors.delete(id);
         this.turnOrder = this.turnOrder.filter(x => x !== id);
-        // 🔹 Fix currentIndex se necessario
-        if (indexRemoved <= this.currentIndex && this.currentIndex > 0) {
-            this.currentIndex--;
+        if (this.turnOrder.length === 0) {
+            this.currentIndex = 0;
+            return;
+        }
+        if (wasCurrent) {
+            // resta sullo stesso index (che ora punta al prossimo)
+            if (this.currentIndex >= this.turnOrder.length) {
+                this.currentIndex = 0;
+            }
+        } else {
+            const indexRemoved = this.turnOrder.indexOf(id);
+            if (indexRemoved !== -1 && indexRemoved < this.currentIndex) {
+                this.currentIndex--;
+            }
         }
     }
 
@@ -303,68 +314,41 @@ class CombatCore {
             console.log("MISS -> returning early");
             return { hit: false, shieldDamage: 0, wound: 0 };
         }
-    
         // ===== shield check =====
         let shieldDamage = 0;
-    
         if (isPlayerDefender && defender.shield > 0) {
-    
             const shieldProt = defender.shield ?? 0;
-    
-            console.log("Shield protection:", shieldProt);
-    
             if (diff <= shieldProt) {
-                shieldDamage = diff * (Math.floor(Math.random() * 4) + 1);
-    
-                console.log("BLOCKED BY SHIELD -> shieldDamage:", shieldDamage);
-    
+                shieldDamage = diff * (Math.floor(Math.random() * 4) + 1);        
                 return { hit: false, shieldDamage, wound: 0 };
             }
-        }
-    
+        }    
         // ===== damage =====
         const roll = Math.floor(Math.random() * 4) + 1;
         const wound = diff * roll;
-    
         console.log("raw wound:", wound, "roll multiplier:", roll);
-    
         // ===== armor =====
         let armorAbsorb = 0;
-    
         if (isPlayerDefender && defender.armor) {
-    
             const locRoll = Math.floor(Math.random() * 12) + 1;
-    
             console.log("armor locRoll:", locRoll);
-    
             let location;
-    
             if (locRoll <= 6) location = 'ARMOUR';
             else if (locRoll <= 8) location = 'GLOVES';
             else if (locRoll <= 10) location = 'BOOTS';
             else location = 'HELM';
-    
             console.log("armor location:", location);
-    
-            const armorPiece = defender.equipped?.[location];
-    
+            nst armorPiece = defender.equipped?.[location];
             const armorProt = (armorPiece?.armourValue ?? 0) + (armorPiece?.variable ?? 0);
-    
             console.log("armor piece:", armorPiece, "armorProt:", armorProt);
-    
             armorAbsorb = armorProt > 0
                 ? Math.floor(Math.random() * armorProt) + 1
                 : 0;
-    
             console.log("armorAbsorb:", armorAbsorb);
         }
-    
         const finalWound = Math.max(0, wound - armorAbsorb);
-    
         console.log("FINAL wound:", finalWound);
-    
         console.log("===== resolveHit END =====");
-    
         return {
             hit: true,
             shieldDamage: shieldDamage,
