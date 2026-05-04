@@ -365,16 +365,12 @@ class MyRoom extends Room {
         const maxLevels = dungeonConfig.Levels;
         if (maxLevels <= 1) return null;
         if (levelIndex >= maxLevels - 1) return null;
-    
         const rooms = levelData.rooms;
         if (!rooms || rooms.length === 0) return null;
-    
         const MIN_DIST = 15;
-    
         if (entrance && rooms.length > 1) {
             let bestRoom = null;
             let bestDist = -1;
-    
             for (const room of rooms) {
                 const cx = (room.getLeft() + room.getRight()) / 2;
                 const cy = (room.getTop() + room.getBottom()) / 2;
@@ -401,7 +397,6 @@ class MyRoom extends Room {
             const dist = Math.sqrt(Math.pow(x - entrance.x, 2) + Math.pow(y - entrance.y, 2));
             if (dist >= MIN_DIST) return { x, y };
         }
-    
         // last resort
         const room = rooms[Math.floor(ROT.RNG.getUniform() * rooms.length)];
         const x = Math.floor(ROT.RNG.getUniform() * (room.getRight() - room.getLeft() - 1)) + room.getLeft() + 1;
@@ -412,20 +407,14 @@ class MyRoom extends Room {
     generateDoors(levelData, config) {
         const doors = {};
         if (!config.Doors) return doors;
-    
         const rooms = levelData.rooms;
         if (!rooms || rooms.length === 0) return doors;
-    
         const maxDoors = config.maxDoors || 999;
         let count = 0;
-    
         let doorIndex = 0; // 👈 per ratio locked
-    
         const saveDoor = (x, y) => {
             if (count >= maxDoors) return;
-    
             const key = `${x},${y}`;
-    
             // skip adjacent doors
             if (
                 doors[`${x+1},${y}`] ||
@@ -441,43 +430,30 @@ class MyRoom extends Room {
             const down  = levelData.map[`${x},${y-1}`];
             const left  = levelData.map[`${x-1},${y}`];
             const right = levelData.map[`${x+1},${y}`];
-    
             const vertical   = (up === "#" && down === "#");
             const horizontal = (left === "#" && right === "#");
-    
             if (!(vertical || horizontal)) return;
-    
             doorIndex++;
-    
             // 🔥 1 ogni 10 è locked
             const isLocked = (doorIndex % 10 === 0);
-    
             doors[key] = {
                 x,
                 y,
-    
                 closed: true,
-    
                 // 🔐 ONLY key system for now
                 lockType: isLocked ? "key" : "none",
                 keyNumber: isLocked ? 1 : 0,
-    
                 triggerId: 0,
-    
                 // unused for now but safe
                 resistance: 100,
-    
                 orientation: vertical ? "vertical" : "horizontal",
                 material: "wood"
             };
-    
             count++;
         };
-    
         for (const room of rooms) {
             room.getDoors(saveDoor);
         }
-    
         return doors;
     }
 
@@ -496,126 +472,92 @@ class MyRoom extends Room {
     generateFurnitures(levelData, config, occupied = new Set()) {
         const furnitures = {};
         const count = config.furniture || 10;
-    
         for (let i = 0; i < count; i++) {
-    
             for (let attempt = 0; attempt < 10; attempt++) {
-    
                 const a = Math.floor(ROT.RNG.getUniform() * 5);
-    
                 let type = "table";
                 if (a === 1 || a === 4) type = "column";
                 if (a === 2) type = "bookcase";
-    
                 const key = this.getRandomCellInRoom(levelData);
                 if (!key) continue;
-    
                 if (occupied.has(key)) continue;
                 if (levelData.doors && levelData.doors[key]) continue;
-    
                 const [x, y] = key.split(",").map(Number);
-    
                 if (
                     levelData.map[`${x},${y+1}`] !== "." ||
                     levelData.map[`${x},${y-1}`] !== "." ||
                     levelData.map[`${x+1},${y}`] !== "." ||
                     levelData.map[`${x-1},${y}`] !== "."
                 ) continue;
-    
                 let rotation = levelData.map[`${x},${y-1}`] === "." ? 180 : 0;
-    
                 furnitures[key] = {
                     x,
                     y,
                     type,
                     rotation
                 };
-    
                 occupied.add(key);
                 break;
             }
         }
-    
         return furnitures;
     }
     
     generateLoot(levelData, config, occupied = new Set()) {
         const loots = {};
         const count = config.loot || 5;
-    
         for (let i = 0; i < count; i++) {
-    
             for (let attempt = 0; attempt < 10; attempt++) {
-    
                 const key = this.getRandomCellInRoom(levelData);
                 if (!key) continue;
-    
                 if (occupied.has(key)) continue;
                 if (levelData.doors && levelData.doors[key]) continue;
-    
                 const [x, y] = key.split(",").map(Number);
-    
                 if (
                     levelData.map[`${x},${y+1}`] !== "." ||
                     levelData.map[`${x},${y-1}`] !== "." ||
                     levelData.map[`${x+1},${y}`] !== "." ||
                     levelData.map[`${x-1},${y}`] !== "."
                 ) continue;
-    
                 loots[key] = {
                     x,
                     y,
                     type: "chest"
                 };
-    
                 occupied.add(key);
                 break;
             }
         }
-    
         return loots;
     }
     
     getRandomCellInRoom(levelData) {
         const rooms = levelData.rooms;
         if (!rooms || rooms.length === 0) return null;
-    
         for (let attempt = 0; attempt < 10; attempt++) {
-    
             const room = rooms[Math.floor(ROT.RNG.getUniform() * rooms.length)];
-    
             const minX = room.getLeft() + 1;
             const maxX = room.getRight() - 1;
-    
             const minY = room.getTop() + 1;
             const maxY = room.getBottom() - 1;
-    
             if (maxX < minX || maxY < minY) continue;
-    
             const x = Math.floor(ROT.RNG.getUniform() * (maxX - minX + 1)) + minX;
             const y = Math.floor(ROT.RNG.getUniform() * (maxY - minY + 1)) + minY;
-    
             const key = `${x},${y}`;
-    
             if (levelData.map[key] !== ".") continue;
             if (levelData.doors && levelData.doors[key]) continue;
-    
             return key;
         }
-    
         return null;
     }
     
     generateUniformMap(dungeonConfig, seed) {
         const width  = dungeonConfig.dunWidth;
         const height = dungeonConfig.dunHeight;
-    
         ROT.RNG.setSeed(seed);
-    
         const map       = {};
         const freeCells = [];
         const roomsData = [];
-    
         const mapGen = new ROT.Map.Digger(width, height, {
             roomWidth:     [dungeonConfig.xroom, dungeonConfig.xroom + 2],
             roomHeight:    [dungeonConfig.yroom, dungeonConfig.yroom + 2],
@@ -632,13 +574,11 @@ class MyRoom extends Room {
                 map[key] = "#";
             }
         });
-    
         // Store actual room objects so getDoors() is available
         const rooms = mapGen.getRooms();
         for (const room of rooms) {
             roomsData.push(room);
         }
-    
         return {
             map,
             freeCells,
@@ -650,7 +590,6 @@ class MyRoom extends Room {
 
     spawnEnemy(type, x, z, config = {}) {
         const id = "E" + this.enemyIdCounter++;
-    
         const enemy = new EnemySchema();
         const stats = enemyStats[type];
         enemy.id = id;
@@ -671,16 +610,12 @@ class MyRoom extends Room {
         enemy.radius = stats.radius;
         enemy.wRange = stats.wRange;
         enemy.maxHealth = stats.maxHealth;
-    
         // NON ha ownerId → loot libero o null
         enemy.ownerId = "";
         enemy.questId = config.questId ?? -1;
-    
         enemy.isDead = false;
         enemy.lootReady = false;
-    
         this.state.enemies.set(id, enemy);
-    
         const logic = new EnemyServer({
             id: id,
             enemy: config.type,
@@ -695,13 +630,11 @@ class MyRoom extends Room {
             radius: enemyStats[config.type]?.radius ?? 5
         });
         this.enemyInstances.set(id, logic);
-    
         // 3️⃣ Salva riferimento
         if (!this.activeQuestSpawns.has(ownerId)) {
             this.activeQuestSpawns.set(ownerId, new Map());
         }
         this.activeQuestSpawns.get(ownerId).set(questId, id);
-    
         // 4️⃣ Notifica client owner  ← VA QUI, dopo tutto il resto
         const ownerSessionId = [...this.sessionToPlayerId.entries()]
             .find(([, pid]) => pid === ownerId)?.[0];
@@ -717,19 +650,16 @@ class MyRoom extends Room {
         } else {
             console.warn(`[spawnQuestEnemy] client owner ${ownerId} non trovato`);
         }
-    
         return id;
     }
 
     spawnQuestEnemy(ownerId, questId, config) {
     const id = "E" + this.enemyIdCounter++;
-
     const stats = enemyStats[config.type];
     if (!stats) {
         console.error("Enemy type non trovato in enemyStats:", config.type);
         return null;
     }
-
     const enemy = new EnemySchema();
     enemy.id = id;
     enemy.typeId = stats.id;
@@ -753,9 +683,7 @@ class MyRoom extends Room {
     enemy.questId = questId;
     enemy.isDead = false;
     enemy.lootReady = false;
-
     this.state.enemies.set(id, enemy);
-
     const logic = new EnemyServer({
         id: id,
         enemy: config.type,
@@ -770,12 +698,10 @@ class MyRoom extends Room {
         radius: stats.radius ?? 5
     });
     this.enemyInstances.set(id, logic);
-
     if (!this.activeQuestSpawns.has(ownerId)) {
         this.activeQuestSpawns.set(ownerId, new Map());
     }
     this.activeQuestSpawns.get(ownerId).set(questId, id);
-
     const ownerSessionId = [...this.sessionToPlayerId.entries()]
         .find(([, pid]) => pid === ownerId)?.[0];
     const ownerClient = this.clients.find(c => c.sessionId === ownerSessionId);
@@ -790,7 +716,6 @@ class MyRoom extends Room {
     } else {
         console.warn(`[spawnQuestEnemy] client owner ${ownerId} non trovato`);
     }
-
     return id;
 }
 
@@ -868,9 +793,7 @@ class MyRoom extends Room {
                             dungeonId: String(dungeonId),
                             depth: Number(levelKey)
                         };
-        
                         levelData.loot[key] = newChest;              // ← CHANGED
-        
                         placed = true;
                         this.broadcastToLevel(dungeonId, levelKey, "lootSpawned", newChest);
                         break;
@@ -884,23 +807,17 @@ class MyRoom extends Room {
             if (!playerId) return;
             const player = this.state.players.get(playerId);
             if (!player) return;
-        
             const dungeon = this.dungeons.get(player.dungeonId) ?? this.dungeons.get(Number(player.dungeonId));
             if (!dungeon) return;
-        
             const level = dungeon.levels[String(player.depth)];
             if (!level?.loot) return;
-        
             console.log(`[CHEST] Player trying to open chest at key: ${data.key}`);
-        
             if (!(data.key in level.loot)) {
                 console.log(`[CHEST ERROR] Key ${data.key} not found! Available keys:`, Object.keys(level.loot));
                 return; 
             }
-            
             // Delete it from server state
             delete level.loot[data.key];           
-        
             console.log(`[CHEST] Success! Broadcasting chestOpened for key: ${data.key}`);
             this.broadcastToLevel(player.dungeonId, String(player.depth), "chestOpened", {
                 key: data.key
@@ -912,20 +829,16 @@ class MyRoom extends Room {
            console.log(">>> requestSpawnEnemies raw data:", JSON.stringify(data));
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
-        
             const player = this.state.players.get(playerId);
             if (!player) return;
-        
             const questId = data.questID ?? data.questId ?? 0;
             const enemyType = data.enemyType;
             const startPos = data.startPos || {};
             const num = Number.isFinite(data.num) && data.num > 0 ? Math.floor(data.num) : 1;
-        
             if (!enemyType || !Number.isFinite(startPos.x) || !Number.isFinite(startPos.z)) {
                 console.warn("[requestSpawnEnemies] Invalid payload:", data);
                 return;
             }
-        
             for (let i = 0; i < num; i++) {
                 const enemyID = this.spawnQuestEnemy(playerId, questId, {
                     type: enemyType,
@@ -935,7 +848,6 @@ class MyRoom extends Room {
                     dungeonId: player.dungeonId ?? "",
                     depth: player.depth ?? 0
                 });
-        
                 if (!enemyID) {
                     console.error("Spawn failed for enemyType:", enemyType);
                 }
@@ -957,19 +869,15 @@ class MyRoom extends Room {
             let level = data.level ?? 1; // 👈 let
             let depth = data.depth ?? level;
             const depthFromData = data.depth;
-            
             //console.log("Depth FROM DATA:", depthFromData);
             const docId = `${dungeonId}_${level}`;
-        
             // Get or create dungeon in memory
             if (!this.dungeons.has(dungeonId)) {
                 this.dungeons.set(dungeonId, { id: dungeonId, levels: {} });
             }
             const dungeon = this.dungeons.get(dungeonId);
-        
             // If level not in memory, try Firestore first
             const lvlKey = String(level);
-
             if (!dungeon.levels[lvlKey]) {
                 try {
                     const doc = await db.collection("dungeons").doc(docId).get();
@@ -1030,7 +938,6 @@ class MyRoom extends Room {
 
         this.onMessage("openDoor", (client, data) => {
             console.log("openDoor received key:", data.key);
-            
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             console.log("PLAYER:", playerId);
             if (!playerId) return;
@@ -1080,16 +987,12 @@ class MyRoom extends Room {
         this.onMessage("requestCombat", (client, message) => {
             console.log("⚔️ requestCombat received:", message);
             const { attackerId, targetId } = message;
-        
             const combatId = `${attackerId}_${targetId}_${Date.now()}`;
             const combat = new CombatCore(this, combatId);
             this.activeCombats.set(combatId, combat);
-        
             const playerState = this.state.players.get(attackerId);
             const enemyState  = this.state.enemies.get(targetId);
             if (enemyState) enemyState.inCombat = 1;
-
-        
             combat.addActor(attackerId, {
                 combat:    message.playerSnapshot.combat,
                 defence:  message.playerSnapshot.defence,
@@ -1149,10 +1052,8 @@ class MyRoom extends Room {
             if (!enemy || !enemy.isDead || !enemy.lootReady) return;
             if (enemy.ownerId !== playerId && enemy.ownerId !== player?.partyId) return;
             this.giveQuestLoot(playerId, enemy);
-        
             // rimuovi body
             this.state.enemies.delete(enemy.id);
-        
             // cleanup spawn tracking
             const ownerMap = this.activeQuestSpawns.get(enemy.ownerId);
             if (ownerMap) ownerMap.delete(enemy.questId);
@@ -1169,7 +1070,6 @@ class MyRoom extends Room {
                 dungeonId: data.dungeonId,
                 depth: data.depth
             };
-        
             this.spawnQuestEnemy(playerId, questId, questConfig);
         });
         
@@ -1178,14 +1078,12 @@ class MyRoom extends Room {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             const player = this.state.players.get(playerId);
             if (!player || typeof data.slot !== "string") return;
-
             let item = player.equipped.slots.get(data.slot);
             if (!item) {
                 item = new EquippedItem();
                 item.slot = data.slot;
                 player.equipped.slots.set(data.slot, item);
             }
-
             item.obj = data.obj ?? item.obj;
             item.type = data.type ?? item.type;
             item.twohand = !!data.twohand;
