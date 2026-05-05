@@ -999,13 +999,13 @@ class MyRoom extends Room {
             }
             if (enemyState) enemyState.inCombat = 1;
             combat.addActor(attackerId, {
-                combat:    message.playerSnapshot.combat,
-                defence:  message.playerSnapshot.defence,
-                strength: message.playerSnapshot.strength,
-                wDamage:  message.playerSnapshot.wDamage,
-                weaponType: message.playerSnapshot.weaponType,
-                shieldValue:   message.playerSnapshot.shieldArmor,
-                armour:   message.playerSnapshot.armour
+                combat:    message.combat,
+                defence:  message.defence,
+                strength: message.strength,
+                wDamage:  message.wDamage,
+                weaponType: message.weaponType,
+                shieldValue:   message.shieldArmor,
+                armour:   message.armour
             }, "player");
         
            combat.addActor(targetId, {
