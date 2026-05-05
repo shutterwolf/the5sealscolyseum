@@ -322,7 +322,7 @@ class CombatCore {
         if (isPlayerDefender && defender.shield > 0) {
             const shieldProt = defender.shield ?? 0;
             if (diff <= shieldProt) {
-                shieldDamage = diff * (Math.floor(Math.random() * 4) + 1);        
+                shieldDamage = diff;        
                 return { hit: false, shieldDamage, wound: 0 };
             }
         }    
@@ -342,7 +342,7 @@ class CombatCore {
             else location = 'HELM';
             console.log("armor location:", location);
             const armorPiece = defender.equipped?.[location];
-            const armorProt = (armorPiece?.armourValue ?? 0) + (armorPiece?.variable ?? 0);
+            const armorProt = armorPiece.armourValue || 0;
             console.log("armor piece:", armorPiece, "armorProt:", armorProt);
             armorAbsorb = armorProt > 0
                 ? Math.floor(Math.random() * armorProt) + 1
