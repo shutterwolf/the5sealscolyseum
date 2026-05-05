@@ -364,7 +364,7 @@ class CombatCore {
         this.inProgress = false;
         for (let id of this.actors.keys()) {
             const actor = this.actors.get(id);
-            this.updateEntityHP(id, actor.type, actor.hp);
+            //this.updateEntityHP(id, actor.type, actor.hp);
             if (actor.type === "enemy") {
                 const e = this.room.state.enemies.get(id);
                 if (e) e.inCombat = 0;
