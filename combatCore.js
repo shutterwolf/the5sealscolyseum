@@ -14,63 +14,66 @@ class CombatCore {
 
     addActor(id, stats, type = "player") {
         if (this.actors.has(id)) return;
-    
         const entity = this.getEntity(id, type);
-    
-        // valori sicuri
+        // =========================
+        // HP SAFE
+        // =========================
         let initialHP = 20;
         if (type === "player") {
-            if (entity && typeof entity.phealth === "number") initialHP = entity.phealth;
-            else if (typeof stats.hp === "number") initialHP = stats.hp;
+            initialHP =
+                entity?.phealth ??
+                stats.hp ??
+                20;
         } else {
-            if (entity && typeof entity.health === "number") initialHP = entity.health;
-            else if (typeof stats.hp === "number") initialHP = stats.hp;
+            initialHP =
+                entity?.health ??
+                stats.hp ??
+                20;
         }
+        // =========================
+        // ATTACK SKILL (NO RICALCOLO)
+        // =========================
         let attackSkill = stats.combat ?? 5;
-
-        if (type === "player") {
-        
-            const weaponType = stats.equipped?.WEAPON?.type?.toLowerCase();
-        
-            switch (weaponType) {
-                case "blades":
-                    attackSkill = stats.blades ?? stats.combat ?? 5;
-                    break;
-        
-                case "maces":
-                    attackSkill = stats.maces ?? stats.combat ?? 5;
-                    break;
-        
-                case "axes":
-                    attackSkill = stats.axes ?? stats.combat ?? 5;
-                    break;
-        
-                case "polearms":
-                    attackSkill = stats.polearms ?? stats.combat ?? 5;
-                    break;
-            }
-        }
-        
+        // =========================
+        // DEFENSE SKILL
+        // =========================
         let defenseSkill = stats.defence ?? 5;
-        let shieldProtection = 0;
-        
-        if (type === "player" && stats.equipped?.SHIELD) {
-            defenseSkill = stats.aShield ?? defenseSkill;
-            shieldProtection = stats.shield?.protection ?? 0;
-        }
+        // =========================
+        // WEAPON TYPE (OPTIONAL ONLY)
+        // =========================
+        const weaponType = stats.weaponType ?? stats.weapon ?? "UNARMED";
+        // =========================
+        // SHIELD
+        // =========================
+        const shieldProtection = stats.shieldArmor ?? stats.shieldValue ?? stats.shield ?? 0;
+        // =========================
+        // ARMOR (SAFE)
+        // =========================
+        const armorValue =
+            (stats.helmArmor ?? 0) +
+            (stats.armour ?? 0) +
+            (stats.bootsArmor ?? 0) +
+            (stats.glovesArmor ?? 0) +
+            shieldProtection;
+        // =========================
+        // FINAL ACTOR
+        // =========================
         this.actors.set(id, {
             id,
             type,
             hp: initialHP,
-            combat: attackSkill ?? 5,
-            defence: defenseSkill ?? 5,
+            combat: attackSkill,
+            defence: defenseSkill,
             strength: stats.strength ?? 3,
             wDamage: stats.wDamage ?? 2,
-            shield: shieldProtection ?? 0,
+            shield: shieldProtection,
+            armour: armorValue,
+            weaponType,
             targetId: null
         });
-    
-        // Aggiorna lo state corretto
+        // =========================
+        // SYNC STATE
+        // =========================
         if (entity) {
             if (type === "player") entity.phealth = initialHP;
             if (type === "enemy") entity.health = initialHP;
