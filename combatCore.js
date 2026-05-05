@@ -338,7 +338,7 @@ class CombatCore {
             else if (locRoll <= 10) location = 'BOOTS';
             else location = 'HELM';
             console.log("armor location:", location);
-            nst armorPiece = defender.equipped?.[location];
+            const armorPiece = defender.equipped?.[location];
             const armorProt = (armorPiece?.armourValue ?? 0) + (armorPiece?.variable ?? 0);
             console.log("armor piece:", armorPiece, "armorProt:", armorProt);
             armorAbsorb = armorProt > 0
