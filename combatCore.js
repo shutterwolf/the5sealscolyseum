@@ -1,6 +1,11 @@
 // CombatCore.js
 const { Schema, type } = require("@colyseus/schema");
 
+function combatTrace(stage, data = {}) {
+    if (!COMBAT_TRACE) return;
+    console.log(`[COMBAT_CORE][${new Date().toISOString()}][${stage}]`, data);
+}
+
 class CombatCore {
     constructor(room, combatId) {
         this.room = room;
