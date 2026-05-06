@@ -1,11 +1,6 @@
 // CombatCore.js
 const { Schema, type } = require("@colyseus/schema");
 
-function combatTrace(stage, data = {}) {
-    if (!COMBAT_TRACE) return;
-    console.log(`[COMBAT_CORE][${new Date().toISOString()}][${stage}]`, data);
-}
-
 class CombatCore {
     constructor(room, combatId) {
         this.room = room;
@@ -125,12 +120,12 @@ class CombatCore {
         this.inProgress = true;
         this.round = 1;
         this.currentIndex = 0;
-        combatTrace("START", {
+        console.log("START", {
             combatId: this.combatId,
             actors: [...this.actors.keys()]
         });
         this.rollInitiative();
-        combatTrace("INITIATIVE", {
+        console.log("INITIATIVE", {
             combatId: this.combatId,
             turnOrder: this.turnOrder
         });
@@ -144,7 +139,7 @@ class CombatCore {
     }
 
     onActorAnimationFinished(actorId) {
-        combatTrace("TURN_RESOLVE_BEGIN", {
+        console.log("TURN_RESOLVE_BEGIN", {
             combatId: this.combatId,
             actorId,
             currentActorId: this.getCurrentActorId()
@@ -169,7 +164,7 @@ class CombatCore {
             return;
         }*/
         const result = this.resolveHit(actor, target);
-        combatTrace("HIT_RESULT", {
+        console.log("HIT_RESULT", {
             combatId: this.combatId,
             attackerId: actor.id,
             targetId: target.id,
@@ -179,7 +174,7 @@ class CombatCore {
         const damage = result.wound;
         if (result.hit && result.wound > 0) {
             target.hp -= damage;
-            combatTrace("HP_APPLY", {
+            console.log("HP_APPLY", {
                 combatId: this.combatId,
                 targetId: target.id,
                 targetHpAfter: target.hp
@@ -222,7 +217,7 @@ class CombatCore {
         }
         const nextActorId = this.getCurrentActorId();
         const nextActor = this.actors.get(nextActorId);
-        combatTrace("NEXT_TURN", {
+        console.log("NEXT_TURN", {
             combatId: this.combatId,
             round: this.round,
             currentIndex: this.currentIndex,
@@ -391,7 +386,7 @@ class CombatCore {
     }
 
     endCombat() {
-        combatTrace("END", {
+        console.log("END", {
             combatId: this.combatId,
             remainingActors: [...this.actors.keys()]
         });
