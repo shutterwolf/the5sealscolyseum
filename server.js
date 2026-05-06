@@ -346,6 +346,12 @@ type(WorldState)(MyRoomState.prototype, "world");
 type([ChatMessage])(MyRoomState.prototype, "chat");
 type({ map: DoorState })(MyRoomState.prototype, "doors");
 
+const COMBAT_TRACE = true;
+function combatTrace(stage, data = {}) {
+    if (!COMBAT_TRACE) return;
+    console.log(`[COMBAT][${new Date().toISOString()}][${stage}]`, data);
+}
+
 // --- Room ---
 class MyRoom extends Room {
     maxClients = 40;
@@ -1015,7 +1021,9 @@ class MyRoom extends Room {
                 wDamage:  enemyState?.wDamage ?? 2,
                 armour:   enemyState.armour
             }, "enemy");
-        
+            combatTrace("REQUEST", { attackerId, targetId, message });
+            combatTrace("STATE_LOOKUP", { hasPlayer: !!playerState, hasEnemy: !!enemyState });
+            combatTrace("START", { combatId, attackerId, targetId });
             combat.setTarget(attackerId, targetId);
             combat.setTarget(targetId, attackerId);
             combat.startCombat();
