@@ -290,9 +290,8 @@ class CombatCore {
         // ===== Attacker skill =====
         if (isPlayerAttacker) {
             const entity = this.getEntity(attacker.id, "player");
-        
-            const weaponType =
-                entity?.equipped?.slots?.WEAPON?.type?.toLowerCase();
+            const weapon = entity?.equipped?.slots?.get("WEAPON");
+            const weaponType = weapon?.type?.toLowerCase();
         
             console.log("Attacker weaponType:", weaponType);
         
