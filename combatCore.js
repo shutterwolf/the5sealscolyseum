@@ -120,8 +120,15 @@ class CombatCore {
         this.inProgress = true;
         this.round = 1;
         this.currentIndex = 0;
+        combatTrace("START", {
+            combatId: this.combatId,
+            actors: [...this.actors.keys()]
+        });
         this.rollInitiative();
-        console.log("🎲 turnOrder:", this.turnOrder);
+        combatTrace("INITIATIVE", {
+            combatId: this.combatId,
+            turnOrder: this.turnOrder
+        });
         this.broadcastToCombat("combatStart", { turnOrder: this.turnOrder });
         const nextActorId = this.getCurrentActorId();
         const nextActor = this.actors.get(nextActorId);
@@ -132,7 +139,11 @@ class CombatCore {
     }
 
     onActorAnimationFinished(actorId) {
-        console.log("SERVER RECEIVED:", actorId, "CURRENT:", this.getCurrentActorId());
+        combatTrace("TURN_RESOLVE_BEGIN", {
+            combatId: this.combatId,
+            actorId,
+            currentActorId: this.getCurrentActorId()
+        });
         if (!this.inProgress || this.getCurrentActorId() !== actorId) return;
 
         const actor = this.actors.get(actorId);
@@ -153,9 +164,21 @@ class CombatCore {
             return;
         }*/
         const result = this.resolveHit(actor, target);
+        combatTrace("HIT_RESULT", {
+            combatId: this.combatId,
+            attackerId: actor.id,
+            targetId: target.id,
+            result,
+            targetHpBefore: target.hp
+        });
         const damage = result.wound;
         if (result.hit && result.wound > 0) {
             target.hp -= damage;
+            combatTrace("HP_APPLY", {
+                combatId: this.combatId,
+                targetId: target.id,
+                targetHpAfter: target.hp
+            });
             this.updateEntityHP(target.id, target.type, target.hp);
         }
 
@@ -190,13 +213,16 @@ class CombatCore {
     
             // 🔥 ricalcola iniziativa SOLO qui
             this.rollInitiative();
-    
             this.currentIndex = 0;
         }
-    
         const nextActorId = this.getCurrentActorId();
         const nextActor = this.actors.get(nextActorId);
-    
+        combatTrace("NEXT_TURN", {
+            combatId: this.combatId,
+            round: this.round,
+            currentIndex: this.currentIndex,
+            nextActorId
+        });
         this.broadcastToCombat("startTurn", {
             actorId: nextActorId,
             targetId: nextActor?.targetId ?? null
@@ -361,6 +387,10 @@ class CombatCore {
     }
 
     endCombat() {
+        combatTrace("END", {
+            combatId: this.combatId,
+            remainingActors: [...this.actors.keys()]
+        });
         this.inProgress = false;
         for (let id of this.actors.keys()) {
             const actor = this.actors.get(id);
