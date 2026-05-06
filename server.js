@@ -991,43 +991,55 @@ class MyRoom extends Room {
         
         // Replace the broken client-side handlers with these server-side ones:
         this.onMessage("requestCombat", (client, message) => {
-            console.log("⚔️ requestCombat received:", message);
             const { attackerId, targetId } = message;
+            combatTrace("REQUEST", { attackerId, targetId, message });
+        
+            const playerState = this.state.players.get(attackerId);
+            const enemyState = this.state.enemies.get(targetId);
+        
+            combatTrace("STATE_LOOKUP", {
+                attackerId, targetId,
+                hasPlayer: !!playerState,
+                hasEnemy: !!enemyState,
+                enemyType: enemyState?.type
+            });
+        
+            if (!playerState || !enemyState) return;
+        
+            const es = enemyStats[enemyState.type] || {};
             const combatId = `${attackerId}_${targetId}_${Date.now()}`;
             const combat = new CombatCore(this, combatId);
             this.activeCombats.set(combatId, combat);
-            const playerState = this.state.players.get(attackerId);
-            const enemyState  = this.state.enemies.get(targetId);
-            console.log("[requestCombat] missing actor", { attackerId, targetId, hasPlayer: !!playerState, hasEnemy: !!enemyState });
-            if (!playerState || !enemyState) {
-                console.warn("[requestCombat] missing actor", { attackerId, targetId, hasPlayer: !!playerState, hasEnemy: !!enemyState });
-                return;
-            }
-            if (enemyState) enemyState.inCombat = 1;
+        
+            enemyState.inCombat = 1;
+            playerState.inCombat = 1;
+        
             combat.addActor(attackerId, {
-                combat:    message.combat,
-                defence:  message.defence,
-                strength: message.strength,
-                wDamage:  message.wDamage,
-                weaponType: message.weaponType,
-                shieldValue:   message.shieldArmor,
-                armour:   message.armour
+                hp: playerState.hp ?? 20,
+                combat: message.combat ?? 5,
+                defence: message.defence ?? 5,
+                strength: message.strength ?? 3,
+                wDamage: message.wDamage ?? 1,
+                weaponType: message.weaponType ?? "UNARMED",
+                shield: message.shield ?? message.shieldArmor ?? 0,
+                armor: message.armor ?? message.armour ?? 0
             }, "player");
         
-           combat.addActor(targetId, {
-                combat:    enemyState?.attac ?? 5,
-                defence:  enemyState?.defence ?? 5,
-                strength: enemyState?.strength ?? 3,
-                wDamage:  enemyState?.wDamage ?? 2,
-                armour:   enemyState.armour
+            combat.addActor(targetId, {
+                hp: enemyState.health ?? es.maxHealth ?? 20,
+                combat: es.attac ?? es.combat ?? 5,
+                defence: es.defence ?? 5,
+                strength: es.strength ?? 3,
+                wDamage: es.wDamage ?? 1,
+                armor: es.armor ?? 0
             }, "enemy");
-            combatTrace("REQUEST", { attackerId, targetId, message });
-            combatTrace("STATE_LOOKUP", { hasPlayer: !!playerState, hasEnemy: !!enemyState });
+        
             combatTrace("START", { combatId, attackerId, targetId });
             combat.setTarget(attackerId, targetId);
             combat.setTarget(targetId, attackerId);
             combat.startCombat();
         });
+
         
         this.onMessage("combatActionFinished", (client, msg) => {
             const actorId = msg.actorId;
