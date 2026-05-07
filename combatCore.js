@@ -83,6 +83,8 @@ class CombatCore {
     removeActor(id) {
         if (!this.actors.has(id)) return;
         const wasCurrent = this.turnOrder[this.currentIndex] === id;
+        // ✅ QUI
+        const indexRemoved = this.turnOrder.indexOf(id);
         this.actors.delete(id);
         this.turnOrder = this.turnOrder.filter(x => x !== id);
         if (this.turnOrder.length === 0) {
@@ -90,12 +92,10 @@ class CombatCore {
             return;
         }
         if (wasCurrent) {
-            // resta sullo stesso index (che ora punta al prossimo)
             if (this.currentIndex >= this.turnOrder.length) {
                 this.currentIndex = 0;
             }
         } else {
-            const indexRemoved = this.turnOrder.indexOf(id);
             if (indexRemoved !== -1 && indexRemoved < this.currentIndex) {
                 this.currentIndex--;
             }
@@ -366,7 +366,8 @@ class CombatCore {
             else if (locRoll <= 10) location = 'BOOTS';
             else location = 'HELM';
             console.log("armor location:", location);
-            const armorPiece = defender.equipped?.[location];
+            const entity = this.getEntity(defender.id, "player");
+            const armorPiece = entity?.equipped?.[location];
             const armorProt = armorPiece.armourValue || 0;
             console.log("armor piece:", armorPiece, "armorProt:", armorProt);
             armorAbsorb = armorProt > 0
