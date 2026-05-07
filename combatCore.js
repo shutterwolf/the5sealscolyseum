@@ -171,8 +171,11 @@ class CombatCore {
             result,
             targetHpBefore: target.hp
         });
-        const damage = result.wound;
-        if (result.hit && result.wound > 0) {
+        const wound = result.wound;   // ✔ corretto
+        if (result.hit && wound > 0) {
+            target.hp -= wound;
+            this.updateEntityHP(target.id, target.type, target.hp);
+        }
             target.hp -= damage;
             console.log("HP_APPLY", {
                 combatId: this.combatId,
