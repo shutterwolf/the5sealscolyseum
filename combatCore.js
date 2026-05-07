@@ -378,12 +378,11 @@ class CombatCore {
         const finalWound = wound - armorAbsorb;
         console.log("FINAL wound:", finalWound);
         console.log("===== resolveHit END =====");
-        actor.hp -= finalWound;
         return {
             hit: true,
-            shieldDamage: shieldDamage,
+            shieldDamage,
             wound: finalWound,
-            armorAbsorb: armorAbsorb
+            armorAbsorb
         };
     }
 
