@@ -185,7 +185,7 @@ class CombatCore {
         this.broadcastToCombat("damage", {
             attackerId: actorId,
             targetId: actor.targetId,
-            damage: result.wound,
+            wound: finalWound,
             shieldDamage: result.shieldDamage,
             armorAbsorb: result.armorAbsorb,
             hit: result.hit
