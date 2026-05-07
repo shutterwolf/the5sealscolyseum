@@ -171,24 +171,21 @@ class CombatCore {
             result,
             targetHpBefore: target.hp
         });
-        const wound = result.wound;   // ✔ corretto
+        const wound = result.wound || 0;
         if (result.hit && wound > 0) {
             target.hp -= wound;
             this.updateEntityHP(target.id, target.type, target.hp);
-        }
-            target.hp -= damage;
             console.log("HP_APPLY", {
                 combatId: this.combatId,
                 targetId: target.id,
                 targetHpAfter: target.hp
             });
-            this.updateEntityHP(target.id, target.type, target.hp);
         }
 
         this.broadcastToCombat("damage", {
             attackerId: actorId,
             targetId: actor.targetId,
-            wound: finalWound,
+            wound: wound,
             shieldDamage: result.shieldDamage,
             armorAbsorb: result.armorAbsorb,
             hit: result.hit
