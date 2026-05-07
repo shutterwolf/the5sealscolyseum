@@ -1015,18 +1015,19 @@ class MyRoom extends Room {
             playerState.inCombat = 1;
         
             combat.addActor(attackerId, {
-                hp: playerState.hp ?? 20,
-                combat: message.combat ?? 5,
-                defence: message.defence ?? 5,
-                strength: message.strength ?? 3,
-                wDamage: message.wDamage ?? 1,
-                weaponType: message.weaponType ?? "UNARMED",
-                shield: message.shield ?? message.shieldArmor ?? 0,
-                armor: message.armor ?? message.armour ?? 0
-            }, "player");
+                hp: message.hp,
+                maxHp: message.maxHp,
+                combat: message.combat,
+                defence: message.defence,
+                strength: message.strength,
+                wDamage: message.wDamage,
+                weaponType: message.weaponType,
+                shield: message.shieldArmor,
+                armor: message.armour
+            });
         
             combat.addActor(targetId, {
-                hp: enemyState.health ?? es.maxHealth ?? 20,
+                hp: message.enemyHp ?? enemyState.health,
                 combat: es.attac ?? es.combat ?? 5,
                 defence: es.defence ?? 5,
                 strength: es.strength ?? 3,
