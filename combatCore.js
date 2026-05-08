@@ -157,6 +157,8 @@ class CombatCore {
             this.endTurn();
             return;
         }
+        target.lastHitBy = actor.id;
+        target.lastWeaponUsed = actor.weaponType;
         /*
         if (!this.isInRange(actorId, actor.targetId)) {
             this.removeActor(actorId);
@@ -192,7 +194,48 @@ class CombatCore {
         });
         
         if (target.hp <= 0) {
-            this.broadcastToCombat("actorDied", { id: target.id });
+            const killerId = target.lastHitBy;
+            const weaponType = target.lastWeaponUsed;
+        
+            const killer = this.actors.get(killerId);
+        
+            if (killer && killer.type === "player") {
+        
+                const entity = this.getEntity(killerId, "player");
+                if (!entity) return;
+        
+                const advKey = weaponType + "Adv";
+        
+                const weaponType = actor.weaponType.toLowerCase();
+                const advKey = weaponType + "Adv";
+                
+                const currentSkillLevel = entity[weaponType] ?? 1;
+                
+                const enemyValue =
+                    (target.hpMax ?? 10) +
+                    (target.combat ?? 0);
+                
+                const xpGain = Math.max(
+                    1,
+                    Math.floor((enemyValue * 0.3) / currentSkillLevel)
+                );
+                
+                entity[advKey] =
+                    (entity[advKey] ?? 0) + xpGain;
+        
+                console.log("XP_WEAPON_GAIN", {
+                    killerId,
+                    weapon: advKey,
+                    xpGain,
+                    total: entity[advKey]
+                });
+            }
+            this.broadcastToCombat("actorDied", {
+                id: target.id,
+                killerId: actor.id,
+                skill: advKey,
+                xpGain: xpGain
+            });
             this.removeActor(target.id);
         }
 
