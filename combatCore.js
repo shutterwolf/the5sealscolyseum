@@ -401,7 +401,7 @@ class CombatCore {
             }
             if (actor.type === "player") {
                 const p = this.room.state.players.get(id);
-                if (p) p.inCombat = false; // oppure p.inCombat = 0 se usi numeri
+                if (p) p.inCombat = 0; // oppure p.inCombat = 0 se usi numeri
             }
         }
         this.broadcastToCombat("combatEnd", { combatId: this.combatId });
