@@ -204,8 +204,6 @@ class CombatCore {
                 const entity = this.getEntity(killerId, "player");
                 if (!entity) return;
         
-                const advKey = weaponType + "Adv";
-        
                 const weaponType = actor.weaponType.toLowerCase();
                 const advKey = weaponType + "Adv";
                 
