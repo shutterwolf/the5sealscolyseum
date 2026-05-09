@@ -199,28 +199,31 @@ class CombatCore {
         
             const killer = this.actors.get(killerId);
         
+            let advKey = null;
+            let xpGain = 0;
+            
             if (killer && killer.type === "player") {
-        
+            
                 const entity = this.getEntity(killerId, "player");
                 if (!entity) return;
-        
+            
                 const weaponType = actor.weaponType.toLowerCase();
-                const advKey = weaponType + "Adv";
-                
+                advKey = weaponType + "Adv";
+            
                 const currentSkillLevel = entity[weaponType] ?? 1;
-                
+            
                 const enemyValue =
                     (target.hpMax ?? 10) +
                     (target.combat ?? 0);
-                
-                const xpGain = Math.max(
+            
+                xpGain = Math.max(
                     1,
                     Math.floor((enemyValue * 0.3) / currentSkillLevel)
                 );
-                
+            
                 entity[advKey] =
                     (entity[advKey] ?? 0) + xpGain;
-        
+            
                 console.log("XP_WEAPON_GAIN", {
                     killerId,
                     weapon: advKey,
@@ -236,7 +239,6 @@ class CombatCore {
             });
             this.removeActor(target.id);
         }
-
         this.endTurn();
     }
 
