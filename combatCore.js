@@ -410,7 +410,7 @@ class CombatCore {
             else location = 'HELM';
             console.log("armor location:", location);
             const entity = this.getEntity(defender.id, "player");
-            const armorPiece = entity?.equipped?.[location];
+            const armorPiece = entity?.equipped?.slots?.get(location);
             const armorProt = armorPiece.armourValue || 0;
             console.log("armor piece:", armorPiece, "armorProt:", armorProt);
             armorAbsorb = armorProt > 0
