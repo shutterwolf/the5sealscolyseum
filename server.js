@@ -1062,14 +1062,14 @@ class MyRoom extends Room {
         
         this.onMessage("lootEnemy", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
-            const player = this.state.players.get(playerId); // ← ADD THIS
+            const player = this.state.players.get(playerId);
             const enemy = this.state.enemies.get(data.enemyId);
             if (!enemy || !enemy.isDead || !enemy.lootReady) return;
             if (enemy.ownerId !== playerId && enemy.ownerId !== player?.partyId) return;
             this.giveQuestLoot(playerId, enemy);
-            // rimuovi body
+            // rimuove il nemico dallo stato server
             this.state.enemies.delete(enemy.id);
-            // cleanup spawn tracking
+            // cleanup tracking quest
             const ownerMap = this.activeQuestSpawns.get(enemy.ownerId);
             if (ownerMap) ownerMap.delete(enemy.questId);
         });
