@@ -194,49 +194,50 @@ class CombatCore {
         });
         
         if (target.hp <= 0) {
-            const killerId = target.lastHitBy;
-            const weaponType = target.lastWeaponUsed;
+            target.isDead = true;
+            target.lootReady = true;
+            target.aiState = "dead";
+            target.inCombat = 0;
         
+            const killerId = target.lastHitBy;
             const killer = this.actors.get(killerId);
         
             let advKey = null;
             let xpGain = 0;
-            
+        
+            if (target.type !== "player") {
+                this.server.enemyInstances.delete(target.id);
+            }
+        
             if (killer && killer.type === "player") {
-            
+        
                 const entity = this.getEntity(killerId, "player");
                 if (!entity) return;
-            
-                const weaponType = actor.weaponType.toLowerCase();
+        
+                const weaponType = killer.weaponType?.toLowerCase();
                 advKey = weaponType + "Adv";
-            
+        
                 const currentSkillLevel = entity[weaponType] ?? 1;
-            
+        
                 const enemyValue =
                     (target.hpMax ?? 10) +
                     (target.combat ?? 0);
-            
+        
                 xpGain = Math.max(
                     1,
                     Math.floor((enemyValue * 0.3) / currentSkillLevel)
                 );
-            
-                entity[advKey] =
-                    (entity[advKey] ?? 0) + xpGain;
-            
-                console.log("XP_WEAPON_GAIN", {
-                    killerId,
-                    weapon: advKey,
-                    xpGain,
-                    total: entity[advKey]
-                });
+        
+                entity[advKey] = (entity[advKey] ?? 0) + xpGain;
             }
+        
             this.broadcastToCombat("actorDied", {
                 id: target.id,
-                killerId: actor.id,
+                killerId: killerId,
                 skill: advKey,
                 xpGain: xpGain
             });
+        
             this.removeActor(target.id);
         }
         this.endTurn();
