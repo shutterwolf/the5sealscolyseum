@@ -1023,7 +1023,7 @@ class MyRoom extends Room {
                 wDamage: message.wDamage,
                 weaponType: message.weaponType,
                 shield: message.shieldArmor,
-                armor: message.armour
+                armour: message.armour
             });
         
             combat.addActor(targetId, {
