@@ -1036,21 +1036,28 @@ class MyRoom extends Room {
         
         this.onMessage("enemyReachedTarget", (client, data) => {
             console.log(">>> enemyReachedTarget RICEVUTO per enemy:", data.enemyId);
+        
             const logic = this.enemyInstances.get(data.enemyId);
             const schemaEnemy = this.state.enemies.get(data.enemyId);
+        
             if (!logic || !schemaEnemy) return;
-            if (schemaEnemy.inCombat === 1) return;
-            // 1️⃣ aggiorna logica AI
+        
+            // aggiorna posizione
             logic.updatePositionFromClient(data.pos);
         
-            // 2️⃣ aggiorna posizione reale nello state
             schemaEnemy.pos.x = data.pos.x;
             schemaEnemy.pos.z = data.pos.z;
-            // 2️⃣ ferma la destinazione AI
+        
+            // reset AI
             logic.destination = null;
-            // 3️⃣ pulisci destinazione
+            logic.targetPlayerId = null;
+            logic.leaderId = null;
+        
             schemaEnemy.destX = data.pos.x;
             schemaEnemy.destZ = data.pos.z;
+        
+            schemaEnemy.aiState = "idle";
+            schemaEnemy.currentAnim = "idle";
         });
         
         this.onMessage("lootEnemy", (client, data) => {
