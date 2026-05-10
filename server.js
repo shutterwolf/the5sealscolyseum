@@ -637,25 +637,7 @@ class MyRoom extends Room {
         });
         this.enemyInstances.set(id, logic);
         // 3️⃣ Salva riferimento
-        if (!this.activeQuestSpawns.has(ownerId)) {
-            this.activeQuestSpawns.set(ownerId, new Map());
-        }
-        this.activeQuestSpawns.get(ownerId).set(questId, id);
-        // 4️⃣ Notifica client owner  ← VA QUI, dopo tutto il resto
-        const ownerSessionId = [...this.sessionToPlayerId.entries()]
-            .find(([, pid]) => pid === ownerId)?.[0];
-        const ownerClient = this.clients.find(c => c.sessionId === ownerSessionId);
-        if (ownerClient) {
-            ownerClient.send("enemySpawn", {
-                id: enemy.id,
-                type: enemy.type,
-                typeId: enemy.typeId,
-                pos: { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z }
-            });
-            console.log(`[spawnQuestEnemy] enemySpawn inviato a ${ownerId} per ${enemy.id}`);
-        } else {
-            console.warn(`[spawnQuestEnemy] client owner ${ownerId} non trovato`);
-        }
+        
         return id;
     }
 
