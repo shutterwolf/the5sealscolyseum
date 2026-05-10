@@ -434,23 +434,40 @@ class CombatCore {
             combatId: this.combatId,
             remainingActors: [...this.actors.keys()]
         });
+    
         this.inProgress = false;
+    
         for (let id of this.actors.keys()) {
             const actor = this.actors.get(id);
-            //this.updateEntityHP(id, actor.type, actor.hp);
+    
             if (actor.type === "enemy") {
                 const e = this.room.state.enemies.get(id);
+                const logic = this.room.enemyInstances.get(id);
+    
                 if (e) e.inCombat = 0;
+    
+                if (logic) {
+                    logic.destination = null;
+                    logic.targetPlayerId = null;
+                    logic.leaderId = null;
+    
+                    // 🔥 RIATTIVA AI
+                    logic.state = "idle";
+                }
             }
+    
             if (actor.type === "player") {
                 const p = this.room.state.players.get(id);
-                if (p) p.inCombat = 0; // oppure p.inCombat = 0 se usi numeri
+                if (p) p.inCombat = 0;
             }
         }
+    
         this.broadcastToCombat("combatEnd", { combatId: this.combatId });
+    
         this.turnOrder = [];
         this.actors.clear();
         this.currentIndex = 0;
+    
         this.room.activeCombats.delete(this.combatId);
     }
 
