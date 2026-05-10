@@ -400,7 +400,7 @@ class CombatCore {
         console.log("raw wound:", wound, "roll multiplier:", roll);
         // ===== armor =====
         let armorAbsorb = 0;
-        if (isPlayerDefender && defender.armor) {
+        if (isPlayerDefender && defender.armour) {
             const locRoll = Math.floor(Math.random() * 12) + 1;
             console.log("armor locRoll:", locRoll);
             let location;
