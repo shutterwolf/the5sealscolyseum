@@ -206,7 +206,7 @@ class CombatCore {
             let xpGain = 0;
         
             if (target.type !== "player") {
-                this.server.enemyInstances.delete(target.id);
+                this.room.enemyInstances.delete(target.id);
             }
         
             if (killer && killer.type === "player") {
