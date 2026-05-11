@@ -92,7 +92,6 @@ class DoorState extends Schema {
         this.material = "wood";
     }
 }
-
 type("number")(DoorState.prototype, "x");
 type("number")(DoorState.prototype, "y");
 type("boolean")(DoorState.prototype, "closed");
@@ -156,7 +155,6 @@ class Equipped extends Schema {
     }
 }
 type({ map: EquippedItem })(Equipped.prototype, "slots");
-
 class EnemyLogic {
     constructor(schemaEnemy, type) {
         this.schema = schemaEnemy;
@@ -164,7 +162,6 @@ class EnemyLogic {
         this.speed = enemyStats[type].enemyspeed || 1;
     }
 }
-
 // --- Server: aggiorna la posizione dei nemici ---
 class EnemyState {
     constructor(id, type, startPos) {
@@ -238,7 +235,6 @@ class PlayerState extends Schema {
         this.equipped = new Equipped();
     }
 }
-
 type("string")(PlayerState.prototype, "id");
 type("string")(PlayerState.prototype, "user");
 type("string")(PlayerState.prototype, "email");
@@ -358,12 +354,9 @@ class MyRoom extends Room {
     placeEntrance(levelData) {
         const rooms = levelData.rooms;
         if (!rooms || rooms.length === 0) return null;
-    
         const room = rooms[Math.floor(ROT.RNG.getUniform() * rooms.length)];
-    
         const x = Math.floor(ROT.RNG.getUniform() * (room.getRight() - room.getLeft() - 1)) + room.getLeft() + 1;
         const y = Math.floor(ROT.RNG.getUniform() * (room.getBottom() - room.getTop() - 1)) + room.getTop() + 1;
-    
         return { x, y };
     }
     
@@ -706,7 +699,6 @@ class MyRoom extends Room {
     }
     return id;
 }
-
     
     onCreate() {
         console.log("Room created");
@@ -769,11 +761,9 @@ class MyRoom extends Room {
                     for (let attempt = 0; attempt < 20; attempt++) {
                         const key = this.getRandomCellInRoom(levelData);
                         if (!key) continue;
-        
                         const alreadyLoot = key in levelData.loot;   // ← CHANGED
                         if (alreadyLoot) continue;
                         if (levelData.doors && levelData.doors[key]) continue;
-        
                         const [x, y] = key.split(",").map(Number);
                         const newChest = {
                             x, y,
@@ -812,7 +802,6 @@ class MyRoom extends Room {
             });
         });
 
-        
        this.onMessage("requestSpawnEnemies", (client, data) => {
            console.log(">>> requestSpawnEnemies raw data:", JSON.stringify(data));
             const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -841,7 +830,6 @@ class MyRoom extends Room {
                 }
             }
         });
-
 
         this.onMessage("enterDungeon", async (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
@@ -954,7 +942,6 @@ class MyRoom extends Room {
                     return;
                 }
             }
-            
             if (doorState.state === "closed") {
                 doorState.state = "open";
                 doorState.closed = false;
@@ -975,27 +962,21 @@ class MyRoom extends Room {
         this.onMessage("requestCombat", (client, message) => {
             const { attackerId, targetId } = message;
             combatTrace("REQUEST", { attackerId, targetId, message });
-        
             const playerState = this.state.players.get(attackerId);
             const enemyState = this.state.enemies.get(targetId);
-        
             combatTrace("STATE_LOOKUP", {
                 attackerId, targetId,
                 hasPlayer: !!playerState,
                 hasEnemy: !!enemyState,
                 enemyType: enemyState?.type
             });
-        
             if (!playerState || !enemyState) return;
-        
             const es = enemyStats[enemyState.type] || {};
             const combatId = `${attackerId}_${targetId}_${Date.now()}`;
             const combat = new CombatCore(this, combatId);
             this.activeCombats.set(combatId, combat);
-        
             enemyState.inCombat = 1;
             playerState.inCombat = 1;
-        
             combat.addActor(attackerId, {
                 hp: message.hp,
                 maxHp: message.maxHp,
@@ -1016,7 +997,6 @@ class MyRoom extends Room {
                 wDamage: es.wDamage ?? 1,
                 armor: es.armor ?? 0
             }, "enemy");
-        
             combatTrace("START", { combatId, attackerId, targetId });
             combat.setTarget(attackerId, targetId);
             combat.setTarget(targetId, attackerId);
@@ -1033,46 +1013,33 @@ class MyRoom extends Room {
                 }
             }
         });
-        
         this.onMessage("enemyReachedTarget", (client, data) => {
             console.log(">>> enemyReachedTarget RICEVUTO per enemy:", data.enemyId);
-        
             const logic = this.enemyInstances.get(data.enemyId);
             const schemaEnemy = this.state.enemies.get(data.enemyId);
-        
             if (!logic || !schemaEnemy) return;
-        
             // aggiorna posizione
             logic.updatePositionFromClient(data.pos);
-        
             schemaEnemy.pos.x = data.pos.x;
             schemaEnemy.pos.z = data.pos.z;
-        
             // reset AI
             logic.destination = null;
             logic.targetPlayerId = null;
             logic.leaderId = null;
-        
             schemaEnemy.destX = data.pos.x;
             schemaEnemy.destZ = data.pos.z;
-        
             schemaEnemy.aiState = "idle";
             schemaEnemy.currentAnim = "idle";
         });
         
         this.onMessage("lootEnemy", (client, data) => {
-
             console.log("[lootEnemy] message received", {
                 sessionId: client.sessionId,
                 enemyId: data.enemyId
             });
-        
             const playerId = this.sessionToPlayerId.get(client.sessionId);
-        
             console.log("[lootEnemy] resolved playerId:", playerId);
-        
             const player = this.state.players.get(playerId);
-        
             if (!player) {
                 console.warn("[lootEnemy] player not found", playerId);
             } else {
@@ -1081,14 +1048,11 @@ class MyRoom extends Room {
                     partyId: player.partyId
                 });
             }
-        
             const enemy = this.state.enemies.get(data.enemyId);
-        
             if (!enemy) {
                 console.warn("[lootEnemy] enemy not found", data.enemyId);
                 return;
             }
-        
             console.log("[lootEnemy] enemy state", {
                 id: enemy.id,
                 isDead: enemy.isDead,
@@ -1096,52 +1060,40 @@ class MyRoom extends Room {
                 ownerId: enemy.ownerId,
                 questId: enemy.questId
             });
-        
             if (!enemy.isDead) {
                 console.warn("[lootEnemy] enemy is not dead");
                 return;
             }
-        
             if (!enemy.lootReady) {
                 console.warn("[lootEnemy] loot not ready");
                 return;
             }
-        
             const allowed =
                 enemy.ownerId === playerId ||
                 enemy.ownerId === player?.partyId;
-        
             console.log("[lootEnemy] permission check", {
                 enemyOwner: enemy.ownerId,
                 playerId: playerId,
                 playerPartyId: player?.partyId,
                 allowed
             });
-        
             if (!allowed) {
                 console.warn("[lootEnemy] loot denied");
                 return;
             }
-        
             console.log("[lootEnemy] giving quest loot");
-        
             this.giveQuestLoot(playerId, enemy);
-        
             console.log("[lootEnemy] deleting enemy from state", enemy.id);
-        
             // rimuove il nemico dallo stato server
             this.state.enemies.delete(enemy.id);
-        
             // cleanup tracking quest
             const ownerMap = this.activeQuestSpawns.get(enemy.ownerId);
-        
             if (!ownerMap) {
                 console.warn("[lootEnemy] ownerMap not found for owner", enemy.ownerId);
             } else {
                 console.log("[lootEnemy] removing quest tracking", enemy.questId);
                 ownerMap.delete(enemy.questId);
             }
-        
             console.log("[lootEnemy] completed successfully");
         });
 
@@ -1192,13 +1144,11 @@ class MyRoom extends Room {
                 if (!hasNearbyPlayer) return;
                 const result = logic.update(playersMap, deltaTime / 1000, this);
                 if (!result) return;
-            
                 // aggiorna destinazione
                 if (logic.destination) {
                     schemaEnemy.destX = logic.destination.x;
                     schemaEnemy.destZ = logic.destination.z;
                 }
-            
                 schemaEnemy.aiState = result.state || schemaEnemy.aiState;
                 schemaEnemy.currentAnim = result.anim || schemaEnemy.currentAnim;
             });
@@ -1206,17 +1156,12 @@ class MyRoom extends Room {
         
         setInterval(() => {
             const world = this.state.world;
-        
             const speed = world.isDay
                 ? 16 / this.dayDuration
                 : 8 / this.nightDuration;
-        
             world.timeOfDay += speed * 1000;
-        
             if (world.timeOfDay >= 24) world.timeOfDay -= 24;
-        
             const nowDay = world.timeOfDay >= 6 && world.timeOfDay < 22;
-        
             if (nowDay !== world.isDay) {
                 world.isDay = nowDay;
             }
@@ -1241,23 +1186,18 @@ class MyRoom extends Room {
                 });
             }
         }, 10000);
-
         this.onMessage("enemyTarget", (client, data) => {
             const enemy = this.enemyInstances.get(data.enemyId);
             if (!enemy) return;
-        
             enemy.setTarget(data.playerId, data.pos);
         });
-
         this.onMessage("enemyAggro", (client, data) => {
             const schemaEnemy = this.state.enemies.get(data.enemyId);
             const logic = this.enemyInstances.get(data.enemyId);
             if (!schemaEnemy || !logic) return;
-        
             schemaEnemy.destX = data.destX;
             schemaEnemy.destZ = data.destZ;
             schemaEnemy.aiState = "aggro";
-        
             logic.leaderId = this.sessionToPlayerId.get(client.sessionId);
             logic.destination = { x: data.destX, z: data.destZ };
         });
@@ -1274,26 +1214,22 @@ class MyRoom extends Room {
                 }
             );
         });
-        
         // --- playerInput ---
         this.onMessage("playerInput", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             const player = this.state.players.get(playerId);
             if (!player) return;
-
             const pos = {
                 x: Number(data.playerPos?.x) || 0,
                 y: Number(data.playerPos?.y) || 0,
                 z: Number(data.playerPos?.z) || 0
             };
-
             const rot = {
                 x: Number(data.rotation?.x) || 0,
                 y: Number(data.rotation?.y) || 0,
                 z: Number(data.rotation?.z) || 0,
                 w: Number(data.rotation?.w) || 1
             };
-
             const quantize = (v) => Math.round(v * 10) / 10;
             const newX = quantize(pos.x);
             const newZ = quantize(pos.z);
@@ -1343,7 +1279,6 @@ class MyRoom extends Room {
                 client.send("characterExistence", { exists: false, character: null });
             }
         });
-
         // --- saveCharacter ---
         this.onMessage("saveCharacter", async (client, data) => {
             try {
@@ -1354,37 +1289,30 @@ class MyRoom extends Room {
                 client.send("characterSaved", { ok: false, playerId: data.playerId });
             }
         });
-
         // --- deleteCharacter ---
         this.onMessage("deleteCharacter", async (client, message) => {
             const charId = message.id;
             let success = false;
-        
             try {
                 // Cancella dal DB Firestore
                 await db.collection("characters").doc(charId).delete();
                 success = true;
-        
                 // Cancella anche dallo stato della stanza
                 if (this.state.players.has(charId)) {
                     this.state.players.delete(charId);
                 }
-        
                 //console.log(`❌ Character ${charId} deleted successfully`);
             } catch (err) {
                 console.error(`❌ Error deleting character ${charId}:`, err);
             }
-        
             // Conferma al client
             client.send("characterDeleted", { id: charId, success });
         });
-        
         // --- playerInfo ---
         this.onMessage("playerInfo", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             const player = this.state.players.get(playerId);
             if (!player) return;
-
             player.name = data.name ?? player.name;
             player.user = data.user ?? player.user;
             player.email = data.email ?? player.email;
@@ -1400,13 +1328,10 @@ class MyRoom extends Room {
         
             const player = this.state.players.get(playerId);
             const name = player?.name || "Anon";
-        
             const msg = new ChatMessage(playerId, name, message.trim(), Date.now());
-        
             // memorizza max 50
             this.state.chat.push(msg);
             if (this.state.chat.length > 50) this.state.chat.shift();
-        
             // broadcast a tutti
             this.broadcast("chatMessage", msg);
         });
@@ -1541,10 +1466,8 @@ class MyRoom extends Room {
 
                 if (data.playerPos) {
                     const quantize = (v) => Math.round(v * 10) / 10;
-                
                     const x = quantize(data.playerPos.x);
                     const z = quantize(data.playerPos.z);
-                
                     if (Math.abs(player.playerPos.x - x) > 0.1) player.playerPos.x = x;
                     if (Math.abs(player.playerPos.z - z) > 0.1) player.playerPos.z = z;
                     player.playerPos.y = player.playerPos.y ?? 0;
@@ -1606,9 +1529,7 @@ class MyRoom extends Room {
         player.equipped.slots.forEach((item, slot) => {
             equippedData[slot] = { ...item };
         });
-
         client.send("fullEquip", { equipped: equippedData });
-
         // invia messaggi chat già presenti
         client.send("chatInit", this.state.chat.map(msg => ({
             id: msg.id,
@@ -1632,7 +1553,6 @@ gameServer.define("my_room", MyRoom);
 //gameServer.define("chat_room", ChatRoom);
 // route di test
 app.get("/", (req, res) => res.send("Server Colyseus online ✅"));
-
 // avvia il server
 const PORT = process.env.PORT || 10000;
 httpServer.listen(PORT, () => {
