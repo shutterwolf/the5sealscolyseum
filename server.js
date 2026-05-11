@@ -1061,17 +1061,88 @@ class MyRoom extends Room {
         });
         
         this.onMessage("lootEnemy", (client, data) => {
+
+            console.log("[lootEnemy] message received", {
+                sessionId: client.sessionId,
+                enemyId: data.enemyId
+            });
+        
             const playerId = this.sessionToPlayerId.get(client.sessionId);
+        
+            console.log("[lootEnemy] resolved playerId:", playerId);
+        
             const player = this.state.players.get(playerId);
+        
+            if (!player) {
+                console.warn("[lootEnemy] player not found", playerId);
+            } else {
+                console.log("[lootEnemy] player found", {
+                    id: playerId,
+                    partyId: player.partyId
+                });
+            }
+        
             const enemy = this.state.enemies.get(data.enemyId);
-            if (!enemy || !enemy.isDead || !enemy.lootReady) return;
-            if (enemy.ownerId !== playerId && enemy.ownerId !== player?.partyId) return;
+        
+            if (!enemy) {
+                console.warn("[lootEnemy] enemy not found", data.enemyId);
+                return;
+            }
+        
+            console.log("[lootEnemy] enemy state", {
+                id: enemy.id,
+                isDead: enemy.isDead,
+                lootReady: enemy.lootReady,
+                ownerId: enemy.ownerId,
+                questId: enemy.questId
+            });
+        
+            if (!enemy.isDead) {
+                console.warn("[lootEnemy] enemy is not dead");
+                return;
+            }
+        
+            if (!enemy.lootReady) {
+                console.warn("[lootEnemy] loot not ready");
+                return;
+            }
+        
+            const allowed =
+                enemy.ownerId === playerId ||
+                enemy.ownerId === player?.partyId;
+        
+            console.log("[lootEnemy] permission check", {
+                enemyOwner: enemy.ownerId,
+                playerId: playerId,
+                playerPartyId: player?.partyId,
+                allowed
+            });
+        
+            if (!allowed) {
+                console.warn("[lootEnemy] loot denied");
+                return;
+            }
+        
+            console.log("[lootEnemy] giving quest loot");
+        
             this.giveQuestLoot(playerId, enemy);
+        
+            console.log("[lootEnemy] deleting enemy from state", enemy.id);
+        
             // rimuove il nemico dallo stato server
             this.state.enemies.delete(enemy.id);
+        
             // cleanup tracking quest
             const ownerMap = this.activeQuestSpawns.get(enemy.ownerId);
-            if (ownerMap) ownerMap.delete(enemy.questId);
+        
+            if (!ownerMap) {
+                console.warn("[lootEnemy] ownerMap not found for owner", enemy.ownerId);
+            } else {
+                console.log("[lootEnemy] removing quest tracking", enemy.questId);
+                ownerMap.delete(enemy.questId);
+            }
+        
+            console.log("[lootEnemy] completed successfully");
         });
 
         this.onMessage("startQuest", (client, data) => {
