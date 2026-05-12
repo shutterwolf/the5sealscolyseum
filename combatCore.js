@@ -344,9 +344,11 @@ class CombatCore {
             } else {
                 attackerSkill = entity?.combat ?? 0;
             }
-        
-            console.log("attackerSkill FINAL:", attackerSkill);
+        } else {
+            attackerSkill = attacker.combat ?? attacker.attack ?? 0;
         }
+        
+        console.log("attackerSkill FINAL:", attackerSkill);
     
         // ===== Defender skill =====
         if (isPlayerDefender) {
