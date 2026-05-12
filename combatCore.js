@@ -398,7 +398,7 @@ class CombatCore {
             }
         }    
         // ===== damage =====
-        const roll = Math.floor(Math.random() * attacker.wDamage) + 1;
+        const roll = Math.floor(Math.random() * attacker.strength)+wDamage;
         const wound = diff + roll;
         console.log("raw wound:", wound, "roll multiplier:", roll);
         // ===== armor =====
