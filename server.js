@@ -591,6 +591,13 @@ class MyRoom extends Room {
         const id = "E" + this.enemyIdCounter++;
         const enemy = new EnemySchema();
         const stats = enemyStats[type];
+        const combatStats = {
+            combat: stats.attac ?? stats.combat ?? 0,
+            defence: stats.defence ?? 0,
+            strength: stats.strength ?? 5,
+            wDamage: stats.wDamage ?? 2,
+            armour: stats.armor ?? stats.armour ?? 0
+        };
         enemy.id = id;
         enemy.typeId = stats.id;
         enemy.type = type;
@@ -608,6 +615,8 @@ class MyRoom extends Room {
         enemy.speed = stats.enemyspeed;
         enemy.radius = stats.radius;
         enemy.wRange = stats.wRange;
+        enemy.combat = stats.attac;
+        enemy.armour = stats.armor;
         enemy.maxHealth = stats.maxHealth;
         // NON ha ownerId → loot libero o null
         enemy.ownerId = "";
@@ -637,6 +646,13 @@ class MyRoom extends Room {
     spawnQuestEnemy(ownerId, questId, config) {
     const id = "E" + this.enemyIdCounter++;
     const stats = enemyStats[config.type];
+        const combatStats = {
+            combat: stats.attac ?? stats.combat ?? 0,
+            defence: stats.defence ?? 0,
+            strength: stats.strength ?? 5,
+            wDamage: stats.wDamage ?? 2,
+            armour: stats.armor ?? stats.armour ?? 0
+        };
     if (!stats) {
         console.error("Enemy type non trovato in enemyStats:", config.type);
         return null;
@@ -662,6 +678,8 @@ class MyRoom extends Room {
     enemy.depth = config.depth ?? 0;
     enemy.ownerId = ownerId;
     enemy.questId = questId;
+    enemy.combat = stats.attac;
+    enemy.armour = stats.armor;
     enemy.isDead = false;
     enemy.lootReady = false;
     this.state.enemies.set(id, enemy);
