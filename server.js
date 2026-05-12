@@ -1013,7 +1013,7 @@ class MyRoom extends Room {
                 defence: es.defence ?? 5,
                 strength: es.strength ?? 3,
                 wDamage: es.wDamage ?? 1,
-                armor: es.armor ?? 0
+                armour: es.armor ?? 0
             }, "enemy");
             combatTrace("START", { combatId, attackerId, targetId });
             combat.setTarget(attackerId, targetId);
