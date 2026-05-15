@@ -402,16 +402,16 @@ class CombatCore {
             Math.floor(Math.random() * attacker.strength) +
             (attacker.wDamage || 0);
         const wound = diff + roll;
-        console.log("raw wound:", wound, "roll multiplier:", roll);
+        console.log("raw wound:", wound, "roll multiplier:", roll, "diff",diff);
         // ===== armor =====
         let armorAbsorb = 0;
         if (isPlayerDefender && defender.armour) {
-            const locRoll = Math.floor(Math.random() * 12) + 1;
+            const locRoll = Math.floor(Math.random() * 20) + 1;
             console.log("armor locRoll:", locRoll);
             let location;
-            if (locRoll <= 6) location = 'ARMOUR';
-            else if (locRoll <= 8) location = 'GLOVES';
-            else if (locRoll <= 10) location = 'BOOTS';
+            if (locRoll <= 14) location = 'ARMOUR';
+            else if (locRoll <= 16) location = 'GLOVES';
+            else if (locRoll <= 18) location = 'BOOTS';
             else location = 'HELM';
             console.log("armor location:", location);
             const entity = this.getEntity(defender.id, "player");
