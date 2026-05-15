@@ -418,9 +418,7 @@ class CombatCore {
             const armorPiece = entity?.equipped?.slots?.get(location);
             const armorProt = armorPiece.armourValue || 0;
             console.log("armor piece:", armorPiece, "armorProt:", armorProt);
-            armorAbsorb = armorProt > 0
-                ? Math.floor(Math.random() * armorProt) + 1
-                : 0;
+            armorAbsorb = armorProt;
             console.log("armorAbsorb:", armorAbsorb);
         }
         const finalWound = wound - armorAbsorb;
