@@ -196,6 +196,16 @@ class CombatCore {
         if (target.hp <= 0) {
             target.isDead = true;
             target.lootReady = true;
+            // entity state
+            const enemyEntity = this.room.state.enemies.get(target.id);
+        
+            if (enemyEntity) {
+                enemyEntity.isDead = true;
+                enemyEntity.lootReady = true;
+                enemyEntity.aiState = "dead";
+                enemyEntity.inCombat = 0;
+                enemyEntity.health = 0;
+            }
             target.aiState = "dead";
             target.inCombat = 0;
         
