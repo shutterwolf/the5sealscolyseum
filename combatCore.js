@@ -21,10 +21,7 @@ class CombatCore {
         let initialHP = 20;
         let maxHp = 20;
         if (type === "player") {
-            initialHP =
-                entity?.phealth ??
-                stats.hp ??
-                20;
+            initialHP = entity?.hp ?? stats.hp ?? 20;
         } else {
             maxHp = entity.maxHealth;
             initialHP =
@@ -64,6 +61,7 @@ class CombatCore {
             id,
             type,
             hp: initialHP,
+            maxHealth: maxHp,
             combat: attackSkill,
             defence: defenseSkill,
             strength: stats.strength ?? 3,
@@ -77,7 +75,7 @@ class CombatCore {
         // SYNC STATE
         // =========================
         if (entity) {
-            if (type === "player") entity.phealth = initialHP;
+            if (type === "player") entity.hp = initialHP;
             if (type === "enemy") entity.health = initialHP;
         }
     }
