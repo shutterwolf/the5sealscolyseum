@@ -227,7 +227,7 @@ class CombatCore {
                 if (entity) {
                     const weaponType = killer.weaponType?.toLowerCase();
                     advKey = weaponType + "Adv";
-                    const currentSkillLevel = entity[weaponType] ?? 1;
+                    const currentSkillLevel = killer.combat || 1;
                     const enemyValue =
                         (target.maxHealth) +
                         (target.combat);
@@ -348,14 +348,8 @@ class CombatCore {
             const entity = this.getEntity(attacker.id, "player");
             const weapon = entity?.equipped?.slots?.get("WEAPON");
             const weaponType = weapon?.type?.toLowerCase();
-        
             console.log("Attacker weaponType:", weaponType);
-        
-            if (weaponType && entity?.[weaponType] != null) {
-                attackerSkill = entity[weaponType];
-            } else {
-                attackerSkill = entity?.combat ?? 0;
-            }
+            attackerSkill = attacker.combat;
         } else {
             attackerSkill = attacker.combat ?? attacker.attack ?? 0;
         }
