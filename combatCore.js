@@ -230,13 +230,16 @@ class CombatCore {
                 const currentSkillLevel = entity[weaponType] ?? 1;
         
                 const enemyValue =
-                    (target.hpMax ?? 10) +
-                    (target.combat ?? 0);
+                    (target.maxHhealth) +
+                    (target.combat);
         
                 xpGain = Math.max(
                     1,
                     Math.floor((enemyValue * 0.3) / currentSkillLevel)
                 );
+                if (!isFinite(xpGain) || xpGain < 1) {
+                    xpGain = 1;
+                }
         
                 entity[advKey] = (entity[advKey] ?? 0) + xpGain;
             }
