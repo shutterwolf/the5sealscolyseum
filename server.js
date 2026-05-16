@@ -1130,13 +1130,11 @@ class MyRoom extends Room {
             console.log("[lootEnemy] deleting enemy from state", enemy.id);
             // rimuove il nemico dallo stato server
             this.state.enemies.delete(enemy.id);
-            // cleanup tracking quest
-            const ownerMap = this.activeQuestSpawns.get(enemy.ownerId);
-            if (!ownerMap) {
-                console.warn("[lootEnemy] ownerMap not found for owner", enemy.ownerId);
-            } else {
-                console.log("[lootEnemy] removing quest tracking", enemy.questId);
-                ownerMap.delete(enemy.questId);
+            const loaderClient = [...this.clients].find(
+                c => this.sessionToPlayerId.get(c.sessionId) === playerId
+            );
+            if (loaderClient) {
+                loaderClient.send("lootSuccess", { enemyId: enemy.id });
             }
             console.log("[lootEnemy] completed successfully");
         });
