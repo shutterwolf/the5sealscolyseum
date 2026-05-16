@@ -1112,6 +1112,7 @@ class MyRoom extends Room {
                 return;
             }
             const allowed =
+                !enemy.ownerId ||
                 enemy.ownerId === playerId ||
                 enemy.ownerId === player?.partyId;
             console.log("[lootEnemy] permission check", {
