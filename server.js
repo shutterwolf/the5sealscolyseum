@@ -1114,7 +1114,7 @@ class MyRoom extends Room {
                 return;
             }
             console.log("[lootEnemy] giving quest loot");
-            this.giveQuestLoot(playerId, enemy);
+            //this.giveQuestLoot(playerId, enemy);
             console.log("[lootEnemy] deleting enemy from state", enemy.id);
             // rimuove il nemico dallo stato server
             this.state.enemies.delete(enemy.id);
