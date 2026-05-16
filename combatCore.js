@@ -522,7 +522,7 @@ class CombatCore {
     updateEntityHP(id, type, hp) {
         if (type === "player") {
             const p = this.room.state.players.get(id);
-            if (p) p.phealth = hp;   // ← usa phealth
+            if (p) p.hp = hp;   // ← hp, not phealth
         } else {
             const e = this.room.state.enemies.get(id);
             if (e) e.health = hp;
