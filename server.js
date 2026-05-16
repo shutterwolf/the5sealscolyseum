@@ -1065,9 +1065,13 @@ class MyRoom extends Room {
         });
         
         this.onMessage("lootEnemy", (client, data) => {
-            console.log("[lootEnemy] message received", {
-                sessionId: client.sessionId,
-                enemyId: data.enemyId
+            console.log("[lootEnemy RAW STATE]", {
+                enemy: this.state.enemies.get(data.enemyId),
+                allEnemies: [...this.state.enemies.keys()]
+            });
+            console.log("[lootEnemy FLAGS]", {
+                isDead: enemy?.isDead,
+                lootReady: enemy?.lootReady
             });
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             console.log("[lootEnemy] resolved playerId:", playerId);
