@@ -1081,6 +1081,13 @@ class MyRoom extends Room {
                 });
             }
             const enemy = this.state.enemies.get(data.enemyId);
+            console.log("[DEBUG enemy RAW]", enemy);
+            console.log("[DEBUG enemy type]", {
+                ctor: enemy?.constructor?.name,
+                hasStateRef: !!enemy?.state,
+                hasOwnerRef: !!enemy?.owner,
+                keys: enemy ? Object.keys(enemy) : null
+            });
             if (!enemy) {
                 console.warn("[lootEnemy] enemy not found", data.enemyId);
                 return;
