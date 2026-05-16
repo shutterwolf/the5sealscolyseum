@@ -21,7 +21,7 @@ class CombatCore {
         let initialHP = 20;
         let maxHp = 20;
         if (type === "player") {
-            initialHP = entity?.hp ?? stats.hp ?? 20;
+            initialHP = stats.hp ?? entity?.hp ?? 20;
         } else {
             maxHp = entity.maxHealth;
             initialHP =
