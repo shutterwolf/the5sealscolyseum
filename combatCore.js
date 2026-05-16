@@ -19,12 +19,14 @@ class CombatCore {
         // HP SAFE
         // =========================
         let initialHP = 20;
+        let maxHp = 20;
         if (type === "player") {
             initialHP =
                 entity?.phealth ??
                 stats.hp ??
                 20;
         } else {
+            maxHp = entity.maxHealth;
             initialHP =
                 entity?.health ??
                 stats.hp ??
@@ -223,28 +225,24 @@ class CombatCore {
             }
         
             if (killer && killer.type === "player") {
-        
                 const entity = this.getEntity(killerId, "player");
-                if (!entity) return;
-        
-                const weaponType = killer.weaponType?.toLowerCase();
-                advKey = weaponType + "Adv";
-        
-                const currentSkillLevel = entity[weaponType] ?? 1;
-        
-                const enemyValue =
-                    (target.maxHealth) +
-                    (target.combat);
-        
-                xpGain = Math.max(
-                    1,
-                    Math.floor((enemyValue * 0.3) / currentSkillLevel)
-                );
-                if (!isFinite(xpGain) || xpGain < 1) {
-                    xpGain = 1;
+                if (entity) {
+                    const weaponType = killer.weaponType?.toLowerCase();
+                    advKey = weaponType + "Adv";
+                    const currentSkillLevel = entity[weaponType] ?? 1;
+                    const enemyValue =
+                        (target.maxHealth) +
+                        (target.combat);
+            
+                    xpGain = Math.max(
+                        1,
+                        Math.floor((enemyValue * 0.3) / currentSkillLevel)
+                    );
+                    if (!isFinite(xpGain) || xpGain < 1) {
+                        xpGain = 1;
+                    }
+                    entity[advKey] = (entity[advKey] ?? 0) + xpGain;
                 }
-        
-                entity[advKey] = (entity[advKey] ?? 0) + xpGain;
             }
         
             this.broadcastToCombat("actorDied", {
@@ -432,7 +430,7 @@ class CombatCore {
             console.log("armor location:", location);
             const entity = this.getEntity(defender.id, "player");
             const armorPiece = entity?.equipped?.slots?.get(location);
-            const armorProt = armorPiece.armourValue || 0;
+            const armorProt = armorPiece?.armourValue || 0;
             console.log("armor piece:", armorPiece, "armorProt:", armorProt);
             armorAbsorb = armorProt;
             console.log("armorAbsorb:", armorAbsorb);
