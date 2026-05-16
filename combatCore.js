@@ -234,7 +234,7 @@ class CombatCore {
             
                     xpGain = Math.max(
                         1,
-                        Math.floor((enemyValue * 0.3) / currentSkillLevel)
+                        Math.floor((enemyValue * target.combat) / currentSkillLevel)
                     );
                     if (!isFinite(xpGain) || xpGain < 1) {
                         xpGain = 1;
