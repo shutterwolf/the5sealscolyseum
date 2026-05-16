@@ -176,6 +176,9 @@ class CombatCore {
         const wound = result.wound || 0;
         if (result.hit && wound > 0) {
             target.hp -= wound;
+            if (target.hp < 0) {
+                target.hp = 0;
+            }
             this.updateEntityHP(target.id, target.type, target.hp);
             console.log("HP_APPLY", {
                 combatId: this.combatId,
@@ -230,7 +233,7 @@ class CombatCore {
                 const currentSkillLevel = entity[weaponType] ?? 1;
         
                 const enemyValue =
-                    (target.maxHhealth) +
+                    (target.maxHealth) +
                     (target.combat);
         
                 xpGain = Math.max(
