@@ -1069,10 +1069,6 @@ class MyRoom extends Room {
                 enemy: this.state.enemies.get(data.enemyId),
                 allEnemies: [...this.state.enemies.keys()]
             });
-            console.log("[lootEnemy FLAGS]", {
-                isDead: enemy?.isDead,
-                lootReady: enemy?.lootReady
-            });
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             console.log("[lootEnemy] resolved playerId:", playerId);
             const player = this.state.players.get(playerId);
@@ -1085,6 +1081,10 @@ class MyRoom extends Room {
                 });
             }
             const enemy = this.state.enemies.get(data.enemyId);
+            console.log("[lootEnemy FLAGS]", {
+                isDead: enemy?.isDead,
+                lootReady: enemy?.lootReady
+            });
             console.log("[DEBUG enemy RAW]", enemy);
             console.log("[DEBUG enemy type]", {
                 ctor: enemy?.constructor?.name,
