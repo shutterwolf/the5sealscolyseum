@@ -1134,7 +1134,7 @@ class MyRoom extends Room {
                 c => this.sessionToPlayerId.get(c.sessionId) === playerId
             );
             if (loaderClient) {
-                loaderClient.send("lootSuccess", { enemyId: enemy.id });
+                loaderClient.send("lootSuccess", { enemyId: enemy.id, questId: enemy.questId ?? null });
             }
             console.log("[lootEnemy] completed successfully");
         });
