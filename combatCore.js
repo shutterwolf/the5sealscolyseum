@@ -32,7 +32,7 @@ class CombatCore {
         // =========================
         // ATTACK SKILL (NO RICALCOLO)
         // =========================
-        let attackSkill = stats.combat ?? 5;
+        let attackSkill = stats.combat ?? stats.attac ?? 5;
         // =========================
         // DEFENSE SKILL
         // =========================
