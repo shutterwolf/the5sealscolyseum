@@ -386,8 +386,6 @@ class MyRoom extends Room {
     }
     
     getEligibleEnemyTypes(depth) {
-        // Map dungeon depth to DunLevel tier
-        // depth 1-2 → tier 1 only, depth 3-4 → tier 1+2, depth 5+ → all tiers
         var maxTier;
         if (depth <= 2) {
             maxTier = 1;
@@ -397,7 +395,7 @@ class MyRoom extends Room {
             maxTier = 3;
         }
         return Object.keys(enemyStats).filter(function(type) {
-            return enemyStats[type].DunLevel <= maxTier;
+            return enemyStats[type].DunLevel <= maxTier && enemyStats[type].id !== 3;
         });
     }
     
