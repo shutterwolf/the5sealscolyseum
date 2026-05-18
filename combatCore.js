@@ -325,7 +325,10 @@ class CombatCore {
             const client = [...this.room.clients].find(
                 c => this.room.sessionToPlayerId.get(c.sessionId) === id
             );
-            if (client) client.send("disengage", { id, combatId: this.combatId });
+            if (client) {
+                client.send("disengage", { id, combatId: this.combatId });
+                client.send("combatEnd", { combatId: this.combatId });
+            }
         }
     
         const playersLeft = [...this.actors.values()].filter(a => a.type === "player").length;
