@@ -477,11 +477,9 @@ class CombatCore {
     
                 if (logic) {
                     logic.destination = null;
-                    logic.targetPlayerId = null;
+                    logic.targetPlayer = null;    // ← was targetPlayerId
                     logic.leaderId = null;
-    
-                    // 🔥 RIATTIVA AI
-                    logic.state = "idle";
+                    logic.state = "IDLE";         // ← was "idle" (lowercase)
                 }
             }
     
