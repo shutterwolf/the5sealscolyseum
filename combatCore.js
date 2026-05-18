@@ -256,6 +256,8 @@ class CombatCore {
     }
 
     endTurn() {
+        this.checkDistances();
+        if (!this.inProgress) return;
         if (this.actors.size < 2) {
             this.endCombat();
             return;
@@ -303,16 +305,32 @@ class CombatCore {
     }
 
     checkDistances() {
-        const toRemove = [];
+        const fleeing = [];
         for (let [id, actor] of this.actors.entries()) {
+            if (actor.type !== "player") continue;
             if (!actor.targetId) continue;
-            if (!this.isInRange(id, actor.targetId)) toRemove.push(id);
+            const posA = this.getPosition(id);
+            const posB = this.getPosition(actor.targetId);
+            if (!posA || !posB) continue;
+            const dx = posA.x - posB.x;
+            const dz = posA.z - posB.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist > 1) fleeing.push(id);
         }
-
-        for (let id of toRemove) {
-            if (!this.inProgress) break;
+    
+        for (let id of fleeing) {
+            const p = this.room.state.players.get(id);
+            if (p) p.inCombat = 0;
             this.removeActor(id);
-            this.broadcastToCombat("disengage", { id });
+            const client = [...this.room.clients].find(
+                c => this.room.sessionToPlayerId.get(c.sessionId) === id
+            );
+            if (client) client.send("disengage", { id, combatId: this.combatId });
+        }
+    
+        const playersLeft = [...this.actors.values()].filter(a => a.type === "player").length;
+        if (playersLeft === 0 && this.inProgress) {
+            this.endCombat();
         }
     }
 
