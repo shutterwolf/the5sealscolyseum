@@ -1520,7 +1520,7 @@ class MyRoom extends Room {
                 const enemyType = config.Enemy || eligibleTypes[Math.floor(ROT.RNG.getUniform() * eligibleTypes.length)];
                 let placed = false;
                 for (let attempt = 0; attempt < 15; attempt++) {
-                    const useRoom = ROT.RNG.getUniform() < 0.8;
+                    const useRoom = ROT.RNG.getUniform() < 0.5;
                     const cell = useRoom
                         ? this.getRandomCellInRoom(newLevel)
                         : this.getRandomCellAnywhere(newLevel);
