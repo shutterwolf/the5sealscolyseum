@@ -404,11 +404,10 @@ class CombatCore {
             }
         }    
         // ===== damage =====
-        const roll =
-            Math.floor(Math.random() * attacker.strength) +
-            (attacker.wDamage || 0);
-        const wound = diff + roll;
-        console.log("raw wound:", wound, "roll multiplier:", roll, "diff",diff);
+        const strengthRoll = Math.max(0, attacker.strength - (Math.floor(Math.random() * 10) + 1));
+        const wound = Math.max(0, diff + strengthRoll + (attacker.wDamage || 0));
+        console.log("raw wound:", wound, "strengthRoll:", strengthRoll, "diff:", diff);
+
         // ===== armor =====
         let armorAbsorb = 0;
         if (isPlayerDefender && defender.armour) {
