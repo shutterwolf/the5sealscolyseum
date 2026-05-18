@@ -613,7 +613,7 @@ class MyRoom extends Room {
         const mapGen = new ROT.Map.Digger(width, height, {
             roomWidth:     [dungeonConfig.xroom, dungeonConfig.xroom + 2],
             roomHeight:    [dungeonConfig.yroom, dungeonConfig.yroom + 2],
-            corridorLength: [2, 10],
+            corridorLength: [1, 3],
             dugPercentage: dungeonConfig.dug
         });
     
