@@ -679,16 +679,16 @@ class MyRoom extends Room {
         this.state.enemies.set(id, enemy);
         const logic = new EnemyServer({
             id: id,
-            enemy: config.type,
-            posX: config.x,
+            enemy: type,                                 // ← function parameter
+            posX: x,                                     // ← function parameter
             posY: 3,
-            posZ: config.z,
+            posZ: z,                                     // ← function parameter
             dungeon: !!config.dungeonId,
             localMap: config.localMap ?? 0,
             depth: config.depth ?? 0,
-            aggroRange: enemyStats[config.type]?.radius ?? 5,
-            speed: enemyStats[config.type]?.enemyspeed ?? 1,
-            radius: enemyStats[config.type]?.radius ?? 5
+            aggroRange: enemyStats[type]?.radius ?? 5,   // ← function parameter
+            speed: enemyStats[type]?.enemyspeed ?? 1,    // ← function parameter
+            radius: enemyStats[type]?.radius ?? 5        // ← function parameter
         });
         this.enemyInstances.set(id, logic);
         // 3️⃣ Salva riferimento
@@ -1027,7 +1027,6 @@ class MyRoom extends Room {
                 y: doorState.y
             });
         });
-
         
         // Replace the broken client-side handlers with these server-side ones:
         this.onMessage("requestCombat", (client, message) => {
@@ -1043,6 +1042,24 @@ class MyRoom extends Room {
             });
             if (!playerState || !enemyState) return;
             const es = enemyStats[enemyState.type] || {};
+        
+            if (playerState.inCombat > 0) {
+                const existingCombat = [...this.activeCombats.values()].find(c => c.actors.has(attackerId));
+                if (existingCombat && !existingCombat.actors.has(targetId)) {
+                    existingCombat.addActor(targetId, {
+                        hp: message.enemyHp ?? enemyState.health,
+                        combat: es.attac ?? es.combat ?? 5,
+                        defence: es.defence ?? 5,
+                        strength: es.strength ?? 3,
+                        wDamage: es.wDamage ?? 1,
+                        armour: es.armor ?? 0
+                    }, "enemy");
+                    existingCombat.setTarget(targetId, attackerId);
+                    enemyState.inCombat = 1;
+                }
+                return;
+            }
+        
             const combatId = `${attackerId}_${targetId}_${Date.now()}`;
             const combat = new CombatCore(this, combatId);
             this.activeCombats.set(combatId, combat);
@@ -1059,7 +1076,6 @@ class MyRoom extends Room {
                 shield: message.shieldArmor,
                 armour: message.armour
             });
-        
             combat.addActor(targetId, {
                 hp: message.enemyHp ?? enemyState.health,
                 combat: es.attac ?? es.combat ?? 5,
@@ -1073,7 +1089,6 @@ class MyRoom extends Room {
             combat.setTarget(targetId, attackerId);
             combat.startCombat();
         });
-
         
         this.onMessage("combatActionFinished", (client, msg) => {
             const actorId = msg.actorId;
