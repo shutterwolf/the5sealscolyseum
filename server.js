@@ -373,6 +373,22 @@ class MyRoom extends Room {
         const y = Math.floor(ROT.RNG.getUniform() * (room.getBottom() - room.getTop() - 1)) + room.getTop() + 1;
         return { x, y };
     }
+
+    getEligibleEnemyTypes(depth) {
+        // Map dungeon depth to DunLevel tier
+        // depth 1-2 → tier 1 only, depth 3-4 → tier 1+2, depth 5+ → all tiers
+        var maxTier;
+        if (depth <= 2) {
+            maxTier = 1;
+        } else if (depth <= 4) {
+            maxTier = 2;
+        } else {
+            maxTier = 3;
+        }
+        return Object.keys(enemyStats).filter(function(type) {
+            return enemyStats[type].DunLevel <= maxTier;
+        });
+    }
     
     placeExit(levelData, levelIndex, dungeonConfig, entrance) {
         const maxLevels = dungeonConfig.Levels;
@@ -754,8 +770,8 @@ class MyRoom extends Room {
                 Object.entries(dungeon.levels).forEach(([levelKey, levelData]) => {
                     const config = dungeonConfig.Dungeons.find(d => String(d.id) === String(dungeonId));
                     if (!config) return;
-                    const enemyTypes = Object.keys(enemyStats);
-                    const enemyType = config.Enemy || enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+                    const eligibleTypes = this.getEligibleEnemyTypes(Number(levelKey));
+                    const enemyType = config.Enemy || eligibleTypes[Math.floor(Math.random() * eligibleTypes.length)];
                     // Count enemies currently alive in this dungeon level
                     let currentCount = 0;
                     this.state.enemies.forEach((enemy) => {
@@ -1451,9 +1467,9 @@ class MyRoom extends Room {
         newLevel.loot = this.generateLoot(newLevel, config, occupied);
         // Enemies — spawn using config.Enemy and config.enemies count
         if (config.enemies > 0) {
-            const enemyTypes = Object.keys(enemyStats);
+            const eligibleTypes = this.getEligibleEnemyTypes(depth);
             for (let i = 0; i < config.enemies; i++) {
-                const enemyType = config.Enemy || enemyTypes[Math.floor(ROT.RNG.getUniform() * enemyTypes.length)];
+                const enemyType = config.Enemy || eligibleTypes[Math.floor(ROT.RNG.getUniform() * eligibleTypes.length)];
                 const cell = this.getRandomCellInRoom(newLevel);
                 if (!cell) continue;
                 const [x, y] = cell.split(",").map(Number);
