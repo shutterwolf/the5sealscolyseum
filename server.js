@@ -374,6 +374,17 @@ class MyRoom extends Room {
         return { x, y };
     }
 
+    getRoomContaining(x, y, rooms) {
+        for (var i = 0; i < rooms.length; i++) {
+            var room = rooms[i];
+            if (x >= room.getLeft() && x <= room.getRight() &&
+                y >= room.getTop()  && y <= room.getBottom()) {
+                return room;
+            }
+        }
+        return null;
+    }
+    
     getEligibleEnemyTypes(depth) {
         // Map dungeon depth to DunLevel tier
         // depth 1-2 → tier 1 only, depth 3-4 → tier 1+2, depth 5+ → all tiers
@@ -558,6 +569,18 @@ class MyRoom extends Room {
             }
         }
         return loots;
+    }
+
+    getRandomCellAnywhere(levelData) {
+        const freeCells = levelData.freeCells;
+        if (!freeCells || freeCells.length === 0) return null;
+        for (let attempt = 0; attempt < 10; attempt++) {
+            const key = freeCells[Math.floor(ROT.RNG.getUniform() * freeCells.length)];
+            if (levelData.map[key] !== ".") continue;
+            if (levelData.doors && levelData.doors[key]) continue;
+            return key;
+        }
+        return null;
     }
     
     getRandomCellInRoom(levelData) {
@@ -1436,6 +1459,7 @@ class MyRoom extends Room {
             newLevel.entrance = entrance;
             occupied.add(`${entrance.x},${entrance.y}`);
         }
+        
         // Exit
         const exit = this.placeExit(newLevel, level, config, entrance); 
         if (exit) {
@@ -1465,23 +1489,44 @@ class MyRoom extends Room {
         newLevel.furnitures = this.generateFurnitures(newLevel, config, occupied);
         // Loot — use config.loot (not lootCount)
         newLevel.loot = this.generateLoot(newLevel, config, occupied);
+
+        if (entrance && newLevel.rooms) {
+            var entranceRoom = this.getRoomContaining(entrance.x, entrance.y, newLevel.rooms);
+            if (entranceRoom) {
+                for (var rx = entranceRoom.getLeft(); rx <= entranceRoom.getRight(); rx++) {
+                    for (var ry = entranceRoom.getTop(); ry <= entranceRoom.getBottom(); ry++) {
+                        occupied.add(rx + "," + ry);
+                    }
+                }
+            }
+        }
         // Enemies — spawn using config.Enemy and config.enemies count
         if (config.enemies > 0) {
             const eligibleTypes = this.getEligibleEnemyTypes(depth);
             for (let i = 0; i < config.enemies; i++) {
                 const enemyType = config.Enemy || eligibleTypes[Math.floor(ROT.RNG.getUniform() * eligibleTypes.length)];
-                const cell = this.getRandomCellInRoom(newLevel);
-                if (!cell) continue;
-                const [x, y] = cell.split(",").map(Number);
-                const key = `${x},${y}`;
-                if (occupied.has(key)) continue;
-                occupied.add(key);
-                const enemyId = this.spawnEnemy(enemyType, x, y, {
-                    localMap: 0,
-                    dungeonId: String(dungeonId),
-                    depth: depth
-                });
-                newLevel.enemies.push(enemyId);
+                let placed = false;
+                for (let attempt = 0; attempt < 15; attempt++) {
+                    const useRoom = ROT.RNG.getUniform() < 0.8;
+                    const cell = useRoom
+                        ? this.getRandomCellInRoom(newLevel)
+                        : this.getRandomCellAnywhere(newLevel);
+                    if (!cell) continue;
+                    if (occupied.has(cell)) continue;
+                    const [x, y] = cell.split(",").map(Number);
+                    occupied.add(cell);
+                    const enemyId = this.spawnEnemy(enemyType, x, y, {
+                        localMap: 0,
+                        dungeonId: String(dungeonId),
+                        depth: depth
+                    });
+                    newLevel.enemies.push(enemyId);
+                    placed = true;
+                    break;
+                }
+                if (!placed) {
+                    console.warn(`[createLevel] Could not place enemy ${i} after 15 attempts`);
+                }
             }
         }
         return newLevel;
