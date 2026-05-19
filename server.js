@@ -569,16 +569,18 @@ class MyRoom extends Room {
         return loots;
     }
 
-    getRandomCellAnywhere(levelData) {
-        const freeCells = levelData.freeCells;
-        if (!freeCells || freeCells.length === 0) return null;
-        for (let attempt = 0; attempt < 10; attempt++) {
-            const key = freeCells[Math.floor(ROT.RNG.getUniform() * freeCells.length)];
-            if (levelData.map[key] !== ".") continue;
-            if (levelData.doors && levelData.doors[key]) continue;
-            return key;
-        }
-        return null;
+    getRandomCorridorCell(levelData) {
+        const cells = levelData.freeCells.filter(key => {
+            const [x, y] = key.split(",").map(Number);
+    
+            const room = this.getRoomContaining(x, y, levelData.rooms);
+    
+            return !room;
+        });
+    
+        if (cells.length === 0) return null;
+    
+        return cells[Math.floor(ROT.RNG.getUniform() * cells.length)];
     }
     
     getRandomCellInRoom(levelData) {
@@ -1523,7 +1525,7 @@ class MyRoom extends Room {
                     const useRoom = ROT.RNG.getUniform() < 0.5;
                     const cell = useRoom
                         ? this.getRandomCellInRoom(newLevel)
-                        : this.getRandomCellAnywhere(newLevel);
+                        : this.getRandomCorridorCell(newLevel);
                     if (!cell) continue;
                     if (occupied.has(cell)) continue;
                     const [x, y] = cell.split(",").map(Number);
