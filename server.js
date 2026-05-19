@@ -929,9 +929,9 @@ class MyRoom extends Room {
                 try {
                     const doc = await db.collection("dungeons").doc(docId).get();
                     if (doc.exists) {
-                        const data = doc.data();
-                        const seed = data.seed;
-                        let depth = data.depth ?? level;
+                        const docData = doc.data();
+                        const seed = docData.seed;
+                        let depth = docData.depth ?? level;
                         dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
                     } else {
                         const seed = Math.floor(Math.random() * 1e9);
@@ -1110,7 +1110,7 @@ class MyRoom extends Room {
             schemaEnemy.pos.z = data.pos.z;
             // reset AI
             logic.destination = null;
-            logic.targetPlayerId = null;
+            logic.targetPlayer = null; 
             logic.leaderId = null;
             schemaEnemy.destX = data.pos.x;
             schemaEnemy.destZ = data.pos.z;
@@ -1184,6 +1184,7 @@ class MyRoom extends Room {
             console.log("[lootEnemy] deleting enemy from state", enemy.id);
             // rimuove il nemico dallo stato server
             this.state.enemies.delete(enemy.id);
+            this.enemyInstances.delete(enemy.id);
             const loaderClient = [...this.clients].find(
                 c => this.sessionToPlayerId.get(c.sessionId) === playerId
             );
