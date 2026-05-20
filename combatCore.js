@@ -383,7 +383,7 @@ class CombatCore {
         
             console.log("Defender equipped:", entity?.equipped);
         
-            if (entity?.shield > 0) {
+            if (entity?.aShield > 0) {
                 defenderSkill = entity?.aShield ?? entity?.defence ?? 0;
             } else {
                 const weaponType = entity?.equipped?.WEAPON?.type?.toLowerCase();
@@ -447,7 +447,7 @@ class CombatCore {
             armorAbsorb = armorProt;
             console.log("armorAbsorb:", armorAbsorb);
         }
-        const finalWound = wound - armorAbsorb;
+        const finalWound = Math.max(0, wound - armorAbsorb);
         console.log("FINAL wound:", finalWound);
         console.log("===== resolveHit END =====");
         return {
