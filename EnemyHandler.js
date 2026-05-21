@@ -3,17 +3,14 @@ class Enemy {
         this.id = enemyData.id;
         this.type = enemyData.enemy;
         this.level = enemyData.level || 1;
-
         this.pos = {
             x: enemyData.posX,
             y: enemyData.posY,
             z: enemyData.posZ
         };
-
         this.enabled = true;
         this.state = 'IDLE';
         this.destination = null;
-
         this.speed = enemyData.speed || 3;
         this.radius = enemyData.radius || 5;
         this.aggroRange = enemyData.aggroRange || 5;
@@ -22,7 +19,6 @@ class Enemy {
         this.localMap = enemyData.localMap || 0;
         this.depth = enemyData.depth || 0;
     }
-
     get position() {
         return { 
             x: isFinite(this.pos.x) ? this.pos.x : 0,
@@ -33,29 +29,33 @@ class Enemy {
 
     update(players, dt, room) {
     if (!this.enabled) {
-        //console.log(`[Enemy ${this.id}] disabled, skipping update.`);
         return null;
     }
 
-    let updateData = null;
+    // 🔥 Combat system prende il controllo totale del nemico
+    const enemyState = room.state.enemies.get(this.id);
 
+    if (enemyState?.inCombat) {
+        return null;
+    }
+    let updateData = null;
     // 1️⃣ Aggro check
     for (let pid in players) {
         const player = players[pid];
         if (!player) continue;
-        if (player.localMap !== this.localMap || player.depth !== this.depth) continue;
-
+        if (
+            player.localMap !== this.localMap ||
+            player.depth !== this.depth
+        ) continue;
         const dx = player.playerPos.x - this.pos.x;
         const dz = player.playerPos.z - this.pos.z;
-        const dist = Math.sqrt(dx*dx + dz*dz);
+        const dist = Math.sqrt(dx * dx + dz * dz);
 
         if (dist <= this.aggroRange) {
             this.state = 'AGGRO';
             this.targetPlayer = pid;
-
             const dirX = dist > 0.001 ? dx / dist : 0;
             const dirZ = dist > 0.001 ? dz / dist : 0;
-
             updateData = {
                 moveDir: { x: dirX * this.speed, z: dirZ * this.speed },
                 state: 'AGGRO',
@@ -63,7 +63,6 @@ class Enemy {
                 destX: player.playerPos.x,
                 destZ: player.playerPos.z
             };
-            //console.log(`[Enemy ${this.id}] Aggro su player ${pid}, destX: ${updateData.destX}, destZ: ${updateData.destZ}`);
             break;
         }
     }
