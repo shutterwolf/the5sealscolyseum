@@ -105,6 +105,17 @@ class CombatCore {
     }
     
     removeActor(id) {
+        // Retarget any actor whose target was this one
+        this.actors.forEach((actor) => {
+            if (actor.targetId === id) {
+                const newTarget = [...this.actors.values()].find(
+                    a => a.type !== actor.type && a.id !== id
+                );
+                actor.targetId = newTarget ? newTarget.id : null;
+            }
+        });
+    
+        // existing code below unchanged
         const pendingIndex = this.pendingActors.indexOf(id);
         if (pendingIndex !== -1) {
             this.pendingActors.splice(pendingIndex, 1);
@@ -297,39 +308,43 @@ class CombatCore {
     endTurn() {
         clearTimeout(this.turnTimer);
         if (!this.inProgress) return;
-        // Avanza l'indice del turno
+    
+        if (this.actors.size < 2) {
+            this.endCombat();
+            return;
+        }
+    
+        if (!this.turnOrder || this.turnOrder.length === 0) {
+            console.error('[CombatCore] turnOrder empty/undefined in endTurn, ending combat');
+            this.endCombat();
+            return;
+        }
+    
         this.currentIndex++;
-        // Controlla se il round corrente è terminato
+    
         if (this.currentIndex >= this.turnOrder.length) {
             this.round++;
             this.currentIndex = 0;
-            // Inserisce in coda all'ultimo actor tutti i ritardatari accumulati
-            if (this.pendingActors.length > 0) {
-                console.log(`🔄 ROUND ${this.round}: Inserisco i combattenti in attesa nello scheduling:`, this.pendingActors);
+            if (this.pendingActors && this.pendingActors.length > 0) {
                 this.turnOrder = [...this.turnOrder, ...this.pendingActors];
-                this.pendingActors = []; // Svuota la coda
+                this.pendingActors = [];
             }
         }
+    
         this.normalizeTurnIndex();
         const nextActorId = this.getCurrentActorId();
         if (!nextActorId) {
-            console.log("⚠️ Nessun attore valido per il prossimo turno, chiusura combattimento facoltativa.");
-            this.inProgress = false;
+            this.endCombat();
             return;
         }
+    
         const nextActor = this.actors.get(nextActorId);
-        console.log("NEXT_TURN", {
-            combatId: this.combatId,
-            round: this.round,
-            currentIndex: this.currentIndex,
-            nextActorId: nextActorId
-        });
-
+        console.log("NEXT_TURN", { combatId: this.combatId, round: this.round, currentIndex: this.currentIndex, nextActorId });
+    
         this.broadcastToCombat("startTurn", {
             actorId: nextActorId,
             targetId: nextActor?.targetId ?? null
         });
-        // Fai ripartire il timer di sicurezza per il nuovo attore
         this.startTurnTimer(nextActorId);
     }
 
