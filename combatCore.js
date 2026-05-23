@@ -10,6 +10,7 @@ class CombatCore {
         this.currentIndex = 0;
         this.turnOrder = [];
         this.actors = new Map();
+        this.turnTimer = null;
     }
 
     addActor(id, stats, type = "player") {
@@ -81,28 +82,32 @@ class CombatCore {
         }
     }
 
-    removeActor(id) {
-        if (!this.actors.has(id)) return;
-        const wasCurrent = this.turnOrder[this.currentIndex] === id;
-        // ✅ QUI
-        const indexRemoved = this.turnOrder.indexOf(id);
-        this.actors.delete(id);
-        this.turnOrder = this.turnOrder.filter(x => x !== id);
+    normalizeTurnIndex() {
         if (this.turnOrder.length === 0) {
             this.currentIndex = 0;
             return;
         }
-        if (wasCurrent) {
-            if (this.currentIndex >= this.turnOrder.length) {
-                this.currentIndex = 0;
-            }
-        } else {
-            if (indexRemoved !== -1 && indexRemoved < this.currentIndex) {
-                this.currentIndex--;
-            }
+        if (this.currentIndex >= this.turnOrder.length) {
+            this.currentIndex = 0;
+        }
+        if (this.currentIndex < 0) {
+            this.currentIndex = 0;
         }
     }
-
+    
+    removeActor(id) {
+        const index = this.turnOrder.indexOf(id);
+        if (index === -1) {
+            this.actors.delete(id);
+            return;
+        }
+        this.actors.delete(id);
+        this.turnOrder.splice(index, 1);
+        if (index < this.currentIndex) {
+            this.currentIndex--;
+        }
+        this.normalizeTurnIndex();
+    }
 
     setTarget(attackerId, targetId) {
         const attacker = this.actors.get(attackerId);
@@ -139,7 +144,21 @@ class CombatCore {
         });
     }
 
+    startTurnTimer(actorId) {
+        clearTimeout(this.turnTimer);
+        this.turnTimer = setTimeout(() => {
+            console.log("TURN TIMEOUT:", actorId);
+            if (!this.inProgress) return;
+            // sicurezza:
+            // il turno potrebbe essere già cambiato
+            if (this.getCurrentActorId() !== actorId) return;
+            console.log("FORCED END TURN");
+            this.endTurn();
+        }, 8000);
+    }
+    
     onActorAnimationFinished(actorId) {
+        clearTimeout(this.turnTimer);
         console.log("TURN_RESOLVE_BEGIN", {
             combatId: this.combatId,
             actorId,
@@ -275,13 +294,23 @@ class CombatCore {
             this.currentIndex = 0;
         }
         const nextActorId = this.getCurrentActorId();
+        if (!nextActorId) {
+            this.endCombat();
+            return;
+        }
         const nextActor = this.actors.get(nextActorId);
+        if (!nextActor) {
+            this.removeActor(nextActorId);
+            this.endTurn();
+            return;
+        }
         console.log("NEXT_TURN", {
             combatId: this.combatId,
             round: this.round,
             currentIndex: this.currentIndex,
             nextActorId
         });
+        this.startTurnTimer(nextActorId);
         this.broadcastToCombat("startTurn", {
             actorId: nextActorId,
             targetId: nextActor?.targetId ?? null
@@ -299,10 +328,15 @@ class CombatCore {
         scored.sort((a, b) => b.score - a.score);
     
         this.turnOrder = scored.map(s => s.id);
+        this.normalizeTurnIndex();
     }
 
     getCurrentActorId() {
-        return this.turnOrder[this.currentIndex];
+        this.normalizeTurnIndex();
+        if (this.turnOrder.length === 0) {
+            return null;
+        }
+        return this.turnOrder[this.currentIndex] ?? null;
     }
 
     checkDistances() {
@@ -461,6 +495,7 @@ class CombatCore {
     }
 
     endCombat() {
+        clearTimeout(this.turnTimer);
         console.log("END", {
             combatId: this.combatId,
             remainingActors: [...this.actors.keys()]
