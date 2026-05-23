@@ -80,6 +80,14 @@ class CombatCore {
             if (type === "player") entity.hp = initialHP;
             if (type === "enemy") entity.health = initialHP;
         }
+        if (this.inProgress) {
+            // Se il combattimento è già avviato, lo parcheggiamo per il prossimo round
+            this.pendingActors.push(id);
+            console.log(`⏳ Actor ${id} (${type}) messo in coda per il Round ${this.round + 1}`);
+        } else {
+            // Se il combattimento deve ancora partire, lo inseriamo normalmente
+            this.turnOrder.push(id);
+        }
     }
 
     normalizeTurnIndex() {
@@ -96,6 +104,12 @@ class CombatCore {
     }
     
     removeActor(id) {
+        const pendingIndex = this.pendingActors.indexOf(id);
+        if (pendingIndex !== -1) {
+            this.pendingActors.splice(pendingIndex, 1);
+            this.actors.delete(id);
+            return;
+        }
         const index = this.turnOrder.indexOf(id);
         if (index === -1) {
             this.actors.delete(id);
@@ -126,9 +140,11 @@ class CombatCore {
         this.inProgress = true;
         this.round = 1;
         this.currentIndex = 0;
+        // Popoliamo il turnOrder iniziale con tutti gli attori inseriti prima del via
+        this.turnOrder = [...this.actors.keys()];
         console.log("START", {
             combatId: this.combatId,
-            actors: [...this.actors.keys()]
+            actors: this.turnOrder
         });
         this.rollInitiative();
         console.log("INITIATIVE", {
@@ -142,6 +158,8 @@ class CombatCore {
             actorId: nextActorId,
             targetId: nextActor?.targetId ?? null
         });
+        // Avvia il timer per il primo turno
+        if (nextActorId) this.startTurnTimer(nextActorId);
     }
 
     startTurnTimer(actorId) {
@@ -276,45 +294,42 @@ class CombatCore {
     }
 
     endTurn() {
-        this.checkDistances();
+        clearTimeout(this.turnTimer);
         if (!this.inProgress) return;
-        if (this.actors.size < 2) {
-            this.endCombat();
-            return;
-        }
-    
+        // Avanza l'indice del turno
         this.currentIndex++;
-    
-        // 👉 FINE ROUND
+        // Controlla se il round corrente è terminato
         if (this.currentIndex >= this.turnOrder.length) {
             this.round++;
-    
-            // 🔥 ricalcola iniziativa SOLO qui
-            this.rollInitiative();
             this.currentIndex = 0;
+            // Inserisce in coda all'ultimo actor tutti i ritardatari accumulati
+            if (this.pendingActors.length > 0) {
+                console.log(`🔄 ROUND ${this.round}: Inserisco i combattenti in attesa nello scheduling:`, this.pendingActors);
+                this.turnOrder = [...this.turnOrder, ...this.pendingActors];
+                this.pendingActors = []; // Svuota la coda
+            }
         }
+        this.normalizeTurnIndex();
         const nextActorId = this.getCurrentActorId();
         if (!nextActorId) {
-            this.endCombat();
+            console.log("⚠️ Nessun attore valido per il prossimo turno, chiusura combattimento facoltativa.");
+            this.inProgress = false;
             return;
         }
         const nextActor = this.actors.get(nextActorId);
-        if (!nextActor) {
-            this.removeActor(nextActorId);
-            this.endTurn();
-            return;
-        }
         console.log("NEXT_TURN", {
             combatId: this.combatId,
             round: this.round,
             currentIndex: this.currentIndex,
-            nextActorId
+            nextActorId: nextActorId
         });
-        this.startTurnTimer(nextActorId);
+
         this.broadcastToCombat("startTurn", {
             actorId: nextActorId,
             targetId: nextActor?.targetId ?? null
         });
+        // Fai ripartire il timer di sicurezza per il nuovo attore
+        this.startTurnTimer(nextActorId);
     }
 
     rollInitiative() {
@@ -332,11 +347,8 @@ class CombatCore {
     }
 
     getCurrentActorId() {
-        this.normalizeTurnIndex();
-        if (this.turnOrder.length === 0) {
-            return null;
-        }
-        return this.turnOrder[this.currentIndex] ?? null;
+        if (this.turnOrder.length === 0) return null;
+        return this.turnOrder[this.currentIndex] || null;
     }
 
     checkDistances() {
