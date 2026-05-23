@@ -905,7 +905,6 @@ class MyRoom extends Room {
         this.onMessage("enterDungeon", async (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
-            //console.log("RAW DATA:", JSON.stringify(data));
             const config = dungeonConfig.Dungeons.find(d => d.Name === data.name);
             if (!config) {
                 console.warn("Dungeon not found:", data, client);
@@ -913,17 +912,14 @@ class MyRoom extends Room {
             }
             console.log("ENTER DUNGEON DATA:", data);
             const dungeonId = config.id;
-            let level = data.level ?? 1; // 👈 let
+            let level = data.level ?? 1;
             let depth = data.depth ?? level;
             const depthFromData = data.depth;
-            //console.log("Depth FROM DATA:", depthFromData);
             const docId = `${dungeonId}_${level}`;
-            // Get or create dungeon in memory
             if (!this.dungeons.has(dungeonId)) {
                 this.dungeons.set(dungeonId, { id: dungeonId, levels: {} });
             }
             const dungeon = this.dungeons.get(dungeonId);
-            // If level not in memory, try Firestore first
             const lvlKey = String(level);
             if (!dungeon.levels[lvlKey]) {
                 try {
@@ -936,45 +932,62 @@ class MyRoom extends Room {
                     } else {
                         const seed = Math.floor(Math.random() * 1e9);
                         const dungeonLevel = level;
-                        depth=dungeonLevel;
+                        depth = dungeonLevel;
                         dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
-                        const toSave = {
-                            seed,
-                            dungeonId,
-                            level,
-                            depth
-                        };
+                        const toSave = { seed, dungeonId, level, depth };
                         await db.collection("dungeons").doc(docId).set(toSave, { merge: true });
                         console.log(`Saved dungeon ${docId} to Firestore`);
                     }
                 } catch (err) {
                     console.error("Firestore dungeon error:", err);
-                    // Fallback: generate in memory without saving
                     const seed = Math.floor(Math.random() * 1e9);
                     let depth = level;
-                    console.log("levelKey",lvlKey);
-                    console.log("Depth:",depth);
                     dungeon.levels[lvlKey] = this.createLevel(config, level, dungeonId, depth, seed);
                 }
             }
+        
             const levelData = dungeon.levels[lvlKey];
-            //const depth = levelData.depth ?? level; // 🔥 FIX
+        
+            // ─── SPAWN CHECK: se il livello era già in memoria, ricontrolla i nemici vivi ───
+            let currentCount = 0;
+            this.state.enemies.forEach((enemy) => {
+                if (String(enemy.dungeonId) === String(dungeonId) &&
+                    enemy.depth === Number(lvlKey) &&
+                    !enemy.isDead) {
+                    currentCount++;
+                }
+            });
+            if (currentCount < config.enemies) {
+                const eligibleTypes = this.getEligibleEnemyTypes(Number(lvlKey));
+                const enemyType = config.Enemy || eligibleTypes[Math.floor(Math.random() * eligibleTypes.length)];
+                const toSpawn = config.enemies - currentCount;
+                for (let i = 0; i < toSpawn; i++) {
+                    const key = this.getRandomCellInRoom(levelData);
+                    if (!key) continue;
+                    if (key in levelData.loot) continue;
+                    if (key in levelData.furnitures) continue;
+                    const [ex, ey] = key.split(",").map(Number);
+                    this.spawnEnemy(enemyType, ex, ey, {
+                        localMap: 0,
+                        dungeonId: String(dungeonId),
+                        depth: Number(lvlKey)
+                    });
+                }
+            }
+            // ─────────────────────────────────────────────────────────────────────────────
+        
             const player = this.state.players.get(playerId);
-            console.log("Dati player",dungeonId,depth);
+            console.log("Dati player", dungeonId, depth);
             if (player) {
                 player.dungeonId = String(dungeonId);
                 player.depth = depth;
             }
-            //console.log("LEVEL DATA BEFORE SEND:", levelData);
-            //console.log("Sending loadDungeon:", { level, depth, hasEntrance: !!levelData.entrance });
-            //console.log(levelData)
             client.send("loadDungeon", {
                 dungeonConfig: config,
                 dungeonId,
                 level,
                 depth,
                 map: levelData.map,
-                //rooms: levelData.rooms,
                 doors: levelData.doors,
                 furnitures: levelData.furnitures,
                 loot: levelData.loot,
