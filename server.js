@@ -1661,11 +1661,21 @@ class MyRoom extends Room {
     onLeave(client) {
         const playerId = this.sessionToPlayerId.get(client.sessionId);
         if (playerId) {
+            for (const [combatId, combat] of this.activeCombats) {
+                if (combat.actors.has(playerId)) {
+                    combat.removeActor(playerId);
+                    if (combat.actors.size < 2) {
+                        combat.endCombat();
+                    }
+                    break;
+                }
+            }
             this.state.players.delete(playerId);
             this.sessionToPlayerId.delete(client.sessionId);
         }
         console.log("Player left:", playerId);
     }
+
 }
 // definisci la tua room
 gameServer.define("my_room", MyRoom);
