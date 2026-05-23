@@ -11,6 +11,7 @@ class CombatCore {
         this.turnOrder = [];
         this.actors = new Map();
         this.turnTimer = null;
+        this.pendingActors = [];
     }
 
     addActor(id, stats, type = "player") {
