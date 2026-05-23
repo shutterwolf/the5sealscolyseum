@@ -22,6 +22,7 @@ class CombatCore {
         let maxHp = 20;
         if (type === "player") {
             initialHP = stats.hp ?? entity?.hp ?? 20;
+            maxHp = stats.maxHp ?? entity?.maxHp ?? initialHP;
         } else {
             maxHp = entity.maxHealth;
             initialHP =
@@ -386,8 +387,9 @@ class CombatCore {
             if (entity?.aShield > 0) {
                 defenderSkill = entity?.aShield ?? entity?.defence ?? 0;
             } else {
-                const weaponType = entity?.equipped?.WEAPON?.type?.toLowerCase();
-        
+                const weapon = entity?.equipped?.slots?.get("WEAPON");
+                const weaponType = weapon?.type?.toLowerCase();
+                
                 if (weaponType && entity?.[weaponType] != null) {
                     defenderSkill = entity[weaponType];
                 } else {
