@@ -398,6 +398,15 @@ class MyRoom extends Room {
             return enemyStats[type].DunLevel <= maxTier && enemyStats[type].id !== 3;
         });
     }
+
+    findCombatByActor(actorId) {
+        for (const combat of this.activeCombats.values()) {
+            if (combat.actors.has(actorId)) {
+                return combat;
+            }
+        }
+        return null;
+    }
     
     placeExit(levelData, levelIndex, dungeonConfig, entrance) {
         const maxLevels = dungeonConfig.Levels;
@@ -1048,17 +1057,41 @@ class MyRoom extends Room {
             const playerState = this.state.players.get(attackerId);
             const enemyState = this.state.enemies.get(targetId);
             combatTrace("STATE_LOOKUP", {
-                attackerId, targetId,
+                attackerId,
+                targetId,
                 hasPlayer: !!playerState,
                 hasEnemy: !!enemyState,
                 enemyType: enemyState?.type
             });
             if (!playerState || !enemyState) return;
             const es = enemyStats[enemyState.type] || {};
-        
-            if (playerState.inCombat > 0) {
-                const existingCombat = [...this.activeCombats.values()].find(c => c.actors.has(attackerId));
-                if (existingCombat && !existingCombat.actors.has(targetId)) {
+            // =========================
+            // CHECK EXISTING COMBATS
+            // =========================
+            const attackerCombat = this.findCombatByActor(attackerId);
+            const targetCombat = this.findCombatByActor(targetId);
+            const existingCombat = attackerCombat || targetCombat;
+            // =========================
+            // JOIN EXISTING COMBAT
+            // =========================
+            if (existingCombat) {
+                // add player if missing
+                if (!existingCombat.actors.has(attackerId)) {
+                    existingCombat.addActor(attackerId, {
+                        hp: message.hp,
+                        maxHp: message.maxHp,
+                        combat: message.combat,
+                        defence: message.defence,
+                        strength: message.strength,
+                        wDamage: message.wDamage,
+                        weaponType: message.weaponType,
+                        shield: message.shieldArmor,
+                        armour: message.armour
+                    }, "player");
+                    playerState.inCombat = 1;
+                }
+                // add enemy if missing
+                if (!existingCombat.actors.has(targetId)) {
                     existingCombat.addActor(targetId, {
                         hp: message.enemyHp ?? enemyState.health,
                         combat: es.attac ?? es.combat ?? 5,
@@ -1067,12 +1100,20 @@ class MyRoom extends Room {
                         wDamage: es.wDamage ?? 1,
                         armour: es.armor ?? 0
                     }, "enemy");
-                    existingCombat.setTarget(targetId, attackerId);
                     enemyState.inCombat = 1;
                 }
+                existingCombat.setTarget(attackerId, targetId);
+                existingCombat.setTarget(targetId, attackerId);
+                combatTrace("JOIN_EXISTING", {
+                    combatId: existingCombat.combatId,
+                    attackerId,
+                    targetId
+                });
                 return;
             }
-        
+            // =========================
+            // CREATE NEW COMBAT
+            // =========================
             const combatId = `${attackerId}_${targetId}_${Date.now()}`;
             const combat = new CombatCore(this, combatId);
             this.activeCombats.set(combatId, combat);
@@ -1097,9 +1138,13 @@ class MyRoom extends Room {
                 wDamage: es.wDamage ?? 1,
                 armour: es.armor ?? 0
             }, "enemy");
-            combatTrace("START", { combatId, attackerId, targetId });
             combat.setTarget(attackerId, targetId);
             combat.setTarget(targetId, attackerId);
+            combatTrace("START", {
+                combatId,
+                attackerId,
+                targetId
+            });
             combat.startCombat();
         });
         
