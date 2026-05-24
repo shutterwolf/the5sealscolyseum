@@ -313,6 +313,12 @@ class CombatCore {
             this.endCombat();
             return;
         }
+        // FIX: se non ci sono più player, termina il combat
+        const playersLeft = [...this.actors.values()].filter(a => a.type === "player").length;
+        if (playersLeft === 0) {
+            this.endCombat();
+            return;
+        }
     
         if (!this.turnOrder || this.turnOrder.length === 0) {
             console.error('[CombatCore] turnOrder empty/undefined in endTurn, ending combat');
