@@ -12,10 +12,17 @@ class CombatCore {
         this.actors = new Map();
         this.turnTimer = null;
         this.pendingActors = [];
+        this.disposed = false;
+        this.maxRange = 1.5; // max attack range in world units
     }
 
     addActor(id, stats, type = "player") {
-        if (this.actors.has(id)) return;
+        if (this.actors.has(id)) {
+            // Already in this combat — just update stats and return
+            const existing = this.actors.get(id);
+            Object.assign(existing, stats);
+            return;
+        }
         const entity = this.getEntity(id, type);
         // =========================
         // HP SAFE
@@ -26,11 +33,8 @@ class CombatCore {
             initialHP = stats.hp ?? entity?.hp ?? 20;
             maxHp = stats.maxHp ?? entity?.maxHp ?? initialHP;
         } else {
-            maxHp = entity.maxHealth;
-            initialHP =
-                entity?.health ??
-                stats.hp ??
-                20;
+            maxHp = entity?.maxHealth ?? stats.maxHealth ?? 20;
+            initialHP = entity?.health ?? stats.hp ?? 20;
         }
         // =========================
         // ATTACK SKILL (NO RICALCOLO)
@@ -72,7 +76,10 @@ class CombatCore {
             shield: shieldProtection,
             armour: armorValue,
             weaponType,
-            targetId: null
+            targetId: null,
+            lastHitBy: null,
+            lastWeaponUsed: null,
+            isDead: false
         });
         // =========================
         // SYNC STATE
@@ -103,36 +110,58 @@ class CombatCore {
             this.currentIndex = 0;
         }
     }
-    
+
     removeActor(id) {
+        const actor = this.actors.get(id);
+        if (!actor) return;
+
         // Retarget any actor whose target was this one
-        this.actors.forEach((actor) => {
-            if (actor.targetId === id) {
+        this.actors.forEach((a) => {
+            if (a.targetId === id) {
                 const newTarget = [...this.actors.values()].find(
-                    a => a.type !== actor.type && a.id !== id
+                    other => other.type !== a.type && other.id !== id && !other.isDead
                 );
-                actor.targetId = newTarget ? newTarget.id : null;
+                a.targetId = newTarget ? newTarget.id : null;
             }
         });
-    
-        // existing code below unchanged
+
+        // Remove from pending first
         const pendingIndex = this.pendingActors.indexOf(id);
         if (pendingIndex !== -1) {
             this.pendingActors.splice(pendingIndex, 1);
-            this.actors.delete(id);
-            return;
         }
+
+        // Remove from turnOrder
         const index = this.turnOrder.indexOf(id);
-        if (index === -1) {
-            this.actors.delete(id);
+        if (index !== -1) {
+            this.turnOrder.splice(index, 1);
+            if (index < this.currentIndex) {
+                this.currentIndex--;
+            }
+        }
+
+        this.actors.delete(id);
+        this.normalizeTurnIndex();
+
+        // If combat has too few actors, end it
+        if (this.actors.size < 2) {
+            this.endCombat();
             return;
         }
-        this.actors.delete(id);
-        this.turnOrder.splice(index, 1);
-        if (index < this.currentIndex) {
-            this.currentIndex--;
+
+        // If no players left, end it
+        const playersLeft = [...this.actors.values()].filter(a => a.type === "player").length;
+        if (playersLeft === 0) {
+            this.endCombat();
+            return;
         }
-        this.normalizeTurnIndex();
+
+        // If no enemies left, end it
+        const enemiesLeft = [...this.actors.values()].filter(a => a.type === "enemy").length;
+        if (enemiesLeft === 0) {
+            this.endCombat();
+            return;
+        }
     }
 
     setTarget(attackerId, targetId) {
@@ -177,16 +206,14 @@ class CombatCore {
     startTurnTimer(actorId) {
         clearTimeout(this.turnTimer);
         this.turnTimer = setTimeout(() => {
-            console.log("TURN TIMEOUT:", actorId);
-            if (!this.inProgress) return;
-            // sicurezza:
-            // il turno potrebbe essere già cambiato
+            if (this.disposed || !this.inProgress) return;
+            // sicurezza: il turno potrebbe essere già cambiato
             if (this.getCurrentActorId() !== actorId) return;
-            console.log("FORCED END TURN");
+            console.log("FORCED END TURN (timeout):", actorId);
             this.endTurn();
         }, 8000);
     }
-    
+
     onActorAnimationFinished(actorId) {
         clearTimeout(this.turnTimer);
         console.log("TURN_RESOLVE_BEGIN", {
@@ -197,43 +224,79 @@ class CombatCore {
         if (!this.inProgress || this.getCurrentActorId() !== actorId) return;
 
         const actor = this.actors.get(actorId);
-        if (!actor || !actor.targetId) {
+        if (!actor || actor.isDead) {
             this.endTurn();
             return;
         }
 
+        if (!actor.targetId) {
+            // Try to auto-target an enemy
+            const newTarget = [...this.actors.values()].find(
+                a => a.type !== actor.type && !a.isDead
+            );
+            if (newTarget) {
+                actor.targetId = newTarget.id;
+            } else {
+                this.endTurn();
+                return;
+            }
+        }
+
         const target = this.actors.get(actor.targetId);
-        if (!target) {
+        if (!target || target.isDead) {
+            // Target is dead, try to find new target
+            const newTarget = [...this.actors.values()].find(
+                a => a.type !== actor.type && !a.isDead
+            );
+            if (newTarget) {
+                actor.targetId = newTarget.id;
+            } else {
+                this.endTurn();
+                return;
+            }
+        }
+
+        // Re-fetch target after potential retarget
+        const finalTarget = this.actors.get(actor.targetId);
+        if (!finalTarget || finalTarget.isDead) {
             this.endTurn();
             return;
         }
-        target.lastHitBy = actor.id;
-        target.lastWeaponUsed = actor.weaponType;
-        /*
+
+        // ===== DISTANCE CHECK =====
         if (!this.isInRange(actorId, actor.targetId)) {
-            this.removeActor(actorId);
-            this.broadcastToCombat("disengage", { id: actorId });
+            console.log("OUT OF RANGE:", actorId, "→", actor.targetId);
+            this.broadcastToCombat("combatMiss", {
+                attackerId: actorId,
+                targetId: actor.targetId,
+                reason: "out_of_range"
+            });
+            this.endTurn();
             return;
-        }*/
-        const result = this.resolveHit(actor, target);
+        }
+
+        finalTarget.lastHitBy = actor.id;
+        finalTarget.lastWeaponUsed = actor.weaponType;
+
+        const result = this.resolveHit(actor, finalTarget);
         console.log("HIT_RESULT", {
             combatId: this.combatId,
             attackerId: actor.id,
-            targetId: target.id,
+            targetId: finalTarget.id,
             result,
-            targetHpBefore: target.hp
+            targetHpBefore: finalTarget.hp
         });
         const wound = result.wound || 0;
         if (result.hit && wound > 0) {
-            target.hp -= wound;
-            if (target.hp < 0) {
-                target.hp = 0;
+            finalTarget.hp -= wound;
+            if (finalTarget.hp < 0) {
+                finalTarget.hp = 0;
             }
-            this.updateEntityHP(target.id, target.type, target.hp);
+            this.updateEntityHP(finalTarget.id, finalTarget.type, finalTarget.hp);
             console.log("HP_APPLY", {
                 combatId: this.combatId,
-                targetId: target.id,
-                targetHpAfter: target.hp
+                targetId: finalTarget.id,
+                targetHpAfter: finalTarget.hp
             });
         }
 
@@ -245,108 +308,135 @@ class CombatCore {
             armorAbsorb: result.armorAbsorb,
             hit: result.hit
         });
-        
-        if (target.hp <= 0) {
-            target.isDead = true;
-            target.lootReady = true;
-            // entity state
-            const enemyEntity = this.room.state.enemies.get(target.id);
-        
-            if (enemyEntity) {
-                enemyEntity.isDead = true;
-                enemyEntity.lootReady = true;
-                enemyEntity.aiState = "dead";
-                enemyEntity.inCombat = 0;
-                enemyEntity.health = 0;
-            }
-            target.aiState = "dead";
-            target.inCombat = 0;
-        
-            const killerId = target.lastHitBy;
-            const killer = this.actors.get(killerId);
-        
-            let advKey = null;
-            let xpGain = 0;
-        
-            if (target.type !== "player") {
-                this.room.enemyInstances.delete(target.id);
-            }
-        
-            if (killer && killer.type === "player") {
-                const entity = this.getEntity(killerId, "player");
-                if (entity) {
-                    const weaponType = killer.weaponType?.toLowerCase();
-                    advKey = weaponType + "Adv";
-                    const currentSkillLevel = killer.combat || 1;
-                    const enemyValue =
-                        (target.maxHealth) +
-                        (target.combat);
-            
-                    xpGain = Math.max(
-                        1,
-                        Math.floor((enemyValue * target.combat) / currentSkillLevel)
-                    );
-                    if (!isFinite(xpGain) || xpGain < 1) {
-                        xpGain = 1;
-                    }
-                    entity[advKey] = (entity[advKey] ?? 0) + xpGain;
-                }
-            }
-        
-            this.broadcastToCombat("actorDied", {
-                id: target.id,
-                killerId: killerId,
-                skill: advKey,
-                xpGain: xpGain
-            });
-        
-            this.removeActor(target.id);
+
+        if (finalTarget.hp <= 0) {
+            this.killActor(finalTarget);
         }
+
         this.endTurn();
+    }
+
+    killActor(target) {
+        target.isDead = true;
+        target.lootReady = true;
+
+        // entity state
+        const enemyEntity = this.room.state.enemies.get(target.id);
+        if (enemyEntity) {
+            enemyEntity.isDead = true;
+            enemyEntity.lootReady = true;
+            enemyEntity.aiState = "dead";
+            enemyEntity.inCombat = 0;
+            enemyEntity.health = 0;
+        }
+        target.aiState = "dead";
+        target.inCombat = 0;
+
+        const killerId = target.lastHitBy;
+        const killer = this.actors.get(killerId);
+
+        let advKey = null;
+        let xpGain = 0;
+
+        if (target.type !== "player") {
+            this.room.enemyInstances.delete(target.id);
+        }
+
+        if (killer && killer.type === "player") {
+            const entity = this.getEntity(killerId, "player");
+            if (entity) {
+                const weaponType = killer.weaponType?.toLowerCase();
+                advKey = weaponType + "Adv";
+                const currentSkillLevel = Math.max(1, killer.combat || 1);
+                const enemyValue = (target.maxHealth) + (target.combat);
+                xpGain = Math.max(1, Math.floor((enemyValue * target.combat) / currentSkillLevel));
+                if (!isFinite(xpGain) || xpGain < 1) {
+                    xpGain = 1;
+                }
+                entity[advKey] = (entity[advKey] ?? 0) + xpGain;
+            }
+        }
+
+        this.broadcastToCombat("actorDied", {
+            id: target.id,
+            killerId: killerId,
+            skill: advKey,
+            xpGain: xpGain
+        });
+
+        this.removeActor(target.id);
     }
 
     endTurn() {
         clearTimeout(this.turnTimer);
         if (!this.inProgress) return;
-    
+
         if (this.actors.size < 2) {
             this.endCombat();
             return;
         }
+
         // FIX: se non ci sono più player, termina il combat
         const playersLeft = [...this.actors.values()].filter(a => a.type === "player").length;
         if (playersLeft === 0) {
             this.endCombat();
             return;
         }
-    
+
+        // FIX: se non ci sono più nemici, termina il combat
+        const enemiesLeft = [...this.actors.values()].filter(a => a.type === "enemy").length;
+        if (enemiesLeft === 0) {
+            this.endCombat();
+            return;
+        }
+
         if (!this.turnOrder || this.turnOrder.length === 0) {
             console.error('[CombatCore] turnOrder empty/undefined in endTurn, ending combat');
             this.endCombat();
             return;
         }
-    
+
         this.currentIndex++;
-    
+
         if (this.currentIndex >= this.turnOrder.length) {
             this.round++;
             this.currentIndex = 0;
             if (this.pendingActors && this.pendingActors.length > 0) {
-                this.turnOrder = [...this.turnOrder, ...this.pendingActors];
+                // Add pending actors, avoiding duplicates already in turnOrder
+                const toAdd = this.pendingActors.filter(id => !this.turnOrder.includes(id));
+                this.turnOrder = [...this.turnOrder, ...toAdd];
                 this.pendingActors = [];
             }
         }
-    
+
         this.normalizeTurnIndex();
+
+        // Skip dead actors
+        let safety = 0;
+        while (safety < this.turnOrder.length) {
+            const nextActorId = this.getCurrentActorId();
+            if (!nextActorId) break;
+            const nextActor = this.actors.get(nextActorId);
+            if (nextActor && !nextActor.isDead) break;
+            // Actor is dead, skip
+            this.currentIndex++;
+            if (this.currentIndex >= this.turnOrder.length) {
+                this.round++;
+                this.currentIndex = 0;
+            }
+            this.normalizeTurnIndex();
+            safety++;
+        }
+
         const nextActorId = this.getCurrentActorId();
         if (!nextActorId) {
             this.endCombat();
             return;
         }
-    
+
         const nextActor = this.actors.get(nextActorId);
         console.log("NEXT_TURN", { combatId: this.combatId, round: this.round, currentIndex: this.currentIndex, nextActorId });
-    
+
         this.broadcastToCombat("startTurn", {
             actorId: nextActorId,
             targetId: nextActor?.targetId ?? null
@@ -356,14 +446,14 @@ class CombatCore {
 
     rollInitiative() {
         const scored = [];
-    
+
         for (let [id, actor] of this.actors.entries()) {
             const score = actor.combat - (Math.floor(Math.random() * 12) + 1);
             scored.push({ id, score });
         }
-    
+
         scored.sort((a, b) => b.score - a.score);
-    
+
         this.turnOrder = scored.map(s => s.id);
         this.normalizeTurnIndex();
     }
@@ -374,6 +464,7 @@ class CombatCore {
     }
 
     checkDistances() {
+        if (!this.inProgress) return;
         const fleeing = [];
         for (let [id, actor] of this.actors.entries()) {
             if (actor.type !== "player") continue;
@@ -384,9 +475,11 @@ class CombatCore {
             const dx = posA.x - posB.x;
             const dz = posA.z - posB.z;
             const dist = Math.sqrt(dx * dx + dz * dz);
-            if (dist > 1) fleeing.push(id);
+            if (dist > this.maxRange * 3) { // 3x attack range = flee threshold
+                fleeing.push(id);
+            }
         }
-    
+
         for (let id of fleeing) {
             const p = this.room.state.players.get(id);
             if (p) p.inCombat = 0;
@@ -399,7 +492,7 @@ class CombatCore {
                 client.send("combatEnd", { combatId: this.combatId });
             }
         }
-    
+
         const playersLeft = [...this.actors.values()].filter(a => a.type === "player").length;
         if (playersLeft === 0 && this.inProgress) {
             this.endCombat();
@@ -416,23 +509,23 @@ class CombatCore {
         const dz = posA.z - posB.z;
         const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
 
-        return dist <= 0.8;
+        return dist <= this.maxRange;
     }
 
     resolveHit(attacker, defender) {
         console.log("===== resolveHit START =====");
         console.log("ATTACKER:", attacker);
         console.log("DEFENDER:", defender);
-    
+
         let attackerSkill = 0;
         let defenderSkill = 0;
-    
+
         const isPlayerAttacker = attacker.type === "player";
         const isPlayerDefender = defender.type === "player";
-    
+
         console.log("isPlayerAttacker:", isPlayerAttacker);
         console.log("isPlayerDefender:", isPlayerDefender);
-    
+
         // ===== Attacker skill =====
         if (isPlayerAttacker) {
             const entity = this.getEntity(attacker.id, "player");
@@ -443,43 +536,43 @@ class CombatCore {
         } else {
             attackerSkill = attacker.combat ?? attacker.attack ?? 0;
         }
-        
+
         console.log("attackerSkill FINAL:", attackerSkill);
-    
+
         // ===== Defender skill =====
         if (isPlayerDefender) {
             const entity = this.getEntity(defender.id, "player");
-        
+
             console.log("Defender equipped:", entity?.equipped);
-        
+
             if (entity?.aShield > 0) {
                 defenderSkill = entity?.aShield ?? entity?.defence ?? 0;
             } else {
                 const weapon = entity?.equipped?.slots?.get("WEAPON");
                 const weaponType = weapon?.type?.toLowerCase();
-                
+
                 if (weaponType && entity?.[weaponType] != null) {
                     defenderSkill = entity[weaponType];
                 } else {
                     defenderSkill = entity?.defence ?? 0;
                 }
             }
-        
+
             console.log("defenderSkill FINAL:", defenderSkill);
         } else {
             defenderSkill = defender.defence ?? defender.defense ?? 0;
         }
-    
+
         // ===== Roll =====
         const attackRoll = (attackerSkill || 0) + Math.floor(Math.random() * 10) + 1;
         const defenseRoll = (defenderSkill || 0) + Math.floor(Math.random() * 10) + 1;
-    
+
         console.log("attackRoll:", attackRoll, "defenseRoll:", defenseRoll);
-    
+
         const diff = attackRoll - defenseRoll;
-    
+
         console.log("diff:", diff);
-    
+
         // ===== miss =====
         if (diff <= 0) {
             console.log("MISS -> returning early");
@@ -534,78 +627,89 @@ class CombatCore {
             combatId: this.combatId,
             remainingActors: [...this.actors.keys()]
         });
-    
+
         this.inProgress = false;
-    
+
         for (let id of this.actors.keys()) {
             const actor = this.actors.get(id);
-    
+
             if (actor.type === "enemy") {
                 const e = this.room.state.enemies.get(id);
                 const logic = this.room.enemyInstances.get(id);
-    
+
                 if (e) e.inCombat = 0;
-    
+
                 if (logic) {
                     logic.destination = null;
-                    logic.targetPlayer = null;    // ← was targetPlayerId
+                    logic.targetPlayer = null;
                     logic.leaderId = null;
-                    logic.state = "IDLE";         // ← was "idle" (lowercase)
+                    logic.state = "idle";
                 }
             }
-    
+
             if (actor.type === "player") {
                 const p = this.room.state.players.get(id);
                 if (p) p.inCombat = 0;
             }
         }
-    
+
         this.broadcastToCombat("combatEnd", { combatId: this.combatId });
-    
+
         this.turnOrder = [];
         this.actors.clear();
         this.currentIndex = 0;
-    
+
+        this.room.activeCombats.delete(this.combatId);
+    }
+
+    quietDispose() {
+        // Used when merging combats — don't broadcast end, just clean up
+        clearTimeout(this.turnTimer);
+        this.disposed = true;
+        this.inProgress = false;
+        this.turnOrder = [];
+        this.actors.clear();
+        this.pendingActors = [];
+        this.currentIndex = 0;
         this.room.activeCombats.delete(this.combatId);
     }
 
     broadcastToCombat(type, payload) {
         console.log(`📡 broadcastToCombat: ${type}`, payload);
-    const fullPayload = { combatId: this.combatId, ...payload };
+        const fullPayload = { combatId: this.combatId, ...payload };
 
-    // startTurn: only send to the player whose turn it is
-    if (type === "startTurn" && payload.actorId) {
-        const actor = this.actors.get(payload.actorId);
-        if (actor && actor.type === "player") {
-            const client = [...this.room.clients].find(
-                c => this.room.sessionToPlayerId.get(c.sessionId) === payload.actorId
-            );
-            console.log("🔍 startTurn client found:", !!client, "sessionToPlayerId:", [...this.room.sessionToPlayerId.entries()]);
-            if (client) client.send(type, fullPayload);
-            return;
+        // startTurn: only send to the player whose turn it is
+        if (type === "startTurn" && payload.actorId) {
+            const actor = this.actors.get(payload.actorId);
+            if (actor && actor.type === "player") {
+                const client = [...this.room.clients].find(
+                    c => this.room.sessionToPlayerId.get(c.sessionId) === payload.actorId
+                );
+                console.log("🔍 startTurn client found:", !!client, "sessionToPlayerId:", [...this.room.sessionToPlayerId.entries()]);
+                if (client) client.send(type, fullPayload);
+                return;
+            }
         }
-    }
 
-    // Everything else → all players in this combat
-    const playerIdsInCombat = [...this.actors.values()]
-        .filter(a => a.type === "player")
-        .map(a => a.id);
+        // Everything else → all players in this combat
+        const playerIdsInCombat = [...this.actors.values()]
+            .filter(a => a.type === "player")
+            .map(a => a.id);
         console.log("🎯 playerIdsInCombat:", playerIdsInCombat, "clients:", this.room.clients.length);
 
-    for (const client of this.room.clients) {
-        const playerId = this.room.sessionToPlayerId.get(client.sessionId);
-        console.log("  client", client.sessionId, "→ playerId:", playerId);
-        if (playerIdsInCombat.includes(playerId)) {
-            client.send(type, fullPayload);
+        for (const client of this.room.clients) {
+            const playerId = this.room.sessionToPlayerId.get(client.sessionId);
+            console.log("  client", client.sessionId, "→ playerId:", playerId);
+            if (playerIdsInCombat.includes(playerId)) {
+                client.send(type, fullPayload);
+            }
         }
     }
-}
-
 
     updateEntityHP(id, type, hp) {
         if (type === "player") {
             const p = this.room.state.players.get(id);
-            if (p) p.hp = hp;   // ← hp, not phealth
+            if (p) p.hp = hp;
         } else {
             const e = this.room.state.enemies.get(id);
             if (e) e.health = hp;
