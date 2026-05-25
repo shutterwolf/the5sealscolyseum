@@ -1052,74 +1052,72 @@ class MyRoom extends Room {
         
         // Replace the broken client-side handlers with these server-side ones:
         this.onMessage("requestCombat", (client, message) => {
-            const { attackerId, targetId } = message;
-            combatTrace("REQUEST", { attackerId, targetId, message });
-            const playerState = this.state.players.get(attackerId);
-            const enemyState = this.state.enemies.get(targetId);
-            combatTrace("STATE_LOOKUP", {
-                attackerId,
-                targetId,
-                hasPlayer: !!playerState,
-                hasEnemy: !!enemyState,
-                enemyType: enemyState?.type
-            });
-            if (!playerState || !enemyState) return;
-            const es = enemyStats[enemyState.type] || {};
-            // =========================
-            // CHECK EXISTING COMBATS
-            // =========================
-            const attackerCombat = this.findCombatByActor(attackerId);
-            const targetCombat = this.findCombatByActor(targetId);
-            const existingCombat = attackerCombat || targetCombat;
-            // =========================
-            // JOIN EXISTING COMBAT
-            // =========================
-            if (existingCombat) {
-                // add player if missing
-                if (!existingCombat.actors.has(attackerId)) {
-                    existingCombat.addActor(attackerId, {
-                        hp: message.hp,
-                        maxHp: message.maxHp,
-                        combat: message.combat,
-                        defence: message.defence,
-                        strength: message.strength,
-                        wDamage: message.wDamage,
-                        weaponType: message.weaponType,
-                        shield: message.shieldArmor,
-                        armour: message.armour
-                    }, "player");
-                    playerState.inCombat = 1;
-                }
-                // add enemy if missing
-                if (!existingCombat.actors.has(targetId)) {
-                    existingCombat.addActor(targetId, {
-                        hp: message.enemyHp ?? enemyState.health,
-                        combat: es.attac ?? es.combat ?? 5,
-                        defence: es.defence ?? 5,
-                        strength: es.strength ?? 3,
-                        wDamage: es.wDamage ?? 1,
-                        armour: es.armor ?? 0
-                    }, "enemy");
-                    enemyState.inCombat = 1;
-                }
-                existingCombat.setTarget(attackerId, targetId);
-                existingCombat.setTarget(targetId, attackerId);
-                combatTrace("JOIN_EXISTING", {
-                    combatId: existingCombat.combatId,
-                    attackerId,
-                    targetId
-                });
-                return;
+    const { attackerId, targetId } = message;
+    combatTrace("REQUEST", { attackerId, targetId, message });
+    const playerState = this.state.players.get(attackerId);
+    const enemyState = this.state.enemies.get(targetId);
+    combatTrace("STATE_LOOKUP", {
+        attackerId,
+        targetId,
+        hasPlayer: !!playerState,
+        hasEnemy: !!enemyState,
+        enemyType: enemyState?.type
+    });
+    if (!playerState || !enemyState) return;
+    const es = enemyStats[enemyState.type] || {};
+
+    // =========================
+    // FIND EXISTING COMBATS
+    // =========================
+    const attackerCombat = this.findCombatByActor(attackerId);
+    const targetCombat = this.findCombatByActor(targetId);
+
+    // =========================
+    // MERGE COMBATS IF NEEDED
+    // =========================
+    if (attackerCombat && targetCombat && attackerCombat !== targetCombat) {
+        // Both are in different combats — merge targetCombat into attackerCombat
+        console.log(`[COMBAT MERGE] Merging ${targetCombat.combatId} into ${attackerCombat.combatId}`);
+
+        // Move all actors from targetCombat to attackerCombat
+        for (const [id, actorData] of targetCombat.actors) {
+            if (!attackerCombat.actors.has(id)) {
+                // Reconstruct stats from actorData
+                const stats = {
+                    hp: actorData.hp,
+                    maxHp: actorData.maxHealth,
+                    combat: actorData.combat,
+                    defence: actorData.defence,
+                    strength: actorData.strength,
+                    wDamage: actorData.wDamage,
+                    weaponType: actorData.weaponType,
+                    shieldArmor: actorData.shield,
+                    armour: actorData.armour
+                };
+                attackerCombat.addActor(id, stats, actorData.type);
             }
-            // =========================
-            // CREATE NEW COMBAT
-            // =========================
-            const combatId = `${attackerId}_${targetId}_${Date.now()}`;
-            const combat = new CombatCore(this, combatId);
-            this.activeCombats.set(combatId, combat);
-            enemyState.inCombat = 1;
-            playerState.inCombat = 1;
-            combat.addActor(attackerId, {
+        }
+
+        // Restore targets for moved actors
+        for (const [id, actorData] of targetCombat.actors) {
+            if (actorData.targetId && attackerCombat.actors.has(actorData.targetId)) {
+                attackerCombat.setTarget(id, actorData.targetId);
+            }
+        }
+
+        // Quietly dispose the old combat (no broadcast, no endCombat notification)
+        targetCombat.quietDispose();
+    }
+
+    const existingCombat = attackerCombat || targetCombat;
+
+    // =========================
+    // JOIN EXISTING COMBAT
+    // =========================
+    if (existingCombat) {
+        // add player if missing
+        if (!existingCombat.actors.has(attackerId)) {
+            existingCombat.addActor(attackerId, {
                 hp: message.hp,
                 maxHp: message.maxHp,
                 combat: message.combat,
@@ -1127,10 +1125,14 @@ class MyRoom extends Room {
                 strength: message.strength,
                 wDamage: message.wDamage,
                 weaponType: message.weaponType,
-                shield: message.shieldArmor,
+                shieldArmor: message.shieldArmor,
                 armour: message.armour
-            });
-            combat.addActor(targetId, {
+            }, "player");
+            playerState.inCombat = 1;
+        }
+        // add enemy if missing
+        if (!existingCombat.actors.has(targetId)) {
+            existingCombat.addActor(targetId, {
                 hp: message.enemyHp ?? enemyState.health,
                 combat: es.attac ?? es.combat ?? 5,
                 defence: es.defence ?? 5,
@@ -1138,15 +1140,63 @@ class MyRoom extends Room {
                 wDamage: es.wDamage ?? 1,
                 armour: es.armor ?? 0
             }, "enemy");
-            combat.setTarget(attackerId, targetId);
-            combat.setTarget(targetId, attackerId);
-            combatTrace("START", {
-                combatId,
-                attackerId,
-                targetId
-            });
-            combat.startCombat();
+            enemyState.inCombat = 1;
+        }
+
+        // ONLY set the NEW attacker's target — NEVER overwrite existing targets
+        existingCombat.setTarget(attackerId, targetId);
+
+        // If the target (enemy) has no target yet, set it to the attacker
+        const targetActor = existingCombat.actors.get(targetId);
+        if (targetActor && !targetActor.targetId) {
+            existingCombat.setTarget(targetId, attackerId);
+        }
+
+        combatTrace("JOIN_EXISTING", {
+            combatId: existingCombat.combatId,
+            attackerId,
+            targetId,
+            totalActors: existingCombat.actors.size
         });
+        return;
+    }
+
+    // =========================
+    // CREATE NEW COMBAT
+    // =========================
+    const combatId = `${attackerId}_${targetId}_${Date.now()}`;
+    const combat = new CombatCore(this, combatId);
+    this.activeCombats.set(combatId, combat);
+    enemyState.inCombat = 1;
+    playerState.inCombat = 1;
+    combat.addActor(attackerId, {
+        hp: message.hp,
+        maxHp: message.maxHp,
+        combat: message.combat,
+        defence: message.defence,
+        strength: message.strength,
+        wDamage: message.wDamage,
+        weaponType: message.weaponType,
+        shieldArmor: message.shieldArmor,
+        armour: message.armour
+    });
+    combat.addActor(targetId, {
+        hp: message.enemyHp ?? enemyState.health,
+        combat: es.attac ?? es.combat ?? 5,
+        defence: es.defence ?? 5,
+        strength: es.strength ?? 3,
+        wDamage: es.wDamage ?? 1,
+        armour: es.armor ?? 0
+    }, "enemy");
+    combat.setTarget(attackerId, targetId);
+    combat.setTarget(targetId, attackerId);
+    combatTrace("START", {
+        combatId,
+        attackerId,
+        targetId
+    });
+    combat.startCombat();
+});
         
         this.onMessage("combatActionFinished", (client, msg) => {
             const actorId = msg.actorId;
@@ -1285,6 +1335,8 @@ class MyRoom extends Room {
         this.setSimulationInterval((deltaTime) => {
             const playersMap = {};
             this.state.players.forEach((player, id) => { playersMap[id] = player; });
+        
+            // --- ENEMY AI UPDATE ---
             this.enemyInstances.forEach((logic, id) => {
                 const schemaEnemy = this.state.enemies.get(id);
                 if (!schemaEnemy) return;
@@ -1307,6 +1359,16 @@ class MyRoom extends Room {
                 schemaEnemy.aiState = result.state || schemaEnemy.aiState;
                 schemaEnemy.currentAnim = result.anim || schemaEnemy.currentAnim;
             });
+        
+            // --- COMBAT DISTANCE CHECKS ---
+            // Check distances for all active combats every ~500ms (20 ticks/sec = 50ms per tick, check every 10 ticks)
+            this.combatDistanceCheckCounter = (this.combatDistanceCheckCounter || 0) + 1;
+            if (this.combatDistanceCheckCounter >= 10) {
+                this.combatDistanceCheckCounter = 0;
+                for (const combat of this.activeCombats.values()) {
+                    combat.checkDistances();
+                }
+            }
         }, 1000 / 20); // 20 tick al secondo
         
         setInterval(() => {
