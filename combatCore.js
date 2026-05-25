@@ -725,6 +725,15 @@ class CombatCore {
     getPosition(id) {
         const p = this.room.state.players.get(id);
         if (p) return p.playerPos;
+        // Check live enemy logic position first (most up-to-date)
+        const logic = this.room.enemyInstances.get(id);
+        if (logic && logic.pos) {
+            return {
+                x: logic.pos.x,
+                y: logic.pos.y ?? 0,
+                z: logic.pos.z
+            };
+        }
         const e = this.room.state.enemies.get(id);
         if (e) return e.pos;
         return null;
