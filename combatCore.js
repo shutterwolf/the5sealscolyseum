@@ -347,9 +347,10 @@ class CombatCore {
             if (entity) {
                 const weaponType = killer.weaponType?.toLowerCase();
                 advKey = weaponType + "Adv";
-                const currentSkillLevel = Math.max(1, killer.combat || 1);
-                const enemyValue = (target.maxHealth) + (target.combat);
-                xpGain = Math.max(1, Math.floor((enemyValue * target.combat) / currentSkillLevel));
+                const weaponSkill = entity?.[weaponType] ?? entity?.combat ?? 1;
+                const currentSkillLevel = Math.max(1, weaponSkill);
+                
+                xpGain = Math.max(1, Math.floor((target.maxHealth * target.combat) / currentSkillLevel));
                 if (!isFinite(xpGain) || xpGain < 1) {
                     xpGain = 1;
                 }
@@ -448,7 +449,7 @@ class CombatCore {
         const scored = [];
 
         for (let [id, actor] of this.actors.entries()) {
-            const score = actor.combat - (Math.floor(Math.random() * 12) + 1);
+            const score = actor.combat + (Math.floor(Math.random() * 12) + 1);
             scored.push({ id, score });
         }
 
