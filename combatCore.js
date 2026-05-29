@@ -678,7 +678,6 @@ class CombatCore {
     broadcastToCombat(type, payload) {
         console.log(`📡 broadcastToCombat: ${type}`, payload);
         const fullPayload = { combatId: this.combatId, ...payload };
-
         // startTurn: only send to the player whose turn it is
         if (type === "startTurn" && payload.actorId) {
             const actor = this.actors.get(payload.actorId);
