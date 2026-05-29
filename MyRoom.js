@@ -650,6 +650,36 @@ class MyRoom extends Room {
                 player.dungeonId = String(dungeonId);
                 player.depth = depth;
             }
+            // Build enemy snapshot so the client can spawn them immediately,
+            // without waiting for the Colyseus state patch (which arrives later).
+            const enemySnapshot = [];
+            this.state.enemies.forEach((e, eid) => {
+                if (String(e.dungeonId) === String(dungeonId) &&
+                    e.depth === Number(lvlKey) &&
+                    !e.isDead) {
+                    enemySnapshot.push({
+                        id: e.id,
+                        type: e.type,
+                        typeId: e.typeId,
+                        pos: { x: e.pos.x, y: e.pos.y, z: e.pos.z },
+                        health: e.health,
+                        maxHealth: e.maxHealth,
+                        aiState: e.aiState,
+                        currentAnim: e.currentAnim,
+                        dungeonId: e.dungeonId,
+                        depth: e.depth,
+                        isDead: e.isDead,
+                        speed: e.speed,
+                        radius: e.radius,
+                        wRange: e.wRange,
+                        combat: e.combat,
+                        armour: e.armour,
+                        questId: e.questId,
+                        ownerId: e.ownerId
+                    });
+                }
+            });
+            console.log(`[loadDungeon] sending ${enemySnapshot.length} enemies to client for dungeon ${dungeonId} depth ${depth}`);
             client.send("loadDungeon", {
                 dungeonConfig: config,
                 dungeonId,
@@ -660,7 +690,8 @@ class MyRoom extends Room {
                 furnitures: levelData.furnitures,
                 loot: levelData.loot,
                 entrance: levelData.entrance,
-                exit: levelData.exit
+                exit: levelData.exit,
+                enemies: enemySnapshot
             });
         });;
 
