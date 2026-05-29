@@ -644,7 +644,7 @@ class CombatCore {
                     logic.destination = null;
                     logic.targetPlayer = null;
                     logic.leaderId = null;
-                    logic.state = "idle";
+                    logic.state = "IDLE";
                 }
             }
 
