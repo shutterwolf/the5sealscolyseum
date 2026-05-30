@@ -466,17 +466,35 @@ class CombatCore {
 
     checkDistances() {
         if (!this.inProgress) return;
+        const FLEE_THRESHOLD = Math.max(this.maxRange * 5, 8); // at least 8 units
         const fleeing = [];
         for (let [id, actor] of this.actors.entries()) {
             if (actor.type !== "player") continue;
-            if (!actor.targetId) continue;
             const posA = this.getPosition(id);
-            const posB = this.getPosition(actor.targetId);
-            if (!posA || !posB) continue;
-            const dx = posA.x - posB.x;
-            const dz = posA.z - posB.z;
-            const dist = Math.sqrt(dx * dx + dz * dz);
-            if (dist > this.maxRange * 3) { // 3x attack range = flee threshold
+            if (!posA) continue;
+
+            // Measure distance to the NEAREST living enemy in this combat,
+            // not just actor.targetId (which can be null or stale).
+            let minDist = Infinity;
+            for (let [eid, eactor] of this.actors.entries()) {
+                if (eactor.type !== "enemy") continue;
+                if (eactor.isDead) continue;
+                const posB = this.getPosition(eid);
+                if (!posB) continue;
+                const dx = posA.x - posB.x;
+                const dz = posA.z - posB.z;
+                const d = Math.sqrt(dx * dx + dz * dz);
+                if (d < minDist) minDist = d;
+            }
+
+            // No enemies found means combat should already end via removeActor.
+            // Treat as flee-eligible so the cleanup below fires.
+            if (minDist === Infinity) {
+                fleeing.push(id);
+                continue;
+            }
+
+            if (minDist > FLEE_THRESHOLD) {
                 fleeing.push(id);
             }
         }
