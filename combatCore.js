@@ -486,7 +486,15 @@ class CombatCore {
                 fleeing.push(id);
                 continue;
             }
-
+            console.log(
+                "[COMBAT DIST]",
+                {
+                    playerId: id,
+                    minDist,
+                    threshold: FLEE_THRESHOLD,
+                    willFlee: minDist > FLEE_THRESHOLD
+                }
+            );
             if (minDist > FLEE_THRESHOLD) {
                 fleeing.push(id);
             }
