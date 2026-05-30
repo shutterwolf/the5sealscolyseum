@@ -501,6 +501,13 @@ class CombatCore {
         }
 
         for (let id of fleeing) {
+            console.log(
+                "[COMBAT FLEE]",
+                {
+                    playerId: id,
+                    combatId: this.combatId
+                }
+            );
             const p = this.room.state.players.get(id);
             if (p) p.inCombat = 0;
             this.removeActor(id);
