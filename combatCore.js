@@ -255,7 +255,6 @@ class CombatCore {
                 return;
             }
         }
-
         // Re-fetch target after potential retarget
         const finalTarget = this.actors.get(actor.targetId);
         if (!finalTarget || finalTarget.isDead) {
@@ -265,19 +264,18 @@ class CombatCore {
 
         // ===== DISTANCE CHECK =====
         if (!this.isInRange(actorId, actor.targetId)) {
-            console.log("OUT OF RANGE:", actorId, "→", actor.targetId);
-            this.broadcastToCombat("combatMiss", {
-                attackerId: actorId,
-                targetId: actor.targetId,
-                reason: "out_of_range"
+            const player = this.room.state.players.get(actorId);
+            if (player) {
+                player.inCombat = 0;
+            }
+            this.removeActor(actorId);
+            this.broadcastToCombat("combatEnd", {
+                combatId: this.combatId
             });
-            this.endTurn();
             return;
         }
-
         finalTarget.lastHitBy = actor.id;
         finalTarget.lastWeaponUsed = actor.weaponType;
-
         const result = this.resolveHit(actor, finalTarget);
         console.log("HIT_RESULT", {
             combatId: this.combatId,
@@ -319,7 +317,6 @@ class CombatCore {
     killActor(target) {
         target.isDead = true;
         target.lootReady = true;
-
         // entity state
         const enemyEntity = this.room.state.enemies.get(target.id);
         if (enemyEntity) {
@@ -331,17 +328,13 @@ class CombatCore {
         }
         target.aiState = "dead";
         target.inCombat = 0;
-
         const killerId = target.lastHitBy;
         const killer = this.actors.get(killerId);
-
         let advKey = null;
         let xpGain = 0;
-
         if (target.type !== "player") {
             this.room.enemyInstances.delete(target.id);
         }
-
         if (killer && killer.type === "player") {
             const entity = this.getEntity(killerId, "player");
             if (entity) {
@@ -466,7 +459,7 @@ class CombatCore {
 
     checkDistances() {
         if (!this.inProgress) return;
-        const FLEE_THRESHOLD = Math.max(this.maxRange * 5, 8); // at least 8 units
+        const FLEE_THRESHOLD = 1.2; // at least 8 units
         const fleeing = [];
         for (let [id, actor] of this.actors.entries()) {
             if (actor.type !== "player") continue;
