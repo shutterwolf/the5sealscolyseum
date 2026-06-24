@@ -540,7 +540,7 @@ class CombatCore {
         const dy = posA.y - posB.y;
         const dz = posA.z - posB.z;
         const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-
+        console.log(posA, posB, dist);
         return dist <= this.maxRange;
     }
 
