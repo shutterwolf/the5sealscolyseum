@@ -534,13 +534,14 @@ class CombatCore {
     isInRange(idA, idB) {
         const posA = this.getPosition(idA);
         const posB = this.getPosition(idB);
+    
         if (!posA || !posB) return false;
-
+    
         const dx = posA.x - posB.x;
-        const dy = posA.y - posB.y;
         const dz = posA.z - posB.z;
-        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-        console.log(posA, posB, dist);
+    
+        const dist = Math.sqrt(dx * dx + dz * dz);
+    
         return dist <= this.maxRange;
     }
 
