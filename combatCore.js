@@ -362,6 +362,11 @@ class CombatCore {
     }
 
     endTurn() {
+        console.log({
+            turnOrder: this.turnOrder,
+            currentIndex: this.currentIndex,
+            currentActor: this.getCurrentActorId()
+        });
         clearTimeout(this.turnTimer);
         if (!this.inProgress) return;
 
