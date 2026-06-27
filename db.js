@@ -10,5 +10,7 @@ admin.initializeApp({
 });
 
 const db = admin.firestore();
+console.log("Admin app project:", admin.app().options.projectId);
+console.log("Firestore project:", db.projectId);
 
 module.exports = { db, admin };
