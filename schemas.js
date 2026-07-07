@@ -122,6 +122,7 @@ class PlayerState extends Schema {
         this.user = "";
         this.email = "";
         this.name = "";
+        this.lang = "en";
         this.race = "Human";
         this.sex = "M";
         this.texTure = "";
@@ -150,6 +151,7 @@ type("string")(PlayerState.prototype, "id");
 type("string")(PlayerState.prototype, "user");
 type("string")(PlayerState.prototype, "email");
 type("string")(PlayerState.prototype, "name");
+type("string")(PlayerState.prototype, "lang");
 type("string")(PlayerState.prototype, "race");
 type("string")(PlayerState.prototype, "sex");
 type("string")(PlayerState.prototype, "texTure");
