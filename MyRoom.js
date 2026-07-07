@@ -1383,6 +1383,7 @@ class MyRoom extends Room {
                 player.user = data.user ?? player.user;
                 player.email = data.email ?? player.email;
                 player.name = data.name ?? player.name;
+                player.lang = data.lang ?? player.lang;
                 player.race = data.race ?? player.race;
                 player.sex = data.sex ?? player.sex;
                 player.anim = data.anim ?? player.anim;
