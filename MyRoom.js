@@ -1161,6 +1161,18 @@ class MyRoom extends Room {
             player.activeWeapon = data.activeWeapon ?? player.activeWeapon;
             if (typeof data.anim === "string") player.anim = data.anim;
             if (typeof data.speed === "number") player.speed = data.speed;
+            // aggiorna localMap/depth/dungeonId quando il client cambia area
+            // SENZA questo il server tiene il valore Firestore stale e gli altri
+            // client filtrano il player fuori dalla propria mappa → invisibile.
+            if (typeof data.localMap === "number" && data.localMap !== player.localMap) {
+                player.localMap = data.localMap;
+            }
+            if (typeof data.depth === "number" && data.depth !== player.depth) {
+                player.depth = data.depth;
+            }
+            if (typeof data.dungeonId === "string" && data.dungeonId !== player.dungeonId) {
+                player.dungeonId = data.dungeonId;
+            }
         });
 
         // --- anim ---
@@ -1489,5 +1501,7 @@ class MyRoom extends Room {
 
 }
 // definisci la tua room
+
+module.exports = MyRoom;
 
 module.exports = MyRoom;
