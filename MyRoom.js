@@ -1479,6 +1479,7 @@ class MyRoom extends Room {
             text: msg.text,
             timestamp: msg.timestamp
         })));
+        console.log("PLAYER JOIN:", client.sessionId, options);
     }
 
     onLeave(client) {
