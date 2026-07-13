@@ -1375,7 +1375,7 @@ class MyRoom extends Room {
         if (!playerId) return client.leave();
 
         this.sessionToPlayerId.set(client.sessionId, playerId);
-
+        console.log("PLAYER JOIN:", client.sessionId, options);
         const player = new PlayerState();
         player.id = playerId;
 
