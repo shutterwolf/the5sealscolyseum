@@ -1123,8 +1123,8 @@ class MyRoom extends Room {
         });
         // --- playerInput ---
         this.onMessage("playerInput", (client, data) => {
-            console.log("📥 SERVER RECV playerInput from", playerId, "pos=", data.playerPos, "rot=", data.rotation);
             const playerId = this.sessionToPlayerId.get(client.sessionId);
+            console.log("📥 SERVER RECV playerInput from", playerId, "pos=", data.playerPos, "rot=", data.rotation);
             const player = this.state.players.get(playerId);
             if (!player) return;
             const pos = {
@@ -1150,6 +1150,7 @@ class MyRoom extends Room {
             }
             // opzionale: fissa Y se non ti serve
             player.playerPos.y = player.playerPos.y ?? 0;
+            console.log("💾 SERVER SAVE playerInput: playerId=" + playerId, "savedPos=" + player.playerPos.x + "," + player.playerPos.y + "," + player.playerPos.z);
             const newRotY = quantize(rot.y);
             // aggiorna solo se cambia davvero
             if (Math.abs(player.rotation.y - newRotY) > 0.1) {
@@ -1414,6 +1415,7 @@ class MyRoom extends Room {
                     if (Math.abs(player.playerPos.x - x) > 0.1) player.playerPos.x = x;
                     if (Math.abs(player.playerPos.z - z) > 0.1) player.playerPos.z = z;
                     player.playerPos.y = player.playerPos.y ?? 0;
+                    console.log("📂 SERVER LOAD from Firestore: playerId=" + playerId, "loadedPos=" + (data.playerPos ? data.playerPos.x+","+data.playerPos.y+","+data.playerPos.z : "NO_POS"));
                 }
                 
                 if (data.rotation) {
