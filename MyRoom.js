@@ -1123,6 +1123,7 @@ class MyRoom extends Room {
         });
         // --- playerInput ---
         this.onMessage("playerInput", (client, data) => {
+            console.log("📥 SERVER RECV playerInput from", playerId, "pos=", data.playerPos, "rot=", data.rotation);
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             const player = this.state.players.get(playerId);
             if (!player) return;
