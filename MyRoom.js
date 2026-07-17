@@ -1148,6 +1148,7 @@ class MyRoom extends Room {
             if (Math.abs(player.playerPos.z - newZ) > 0.1) {
                 player.playerPos.z = newZ;
             }
+            if (Math.abs(player.playerPos.y - pos.y) > 0.1) player.playerPos.y = pos.y;  // ✅ AGGIUNGI QUESTO
             // opzionale: fissa Y se non ti serve
             player.playerPos.y = player.playerPos.y ?? 0;
             console.log("💾 SERVER SAVE playerInput: playerId=" + playerId, "savedPos=" + player.playerPos.x + "," + player.playerPos.y + "," + player.playerPos.z);
