@@ -541,6 +541,26 @@ class MyRoom extends Room {
             });
         });
 
+        const COMMON_ROOM_NPCS = JSON.parse(
+            fs.readFileSync(__dirname + '/commonRoomNpcs.json', 'utf8')
+        ).commonRoomNpcs;
+
+        this.onMessage("getCommonRoomNpcs", (client, data) => {
+            const townId = Number(data.townId);
+            let pool = COMMON_ROOM_NPCS.filter(function(n) {
+                return n.townId === townId;
+            });
+
+            // Mescola (Fisher-Yates)
+            for (var i = pool.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+            }
+
+            var selected = pool.slice(0, 4);
+            client.send("commonRoomNpcs", { npcs: selected });
+        });
+
        this.onMessage("requestSpawnEnemies", (client, data) => {
            console.log(">>> requestSpawnEnemies raw data:", JSON.stringify(data));
             const playerId = this.sessionToPlayerId.get(client.sessionId);
