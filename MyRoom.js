@@ -455,6 +455,7 @@ class MyRoom extends Room {
         this.enemyIdCounter = 1;
         this.activeQuestSpawns = new Map();
         this.dungeons = new Map();
+        this.commonRoomCache = new Map(); // townId -> { npcs: [...], timestamp: number }
         // --- IDLE LOGIC ---
         setInterval(() => {
             this.dungeons.forEach((dungeon, dungeonId) => {
@@ -547,18 +548,42 @@ class MyRoom extends Room {
 
         this.onMessage("getCommonRoomNpcs", (client, data) => {
             const townId = Number(data.townId);
-            let pool = COMMON_ROOM_NPCS.filter(function(n) {
-                return n.townId === townId;
-            });
-
-            // Mescola (Fisher-Yates)
-            for (var i = pool.length - 1; i > 0; i--) {
-                var j = Math.floor(Math.random() * (i + 1));
-                var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+            const now = Date.now();
+            const CACHE_TTL = 5 * 60 * 1000; // 5 minuti
+            const MIN_NPCS = 2;
+            const MAX_NPCS = 4;
+        
+            let cacheEntry = this.commonRoomCache.get(townId);
+        
+            // Se non c'è cache o è scaduta (> 5 min), rigenera
+            if (!cacheEntry || (now - cacheEntry.timestamp) > CACHE_TTL) {
+                let pool = COMMON_ROOM_NPCS.filter(function(n) {
+                    return n.townId === townId;
+                });
+        
+                if (pool.length === 0) {
+                    client.send("commonRoomNpcs", { npcs: [] });
+                    return;
+                }
+        
+                // Mescola (Fisher-Yates)
+                for (var i = pool.length - 1; i > 0; i--) {
+                    var j = Math.floor(Math.random() * (i + 1));
+                    var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+                }
+        
+                // Numero casuale tra 2 e 4
+                const count = Math.floor(Math.random() * (MAX_NPCS - MIN_NPCS + 1)) + MIN_NPCS;
+                const selected = pool.slice(0, Math.min(count, pool.length));
+        
+                cacheEntry = {
+                    npcs: selected,
+                    timestamp: now
+                };
+                this.commonRoomCache.set(townId, cacheEntry);
             }
-
-            var selected = pool.slice(0, 4);
-            client.send("commonRoomNpcs", { npcs: selected });
+        
+            client.send("commonRoomNpcs", { npcs: cacheEntry.npcs });
         });
 
        this.onMessage("requestSpawnEnemies", (client, data) => {
