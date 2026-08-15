@@ -1,27 +1,22 @@
 const { EventEmitter } = require('events');
 
 /**
- * WorldEventManager v4
+ * WorldEventManager v5
  * 
- * Fixes:
- * 1. Restore active events after server restart
- * 2. Apply outcomes to ALL participants (online + offline), via Firestore
- * 3. Proper async/await with Promise.all + error logging
- * 
- * Firestore collections:
- *   world_events/{eventId}          -> event data
- *   world_event_players/{eventId}/{playerId} -> participation state
- *   characters/{playerId}           -> player flags (arrayUnion)
+ * FIX: startsAt per avvio automatico
+ * FIX: endsAt calcolato come now + hours allo start
+ * FIX: setInterval che controlla eventi scheduled ogni 60s
  */
 class WorldEventManager extends EventEmitter {
-  constructor({ db }) {
+  constructor({ db, FieldValue }) {
     super();
     this.db = db;
+    this.FieldValue = FieldValue;
     this.rooms = [];
     this.activeEvents = new Map(); // eventId -> { eventData, timer }
+    this.checkInterval = null;
   }
 
-  /* ---------- Rooms ---------- */
   addRoom(room) { this.rooms.push(room); }
   removeRoom(room) { this.rooms = this.rooms.filter(r => r !== room); }
 
@@ -43,46 +38,74 @@ class WorldEventManager extends EventEmitter {
     return false;
   }
 
-  _getPlayerCity(playerId) {
-    for (const room of this.rooms) {
-      const p = room.state.players.get(playerId);
-      if (p) return (p.dungeonId === "" || p.dungeonId == null) ? String(p.localMap ?? "") : null;
-    }
-    return null;
+  /* ---------- Startup: restore + auto-start scheduled events ---------- */
+  async init() {
+    // Restore already-active events
+    await this._restoreActiveEvents();
+
+    // Start cron: check for scheduled events whose startsAt has passed
+    this.checkInterval = setInterval(() => this._checkScheduledEvents(), 60000);
+    console.log("[WEM] Init complete, checking scheduled events every 60s");
   }
 
-  /* ---------- Startup: restore active events ---------- */
-  async restoreActiveEvents() {
-    const snap = await this.db.collection('world_events').where('status', '==', 'active').get();
-    const now = Date.now();
-    let restored = 0;
+  async _restoreActiveEvents() {
+    try {
+      const snap = await this.db.collection('world_events').where('status', '==', 'active').get();
+      const now = Date.now();
+      let restored = 0;
 
-    for (const doc of snap.docs) {
-      const event = doc.data();
-      const eventId = String(event.eventId);
-      const endsAt = event.endsAt?.toDate ? event.endsAt.toDate() : new Date(event.endsAt);
-      const msLeft = endsAt.getTime() - now;
+      for (const doc of snap.docs) {
+        const event = doc.data();
+        const eventId = String(event.eventId);
+        const endsAt = this._toDate(event.endsAt);
+        const msLeft = endsAt.getTime() - now;
 
-      if (msLeft <= 0) {
-        // Event already expired while server was down
-        await this.resolveEvent(eventId);
-        continue;
+        if (msLeft <= 0) {
+          console.log(`[WEM] Event ${eventId} expired, resolving...`);
+          await this.resolveEvent(eventId);
+          continue;
+        }
+
+        const timer = setTimeout(() => this.resolveEvent(eventId), msLeft);
+        this.activeEvents.set(eventId, { ...event, _timer: timer });
+        restored++;
+        console.log(`[WEM] Restored active ${eventId}, ${Math.round(msLeft/1000)}s left`);
       }
-
-      this.activeEvents.set(eventId, event);
-      const timer = setTimeout(() => this.resolveEvent(eventId), msLeft);
-      this.activeEvents.set(eventId, { ...event, _timer: timer });
-      restored++;
-
-      console.log(`[WEM] Restored active event ${eventId} (${event.type}), ${Math.round(msLeft / 1000)}s remaining`);
+      console.log(`[WEM] Restored ${restored} active events`);
+    } catch (err) {
+      console.error("[WEM] _restoreActiveEvents failed:", err.message);
     }
+  }
 
-    console.log(`[WEM] Restored ${restored} active events`);
+  async _checkScheduledEvents() {
+    try {
+      const now = new Date();
+      const snap = await this.db.collection('world_events')
+        .where('status', '==', 'scheduled')
+        .where('startsAt', '<=', now)
+        .get();
+
+      for (const doc of snap.docs) {
+        const event = doc.data();
+        const eventId = String(event.eventId);
+        console.log(`[WEM] Auto-starting scheduled event ${eventId}`);
+        await this.startEvent(eventId);
+      }
+    } catch (err) {
+      console.error("[WEM] _checkScheduledEvents failed:", err.message);
+    }
+  }
+
+  _toDate(val) {
+    if (val?.toDate) return val.toDate();
+    if (val instanceof Date) return val;
+    return new Date(val);
   }
 
   /* ---------- Lifecycle ---------- */
-
   async scheduleEvent(eventData) {
+    // startsAt: when the event should auto-start
+    // hours: how long it lasts once started
     const payload = {
       ...eventData,
       status: 'scheduled',
@@ -99,16 +122,21 @@ class WorldEventManager extends EventEmitter {
     const event = doc.data();
     if (event.status !== 'scheduled') return;
 
-    await this.db.collection('world_events').doc(eventId).update({ status: 'active', startedAt: new Date() });
+    // Calculate endsAt: now + hours
+    const hours = event.hours || 72;
+    const endsAt = new Date(Date.now() + hours * 3600000);
 
-    const endsAt = event.endsAt?.toDate ? event.endsAt.toDate() : new Date(event.endsAt);
+    await this.db.collection('world_events').doc(eventId).update({
+      status: 'active',
+      startedAt: new Date(),
+      endsAt: endsAt
+    });
+
     const ms = endsAt.getTime() - Date.now();
     let timer = null;
-    if (ms > 0) {
-      timer = setTimeout(() => this.resolveEvent(eventId), ms);
-    }
+    if (ms > 0) timer = setTimeout(() => this.resolveEvent(eventId), ms);
 
-    this.activeEvents.set(eventId, { ...event, status: 'active', _timer: timer });
+    this.activeEvents.set(eventId, { ...event, status: 'active', endsAt, _timer: timer });
 
     this.broadcast('world:event:started', {
       eventId: event.eventId,
@@ -122,16 +150,13 @@ class WorldEventManager extends EventEmitter {
       flags: event.flags,
       endsAt: endsAt.toISOString()
     });
-
-    console.log(`[WEM] Event ${eventId} started`);
+    console.log(`[WEM] Event ${eventId} started, ends at ${endsAt.toISOString()}`);
   }
 
   async resolveEvent(eventId) {
     eventId = String(eventId);
     const cached = this.activeEvents.get(eventId);
     if (!cached) return;
-
-    // Clear timer if exists
     if (cached._timer) clearTimeout(cached._timer);
 
     const eventRef = this.db.collection('world_events').doc(eventId);
@@ -140,7 +165,6 @@ class WorldEventManager extends EventEmitter {
     const event = eventDoc.data();
     if (event.status === 'resolved') { this.activeEvents.delete(eventId); return; }
 
-    // Determine winner
     let winner = null;
     if (event.type === 'politic') {
       const c1 = event.faction1Count || 0;
@@ -150,10 +174,7 @@ class WorldEventManager extends EventEmitter {
       winner = (event.enemiesRace || 0) >= (event.enemiesTotal || 1) ? 'defenders' : 'attackers';
     }
 
-    // Mark resolved in DB
     await eventRef.update({ status: 'resolved', resolvedAt: new Date(), winner });
-
-    // Apply outcomes to ALL participants (online + offline)
     await this._applyOutcomesToAllParticipants(eventId, event, winner);
 
     this.activeEvents.delete(eventId);
@@ -161,59 +182,61 @@ class WorldEventManager extends EventEmitter {
     console.log(`[WEM] Event ${eventId} resolved. Winner: ${winner}`);
   }
 
-  /* ---------- Apply outcomes to ALL participants ---------- */
+  /* ---------- Apply outcomes ---------- */
   async _applyOutcomesToAllParticipants(eventId, event, winner) {
-    const playersSnap = await this.db.collection('world_event_players').doc(eventId).collection('players').get();
-    if (playersSnap.empty) return;
+    try {
+      const playersSnap = await this.db.collection('world_event_players')
+        .doc(eventId).collection('players').get();
+      if (playersSnap.empty) { console.log(`[WEM] No participants for ${eventId}`); return; }
 
-    const updates = [];
-    playersSnap.forEach(doc => {
-      updates.push(this._applySingleOutcome(doc.id, eventId, event, winner, doc.data()));
-    });
+      const updates = [];
+      playersSnap.forEach(doc => {
+        updates.push(this._applySingleOutcome(doc.id, eventId, event, winner, doc.data()));
+      });
 
-    const results = await Promise.allSettled(updates);
-    let applied = 0, failed = 0;
-    results.forEach((r, i) => {
-      if (r.status === 'fulfilled') applied++;
-      else { failed++; console.error(`[WEM] Outcome failed for player ${playersSnap.docs[i].id}:`, r.reason); }
-    });
-    console.log(`[WEM] Outcomes applied: ${applied} success, ${failed} failed`);
+      const results = await Promise.allSettled(updates);
+      let ok = 0, fail = 0;
+      results.forEach((r, i) => {
+        if (r.status === 'fulfilled') ok++;
+        else { fail++; console.error(`[WEM] Outcome failed ${playersSnap.docs[i].id}:`, r.reason?.message); }
+      });
+      console.log(`[WEM] Outcomes: ${ok} OK, ${fail} FAILED`);
+    } catch (err) {
+      console.error("[WEM] _applyOutcomesToAllParticipants failed:", err.message);
+    }
   }
 
   async _applySingleOutcome(playerId, eventId, event, winner, pState) {
-    if (pState.outcomeApplied) return; // already done
+    if (pState.outcomeApplied) return;
 
     let flagToAdd = null;
-
     if (event.type === 'politic') {
-      const isWinner = pState.chosenFaction === winner;
-      flagToAdd = isWinner ? event.flags[0] : event.flags[1];
+      flagToAdd = (pState.chosenFaction === winner) ? event.flags[0] : event.flags[1];
     } else if (event.type === 'siege') {
       const kills = pState.raceEnemies || 0;
       if (kills >= 150) flagToAdd = event.flags[2];
       else if (kills >= 50) flagToAdd = event.flags[1];
       else if (kills >= 10) flagToAdd = event.flags[0];
     }
-
     if (!flagToAdd) return;
 
-    // Save flag to character doc
     try {
       await this.db.collection('characters').doc(playerId).update({
-        flags: this.db.FieldValue.arrayUnion(flagToAdd)
+        flags: this.FieldValue.arrayUnion(flagToAdd)
       });
     } catch (e) {
-      console.error(`[WEM] Failed to write flag ${flagToAdd} to player ${playerId}:`, e.message);
+      console.error(`[WEM] Flag write failed ${playerId}:`, e.message);
     }
 
-    // Mark outcome applied
-    await this.db.collection('world_event_players').doc(eventId).collection('players').doc(playerId).update({
-      outcomeApplied: true,
-      flag: flagToAdd,
-      resolvedAt: new Date()
-    });
+    try {
+      await this.db.collection('world_event_players').doc(eventId)
+        .collection('players').doc(playerId).update({
+          outcomeApplied: true, flag: flagToAdd, resolvedAt: new Date()
+        });
+    } catch (e) {
+      console.error(`[WEM] outcomeApplied update failed ${playerId}:`, e.message);
+    }
 
-    // Notify if player is online
     this.sendToPlayer(playerId, 'world:event:outcome', {
       eventId,
       result: event.type === 'politic' ? (pState.chosenFaction === winner ? 'winner' : 'loser') : 'resolved',
@@ -223,17 +246,15 @@ class WorldEventManager extends EventEmitter {
   }
 
   /* ---------- Player actions ---------- */
-
   async joinFaction(playerId, eventId, faction) {
     eventId = String(eventId);
     const event = this.activeEvents.get(eventId);
     if (!event) throw new Error('Event not active');
 
-    // Persist participation state
-    await this.db.collection('world_event_players').doc(eventId).collection('players').doc(playerId).set({
-      chosenFaction: faction,
-      joinedAt: new Date()
-    }, { merge: true });
+    await this.db.collection('world_event_players').doc(eventId)
+      .collection('players').doc(playerId).set({
+        chosenFaction: faction, joinedAt: new Date()
+      }, { merge: true });
 
     this.sendToPlayer(playerId, 'world:event:joined', { eventId, faction });
     return { success: true };
@@ -246,14 +267,13 @@ class WorldEventManager extends EventEmitter {
 
     const incField = faction === event.faction1 ? 'faction1Count' : 'faction2Count';
     await this.db.collection('world_events').doc(eventId).update({
-      [incField]: this.db.FieldValue.increment(1)
+      [incField]: this.FieldValue.increment(1)
     });
 
-    // Also persist that this player completed a quest for this faction
-    await this.db.collection('world_event_players').doc(eventId).collection('players').doc(playerId).set({
-      chosenFaction: faction,
-      lastQuestAt: new Date()
-    }, { merge: true });
+    await this.db.collection('world_event_players').doc(eventId)
+      .collection('players').doc(playerId).set({
+        chosenFaction: faction, lastQuestAt: new Date()
+      }, { merge: true });
 
     const doc = await this.db.collection('world_events').doc(eventId).get();
     const data = doc.data();
@@ -265,7 +285,6 @@ class WorldEventManager extends EventEmitter {
       faction1Count: data.faction1Count || 0,
       faction2Count: data.faction2Count || 0
     });
-
     return { success: true };
   }
 
@@ -274,15 +293,14 @@ class WorldEventManager extends EventEmitter {
     const event = this.activeEvents.get(eventId);
     if (!event || event.type !== 'siege') return { ignored: true };
 
-    // Increment global counter
     await this.db.collection('world_events').doc(eventId).update({
-      enemiesRace: this.db.FieldValue.increment(count)
+      enemiesRace: this.FieldValue.increment(count)
     });
 
-    // Increment personal counter
-    await this.db.collection('world_event_players').doc(eventId).collection('players').doc(playerId).set({
-      raceEnemies: this.db.FieldValue.increment(count)
-    }, { merge: true });
+    await this.db.collection('world_event_players').doc(eventId)
+      .collection('players').doc(playerId).set({
+        raceEnemies: this.FieldValue.increment(count)
+      }, { merge: true });
 
     const doc = await this.db.collection('world_events').doc(eventId).get();
     const data = doc.data();
@@ -290,39 +308,21 @@ class WorldEventManager extends EventEmitter {
     const total = data.enemiesTotal || 1;
 
     this.broadcast('world:siege:progress', {
-      eventId,
-      enemiesRace: killed,
-      enemiesTotal: total,
-      remaining: total - killed
+      eventId, enemiesRace: killed, enemiesTotal: total, remaining: total - killed
     });
 
     if (killed >= total) {
       await this.resolveEvent(eventId);
       return { success: true, citySaved: true };
     }
-
     return { success: true, enemiesRace: killed };
   }
 
-  /* ---------- Load active events for a connecting player ---------- */
   async getActiveEvents() {
     const snap = await this.db.collection('world_events').where('status', '==', 'active').get();
     const out = [];
     snap.forEach(d => out.push(d.data()));
     return out;
-  }
-
-  /* ---------- Check pending outcomes for a player on login ---------- */
-  async checkPendingOutcomes(playerId) {
-    const snap = await this.db.collection('world_event_players')
-      .where(`players.${playerId}.outcomeApplied`, '==', false)
-      .get();
-    // Note: the above query won't work with subcollections. Better approach:
-    // Query all world_event_players docs, then check subcollection.
-    // Simplified: we just send any active events; resolved ones with outcomeApplied=false
-    // will be handled by the periodic cleanup or next login.
-    // For now, return active events; the client will receive outcome when resolved.
-    return [];
   }
 }
 
