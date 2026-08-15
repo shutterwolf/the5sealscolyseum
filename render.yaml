@@ -3,6 +3,6 @@ services:
     name: mio-server
     env: node
     plan: free
-    branch: master
+    branch: main
     buildCommand: npm install
     startCommand: npm start
