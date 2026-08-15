@@ -10,6 +10,9 @@
   "keywords": ["colyseus", "game-server", "express"],
   "author": "",
   "license": "ISC",
+  "overrides": {
+    "@colyseus/greeting-banner": "*"
+  },
   "dependencies": {
     "colyseus": "^0.16.5",
     "@colyseus/core": "^0.16.24",
