@@ -117,11 +117,10 @@ class MyRoom extends Room {
         if (!rooms || rooms.length === 0) return doors;
         const maxDoors = config.maxDoors || 999;
         let count = 0;
-        let doorIndex = 0; // 👈 per ratio locked
+        let doorIndex = 0;
         const saveDoor = (x, y) => {
             if (count >= maxDoors) return;
             const key = `${x},${y}`;
-            // skip adjacent doors
             if (
                 doors[`${x+1},${y}`] ||
                 doors[`${x-1},${y}`] ||
@@ -129,7 +128,6 @@ class MyRoom extends Room {
                 doors[`${x},${y-1}`]
             ) return;
     
-            // must be floor
             if (levelData.map[key] !== ".") return;
     
             const up    = levelData.map[`${x},${y+1}`];
@@ -140,17 +138,14 @@ class MyRoom extends Room {
             const horizontal = (left === "#" && right === "#");
             if (!(vertical || horizontal)) return;
             doorIndex++;
-            // 🔥 1 ogni 10 è locked
             const isLocked = (doorIndex % 10 === 0);
             doors[key] = {
                 x,
                 y,
                 closed: true,
-                // 🔐 ONLY key system for now
                 lockType: isLocked ? "key" : "none",
                 keyNumber: isLocked ? 1 : 0,
                 triggerId: 0,
-                // unused for now but safe
                 resistance: 100,
                 orientation: vertical ? "vertical" : "horizontal",
                 material: "wood"
@@ -196,12 +191,7 @@ class MyRoom extends Room {
                     levelData.map[`${x-1},${y}`] !== "."
                 ) continue;
                 let rotation = levelData.map[`${x},${y-1}`] === "." ? 180 : 0;
-                furnitures[key] = {
-                    x,
-                    y,
-                    type,
-                    rotation
-                };
+                furnitures[key] = { x, y, type, rotation };
                 occupied.add(key);
                 break;
             }
@@ -225,11 +215,7 @@ class MyRoom extends Room {
                     levelData.map[`${x+1},${y}`] !== "." ||
                     levelData.map[`${x-1},${y}`] !== "."
                 ) continue;
-                loots[key] = {
-                    x,
-                    y,
-                    type: "chest"
-                };
+                loots[key] = { x, y, type: "chest" };
                 occupied.add(key);
                 break;
             }
@@ -240,14 +226,10 @@ class MyRoom extends Room {
     getRandomCorridorCell(levelData) {
         const cells = levelData.freeCells.filter(key => {
             const [x, y] = key.split(",").map(Number);
-    
             const room = this.getRoomContaining(x, y, levelData.rooms);
-    
             return !room;
         });
-    
         if (cells.length === 0) return null;
-    
         return cells[Math.floor(ROT.RNG.getUniform() * cells.length)];
     }
     
@@ -289,25 +271,18 @@ class MyRoom extends Room {
             const key = `${x},${y}`;
             if (value === 0) {
                 map[key] = ".";
-                freeCells.push(key);   // ← string key, not {x, y} object
+                freeCells.push(key);
             } else {
                 map[key] = "#";
             }
         });
-        // Store actual room objects so getDoors() is available
         const rooms = mapGen.getRooms();
         for (const room of rooms) {
             roomsData.push(room);
         }
-        return {
-            map,
-            freeCells,
-            rooms: roomsData   // ROT.js Room objects with getDoors()
-        };
-        // Doors are generated separately via generateDoors() after this
+        return { map, freeCells, rooms: roomsData };
     }
     
-
     spawnEnemy(type, x, z, config = {}) {
         const id = "E" + this.enemyIdCounter++;
         const enemy = new EnemySchema();
@@ -323,7 +298,7 @@ class MyRoom extends Room {
         enemy.typeId = stats.id;
         enemy.type = type;
         enemy.pos.x = x;
-        enemy.pos.y = 5; // altezza sicura
+        enemy.pos.y = 5;
         enemy.pos.z = z;
         enemy.rot = new Vec3(0,0,0);
         enemy.health = enemyStats[type]?.maxHealth || 20;
@@ -339,7 +314,6 @@ class MyRoom extends Room {
         enemy.combat = stats.attac;
         enemy.armour = stats.armor;
         enemy.maxHealth = stats.maxHealth;
-        // NON ha ownerId → loot libero o null
         enemy.ownerId = "";
         enemy.questId = config.questId ?? -1;
         enemy.isDead = false;
@@ -347,26 +321,24 @@ class MyRoom extends Room {
         this.state.enemies.set(id, enemy);
         const logic = new EnemyServer({
             id: id,
-            enemy: type,                                 // ← function parameter
-            posX: x,                                     // ← function parameter
+            enemy: type,
+            posX: x,
             posY: 3,
-            posZ: z,                                     // ← function parameter
+            posZ: z,
             dungeon: !!config.dungeonId,
             localMap: config.localMap ?? 0,
             depth: config.depth ?? 0,
-            aggroRange: enemyStats[type]?.radius ?? 5,   // ← function parameter
-            speed: enemyStats[type]?.enemyspeed ?? 1,    // ← function parameter
-            radius: enemyStats[type]?.radius ?? 5        // ← function parameter
+            aggroRange: enemyStats[type]?.radius ?? 5,
+            speed: enemyStats[type]?.enemyspeed ?? 1,
+            radius: enemyStats[type]?.radius ?? 5
         });
         this.enemyInstances.set(id, logic);
-        // 3️⃣ Salva riferimento
-        
         return id;
     }
 
     spawnQuestEnemy(ownerId, questId, config) {
-    const id = "E" + this.enemyIdCounter++;
-    const stats = enemyStats[config.type];
+        const id = "E" + this.enemyIdCounter++;
+        const stats = enemyStats[config.type];
         const combatStats = {
             combat: stats.attac ?? stats.combat ?? 0,
             defence: stats.defence ?? 0,
@@ -374,88 +346,96 @@ class MyRoom extends Room {
             wDamage: stats.wDamage ?? 2,
             armour: stats.armor ?? stats.armour ?? 0
         };
-    if (!stats) {
-        console.error("Enemy type non trovato in enemyStats:", config.type);
-        return null;
-    }
-    const enemy = new EnemySchema();
-    enemy.id = id;
-    enemy.typeId = stats.id;
-    enemy.type = config.type;
-    enemy.pos.x = config.x;
-    enemy.pos.y = 3;
-    enemy.pos.z = config.z;
-    enemy.rot = new Vec3(0, 0, 0);
-    enemy.health = stats.maxHealth;
-    enemy.maxHealth = stats.maxHealth;
-    enemy.speed = stats.enemyspeed;
-    enemy.radius = stats.radius;
-    enemy.wRange = stats.wRange;
-    enemy.aiState = "idle";
-    enemy.currentAnim = "idle";
-    enemy.inCombat = 0;
-    enemy.localMap = config.localMap ?? 0;
-    enemy.dungeonId = config.dungeonId ?? "";
-    enemy.depth = config.depth ?? 0;
-    enemy.ownerId = ownerId;
-    enemy.questId = questId;
-    enemy.combat = stats.attac;
-    enemy.armour = stats.armor;
-    enemy.isDead = false;
-    enemy.lootReady = false;
-    this.state.enemies.set(id, enemy);
-    const logic = new EnemyServer({
-        id: id,
-        enemy: config.type,
-        posX: config.x,
-        posY: 3,
-        posZ: config.z,
-        dungeon: !!config.dungeonId,
-        localMap: config.localMap ?? 0,
-        depth: config.depth ?? 0,
-        aggroRange: stats.radius ?? 5,
-        speed: stats.enemyspeed ?? 1,
-        radius: stats.radius ?? 5
-    });
-    this.enemyInstances.set(id, logic);
-    if (!this.activeQuestSpawns.has(ownerId)) {
-        this.activeQuestSpawns.set(ownerId, new Map());
-    }
-    this.activeQuestSpawns.get(ownerId).set(questId, id);
-    const ownerSessionId = [...this.sessionToPlayerId.entries()]
-        .find(([, pid]) => pid === ownerId)?.[0];
-    const ownerClient = this.clients.find(c => c.sessionId === ownerSessionId);
-    if (ownerClient) {
-        ownerClient.send("enemySpawn", {
-            id: enemy.id,
-            type: enemy.type,
-            typeId: enemy.typeId,
-            pos: { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z }
+        if (!stats) {
+            console.error("Enemy type non trovato in enemyStats:", config.type);
+            return null;
+        }
+        const enemy = new EnemySchema();
+        enemy.id = id;
+        enemy.typeId = stats.id;
+        enemy.type = config.type;
+        enemy.pos.x = config.x;
+        enemy.pos.y = 3;
+        enemy.pos.z = config.z;
+        enemy.rot = new Vec3(0, 0, 0);
+        enemy.health = stats.maxHealth;
+        enemy.maxHealth = stats.maxHealth;
+        enemy.speed = stats.enemyspeed;
+        enemy.radius = stats.radius;
+        enemy.wRange = stats.wRange;
+        enemy.aiState = "idle";
+        enemy.currentAnim = "idle";
+        enemy.inCombat = 0;
+        enemy.localMap = config.localMap ?? 0;
+        enemy.dungeonId = config.dungeonId ?? "";
+        enemy.depth = config.depth ?? 0;
+        enemy.ownerId = ownerId;
+        enemy.questId = questId;
+        enemy.combat = stats.attac;
+        enemy.armour = stats.armor;
+        enemy.isDead = false;
+        enemy.lootReady = false;
+        this.state.enemies.set(id, enemy);
+        const logic = new EnemyServer({
+            id: id,
+            enemy: config.type,
+            posX: config.x,
+            posY: 3,
+            posZ: config.z,
+            dungeon: !!config.dungeonId,
+            localMap: config.localMap ?? 0,
+            depth: config.depth ?? 0,
+            aggroRange: stats.radius ?? 5,
+            speed: stats.enemyspeed ?? 1,
+            radius: stats.radius ?? 5
         });
-        console.log(`[spawnQuestEnemy] OK id=${id} type=${config.type} owner=${ownerId}`);
-    } else {
-        console.warn(`[spawnQuestEnemy] client owner ${ownerId} non trovato`);
+        this.enemyInstances.set(id, logic);
+        if (!this.activeQuestSpawns.has(ownerId)) {
+            this.activeQuestSpawns.set(ownerId, new Map());
+        }
+        this.activeQuestSpawns.get(ownerId).set(questId, id);
+        const ownerSessionId = [...this.sessionToPlayerId.entries()]
+            .find(([, pid]) => pid === ownerId)?.[0];
+        const ownerClient = this.clients.find(c => c.sessionId === ownerSessionId);
+        if (ownerClient) {
+            ownerClient.send("enemySpawn", {
+                id: enemy.id,
+                type: enemy.type,
+                typeId: enemy.typeId,
+                pos: { x: enemy.pos.x, y: enemy.pos.y, z: enemy.pos.z }
+            });
+            console.log(`[spawnQuestEnemy] OK id=${id} type=${config.type} owner=${ownerId}`);
+        } else {
+            console.warn(`[spawnQuestEnemy] client owner ${ownerId} non trovato`);
+        }
+        return id;
     }
-    return id;
-}
     
-    onCreate() {
+    onCreate(options) {
         console.log("Room created");
         this.sessionToPlayerId = new Map();
         this.setState(new MyRoomState());
-        this.dayDuration = 30 * 60 * 1000;    // 30 min
-        this.nightDuration = 15 * 60 * 1000;  // 15 min
+        this.dayDuration = 30 * 60 * 1000;
+        this.nightDuration = 15 * 60 * 1000;
         this.weatherInterval = 10 * 60 * 1000;
         this.lastWeatherChange = Date.now();
-        this.start=true;
-        this.activeCombats = new Map(); // combatId -> CombatCore instance
+        this.start = true;
+        this.activeCombats = new Map();
         this.nextCombatId = 1;    
         this.enemyLogic = new Map();
         this.enemyInstances = new Map();
         this.enemyIdCounter = 1;
         this.activeQuestSpawns = new Map();
         this.dungeons = new Map();
-        this.commonRoomCache = new Map(); // townId -> { npcs: [...], timestamp: number }
+        this.commonRoomCache = new Map();
+
+        // ─── WORLD EVENT MANAGER ───
+        this.worldEventManager = options.worldEventManager || global.worldEventManager;
+        if (this.worldEventManager) {
+            this.worldEventManager.addRoom(this);
+            console.log("[MyRoom] WorldEventManager collegato");
+        }
+
         // --- IDLE LOGIC ---
         setInterval(() => {
             this.dungeons.forEach((dungeon, dungeonId) => {
@@ -464,7 +444,6 @@ class MyRoom extends Room {
                     if (!config) return;
                     const eligibleTypes = this.getEligibleEnemyTypes(Number(levelKey));
                     const enemyType = config.Enemy || eligibleTypes[Math.floor(Math.random() * eligibleTypes.length)];
-                    // Count enemies currently alive in this dungeon level
                     let currentCount = 0;
                     this.state.enemies.forEach((enemy) => {
                         if (String(enemy.dungeonId) === String(dungeonId) &&
@@ -473,15 +452,10 @@ class MyRoom extends Room {
                             currentCount++;
                         }
                     });
-                    // Only respawn if below the max cap for this dungeon
-                    if (currentCount >= config.enemies) {
-                        //console.log(`Dungeon ${dungeonId} level ${levelKey} already at max enemies (${config.enemies}), skipping respawn`);
-                        return;
-                    }
-                    // Pick a random free cell to respawn at
+                    if (currentCount >= config.enemies) return;
                     const key = this.getRandomCellInRoom(levelData);
                     if (!key) return;
-                    if (key in levelData.loot) return;       // skip chest cells
+                    if (key in levelData.loot) return;
                     if (key in levelData.furnitures) return;
                     const [x, y] = key.split(",").map(Number);
                     this.spawnEnemy(enemyType, x, y, {
@@ -489,11 +463,11 @@ class MyRoom extends Room {
                         dungeonId: String(dungeonId),
                         depth: Number(levelKey)
                     });
-                    //console.log(`Respawned 1 ${config.Enemy} in dungeon ${dungeonId} level ${levelKey} (${currentCount + 1}/${config.enemies})`);
                 });
             });
         }, 30 * 60 * 1000);
-        // ─── Loot respawn: 1 chest per active dungeon level every hour ───
+
+        // ─── Loot respawn ───
         setInterval(async () => {
             for (const [dungeonId, dungeon] of this.dungeons) {
                 for (const [levelKey, levelData] of Object.entries(dungeon.levels)) {
@@ -501,7 +475,7 @@ class MyRoom extends Room {
                     for (let attempt = 0; attempt < 20; attempt++) {
                         const key = this.getRandomCellInRoom(levelData);
                         if (!key) continue;
-                        const alreadyLoot = key in levelData.loot;   // ← CHANGED
+                        const alreadyLoot = key in levelData.loot;
                         if (alreadyLoot) continue;
                         if (levelData.doors && levelData.doors[key]) continue;
                         const [x, y] = key.split(",").map(Number);
@@ -511,7 +485,7 @@ class MyRoom extends Room {
                             dungeonId: String(dungeonId),
                             depth: Number(levelKey)
                         };
-                        levelData.loot[key] = newChest;              // ← CHANGED
+                        levelData.loot[key] = newChest;
                         placed = true;
                         this.broadcastToLevel(dungeonId, levelKey, "lootSpawned", newChest);
                         break;
@@ -534,7 +508,6 @@ class MyRoom extends Room {
                 console.log(`[CHEST ERROR] Key ${data.key} not found! Available keys:`, Object.keys(level.loot));
                 return; 
             }
-            // Delete it from server state
             delete level.loot[data.key];           
             console.log(`[CHEST] Success! Broadcasting chestOpened for key: ${data.key}`);
             this.broadcastToLevel(player.dungeonId, String(player.depth), "chestOpened", {
@@ -549,45 +522,32 @@ class MyRoom extends Room {
         this.onMessage("getCommonRoomNpcs", (client, data) => {
             const townId = Number(data.townId);
             const now = Date.now();
-            const CACHE_TTL = 5 * 60 * 1000; // 5 minuti
+            const CACHE_TTL = 5 * 60 * 1000;
             const MIN_NPCS = 2;
             const MAX_NPCS = 4;
-        
             let cacheEntry = this.commonRoomCache.get(townId);
-        
-            // Se non c'è cache o è scaduta (> 5 min), rigenera
             if (!cacheEntry || (now - cacheEntry.timestamp) > CACHE_TTL) {
                 let pool = COMMON_ROOM_NPCS.filter(function(n) {
                     return n.townId === townId;
                 });
-        
                 if (pool.length === 0) {
                     client.send("commonRoomNpcs", { npcs: [] });
                     return;
                 }
-        
-                // Mescola (Fisher-Yates)
                 for (var i = pool.length - 1; i > 0; i--) {
                     var j = Math.floor(Math.random() * (i + 1));
                     var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
                 }
-        
-                // Numero casuale tra 2 e 4
                 const count = Math.floor(Math.random() * (MAX_NPCS - MIN_NPCS + 1)) + MIN_NPCS;
                 const selected = pool.slice(0, Math.min(count, pool.length));
-        
-                cacheEntry = {
-                    npcs: selected,
-                    timestamp: now
-                };
+                cacheEntry = { npcs: selected, timestamp: now };
                 this.commonRoomCache.set(townId, cacheEntry);
             }
-        
             client.send("commonRoomNpcs", { npcs: cacheEntry.npcs });
         });
 
-       this.onMessage("requestSpawnEnemies", (client, data) => {
-           console.log(">>> requestSpawnEnemies raw data:", JSON.stringify(data));
+        this.onMessage("requestSpawnEnemies", (client, data) => {
+            console.log(">>> requestSpawnEnemies raw data:", JSON.stringify(data));
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
             const player = this.state.players.get(playerId);
@@ -627,7 +587,6 @@ class MyRoom extends Room {
             const dungeonId = config.id;
             let level = data.level ?? 1;
             let depth = data.depth ?? level;
-            const depthFromData = data.depth;
             const docId = `${dungeonId}_${level}`;
             if (!this.dungeons.has(dungeonId)) {
                 this.dungeons.set(dungeonId, { id: dungeonId, levels: {} });
@@ -660,8 +619,6 @@ class MyRoom extends Room {
             }
         
             const levelData = dungeon.levels[lvlKey];
-        
-            // ─── SPAWN CHECK: se il livello era già in memoria, ricontrolla i nemici vivi ───
             let currentCount = 0;
             this.state.enemies.forEach((enemy) => {
                 if (String(enemy.dungeonId) === String(dungeonId) &&
@@ -687,7 +644,6 @@ class MyRoom extends Room {
                     });
                 }
             }
-            // ─────────────────────────────────────────────────────────────────────────────
         
             const player = this.state.players.get(playerId);
             console.log("Dati player", dungeonId, depth);
@@ -695,8 +651,6 @@ class MyRoom extends Room {
                 player.dungeonId = String(dungeonId);
                 player.depth = depth;
             }
-            // Build enemy snapshot so the client can spawn them immediately,
-            // without waiting for the Colyseus state patch (which arrives later).
             const enemySnapshot = [];
             this.state.enemies.forEach((e, eid) => {
                 if (String(e.dungeonId) === String(dungeonId) &&
@@ -738,7 +692,7 @@ class MyRoom extends Room {
                 exit: levelData.exit,
                 enemies: enemySnapshot
             });
-        });;
+        });
 
         this.onMessage("openDoor", (client, data) => {
             console.log("openDoor received key:", data.key);
@@ -760,7 +714,6 @@ class MyRoom extends Room {
             const doorState = level.doors[data.key];
             console.log("matched doorState:", doorState);
             if (!doorState) return;
-            
             if (doorState.lockType === "key" && doorState.keyNumber > 0) {
                 if (!data.hasKey) {
                     client.send("doorLocked", {
@@ -785,74 +738,98 @@ class MyRoom extends Room {
             });
         });
         
-        // Replace the broken client-side handlers with these server-side ones:
         this.onMessage("requestCombat", (client, message) => {
-    const { attackerId, targetId } = message;
-    combatTrace("REQUEST", { attackerId, targetId, message });
-    const playerState = this.state.players.get(attackerId);
-    const enemyState = this.state.enemies.get(targetId);
-    combatTrace("STATE_LOOKUP", {
-        attackerId,
-        targetId,
-        hasPlayer: !!playerState,
-        hasEnemy: !!enemyState,
-        enemyType: enemyState?.type
-    });
-    if (!playerState || !enemyState) return;
-    const es = enemyStats[enemyState.type] || {};
+            const { attackerId, targetId } = message;
+            combatTrace("REQUEST", { attackerId, targetId, message });
+            const playerState = this.state.players.get(attackerId);
+            const enemyState = this.state.enemies.get(targetId);
+            combatTrace("STATE_LOOKUP", {
+                attackerId,
+                targetId,
+                hasPlayer: !!playerState,
+                hasEnemy: !!enemyState,
+                enemyType: enemyState?.type
+            });
+            if (!playerState || !enemyState) return;
+            const es = enemyStats[enemyState.type] || {};
 
-    // =========================
-    // FIND EXISTING COMBATS
-    // =========================
-    const attackerCombat = this.findCombatByActor(attackerId);
-    const targetCombat = this.findCombatByActor(targetId);
+            const attackerCombat = this.findCombatByActor(attackerId);
+            const targetCombat = this.findCombatByActor(targetId);
 
-    // =========================
-    // MERGE COMBATS IF NEEDED
-    // =========================
-    if (attackerCombat && targetCombat && attackerCombat !== targetCombat) {
-        // Both are in different combats — merge targetCombat into attackerCombat
-        console.log(`[COMBAT MERGE] Merging ${targetCombat.combatId} into ${attackerCombat.combatId}`);
-
-        // Move all actors from targetCombat to attackerCombat
-        for (const [id, actorData] of targetCombat.actors) {
-            if (!attackerCombat.actors.has(id)) {
-                // Reconstruct stats from actorData
-                const stats = {
-                    hp: actorData.hp,
-                    maxHp: actorData.maxHealth,
-                    combat: actorData.combat,
-                    defence: actorData.defence,
-                    strength: actorData.strength,
-                    wDamage: actorData.wDamage,
-                    weaponType: actorData.weaponType,
-                    shieldArmor: actorData.shield,
-                    armour: actorData.armour
-                };
-                attackerCombat.addActor(id, stats, actorData.type);
+            if (attackerCombat && targetCombat && attackerCombat !== targetCombat) {
+                console.log(`[COMBAT MERGE] Merging ${targetCombat.combatId} into ${attackerCombat.combatId}`);
+                for (const [id, actorData] of targetCombat.actors) {
+                    if (!attackerCombat.actors.has(id)) {
+                        const stats = {
+                            hp: actorData.hp,
+                            maxHp: actorData.maxHealth,
+                            combat: actorData.combat,
+                            defence: actorData.defence,
+                            strength: actorData.strength,
+                            wDamage: actorData.wDamage,
+                            weaponType: actorData.weaponType,
+                            shieldArmor: actorData.shield,
+                            armour: actorData.armour
+                        };
+                        attackerCombat.addActor(id, stats, actorData.type);
+                    }
+                }
+                for (const [id, actorData] of targetCombat.actors) {
+                    if (actorData.targetId && attackerCombat.actors.has(actorData.targetId)) {
+                        attackerCombat.setTarget(id, actorData.targetId);
+                    }
+                }
+                targetCombat.quietDispose();
             }
-        }
 
-        // Restore targets for moved actors
-        for (const [id, actorData] of targetCombat.actors) {
-            if (actorData.targetId && attackerCombat.actors.has(actorData.targetId)) {
-                attackerCombat.setTarget(id, actorData.targetId);
+            const existingCombat = attackerCombat || targetCombat;
+
+            if (existingCombat) {
+                if (!existingCombat.actors.has(attackerId)) {
+                    existingCombat.addActor(attackerId, {
+                        hp: message.hp,
+                        maxHp: message.maxHp,
+                        combat: message.combat,
+                        defence: message.defence,
+                        strength: message.strength,
+                        wDamage: message.wDamage,
+                        weaponType: message.weaponType,
+                        shieldArmor: message.shieldArmor,
+                        armour: message.armour
+                    }, "player");
+                    playerState.inCombat = 1;
+                }
+                if (!existingCombat.actors.has(targetId)) {
+                    existingCombat.addActor(targetId, {
+                        hp: message.enemyHp ?? enemyState.health,
+                        combat: es.attac ?? es.combat ?? 5,
+                        defence: es.defence ?? 5,
+                        strength: es.strength ?? 3,
+                        wDamage: es.wDamage ?? 1,
+                        armour: es.armor ?? 0
+                    }, "enemy");
+                    enemyState.inCombat = 1;
+                }
+                existingCombat.setTarget(attackerId, targetId);
+                const targetActor = existingCombat.actors.get(targetId);
+                if (targetActor && !targetActor.targetId) {
+                    existingCombat.setTarget(targetId, attackerId);
+                }
+                combatTrace("JOIN_EXISTING", {
+                    combatId: existingCombat.combatId,
+                    attackerId,
+                    targetId,
+                    totalActors: existingCombat.actors.size
+                });
+                return;
             }
-        }
 
-        // Quietly dispose the old combat (no broadcast, no endCombat notification)
-        targetCombat.quietDispose();
-    }
-
-    const existingCombat = attackerCombat || targetCombat;
-
-    // =========================
-    // JOIN EXISTING COMBAT
-    // =========================
-    if (existingCombat) {
-        // add player if missing
-        if (!existingCombat.actors.has(attackerId)) {
-            existingCombat.addActor(attackerId, {
+            const combatId = `${attackerId}_${targetId}_${Date.now()}`;
+            const combat = new CombatCore(this, combatId);
+            this.activeCombats.set(combatId, combat);
+            enemyState.inCombat = 1;
+            playerState.inCombat = 1;
+            combat.addActor(attackerId, {
                 hp: message.hp,
                 maxHp: message.maxHp,
                 combat: message.combat,
@@ -862,12 +839,8 @@ class MyRoom extends Room {
                 weaponType: message.weaponType,
                 shieldArmor: message.shieldArmor,
                 armour: message.armour
-            }, "player");
-            playerState.inCombat = 1;
-        }
-        // add enemy if missing
-        if (!existingCombat.actors.has(targetId)) {
-            existingCombat.addActor(targetId, {
+            });
+            combat.addActor(targetId, {
                 hp: message.enemyHp ?? enemyState.health,
                 combat: es.attac ?? es.combat ?? 5,
                 defence: es.defence ?? 5,
@@ -875,63 +848,11 @@ class MyRoom extends Room {
                 wDamage: es.wDamage ?? 1,
                 armour: es.armor ?? 0
             }, "enemy");
-            enemyState.inCombat = 1;
-        }
-
-        // ONLY set the NEW attacker's target — NEVER overwrite existing targets
-        existingCombat.setTarget(attackerId, targetId);
-
-        // If the target (enemy) has no target yet, set it to the attacker
-        const targetActor = existingCombat.actors.get(targetId);
-        if (targetActor && !targetActor.targetId) {
-            existingCombat.setTarget(targetId, attackerId);
-        }
-
-        combatTrace("JOIN_EXISTING", {
-            combatId: existingCombat.combatId,
-            attackerId,
-            targetId,
-            totalActors: existingCombat.actors.size
+            combat.setTarget(attackerId, targetId);
+            combat.setTarget(targetId, attackerId);
+            combatTrace("START", { combatId, attackerId, targetId });
+            combat.startCombat();
         });
-        return;
-    }
-
-    // =========================
-    // CREATE NEW COMBAT
-    // =========================
-    const combatId = `${attackerId}_${targetId}_${Date.now()}`;
-    const combat = new CombatCore(this, combatId);
-    this.activeCombats.set(combatId, combat);
-    enemyState.inCombat = 1;
-    playerState.inCombat = 1;
-    combat.addActor(attackerId, {
-        hp: message.hp,
-        maxHp: message.maxHp,
-        combat: message.combat,
-        defence: message.defence,
-        strength: message.strength,
-        wDamage: message.wDamage,
-        weaponType: message.weaponType,
-        shieldArmor: message.shieldArmor,
-        armour: message.armour
-    });
-    combat.addActor(targetId, {
-        hp: message.enemyHp ?? enemyState.health,
-        combat: es.attac ?? es.combat ?? 5,
-        defence: es.defence ?? 5,
-        strength: es.strength ?? 3,
-        wDamage: es.wDamage ?? 1,
-        armour: es.armor ?? 0
-    }, "enemy");
-    combat.setTarget(attackerId, targetId);
-    combat.setTarget(targetId, attackerId);
-    combatTrace("START", {
-        combatId,
-        attackerId,
-        targetId
-    });
-    combat.startCombat();
-});
         
         this.onMessage("combatActionFinished", (client, msg) => {
             const actorId = msg.actorId;
@@ -942,16 +863,15 @@ class MyRoom extends Room {
                 }
             }
         });
+
         this.onMessage("enemyReachedTarget", (client, data) => {
             console.log(">>> enemyReachedTarget RICEVUTO per enemy:", data.enemyId);
             const logic = this.enemyInstances.get(data.enemyId);
             const schemaEnemy = this.state.enemies.get(data.enemyId);
             if (!logic || !schemaEnemy) return;
-            // aggiorna posizione
             logic.updatePositionFromClient(data.pos);
             schemaEnemy.pos.x = data.pos.x;
             schemaEnemy.pos.z = data.pos.z;
-            // reset AI
             logic.destination = null;
             logic.targetPlayer = null; 
             logic.leaderId = null;
@@ -972,23 +892,10 @@ class MyRoom extends Room {
             if (!player) {
                 console.warn("[lootEnemy] player not found", playerId);
             } else {
-                console.log("[lootEnemy] player found", {
-                    id: playerId,
-                    partyId: player.partyId
-                });
+                console.log("[lootEnemy] player found", { id: playerId, partyId: player.partyId });
             }
             const enemy = this.state.enemies.get(data.enemyId);
-            console.log("[lootEnemy FLAGS]", {
-                isDead: enemy?.isDead,
-                lootReady: enemy?.lootReady
-            });
-            console.log("[DEBUG enemy RAW]", enemy);
-            console.log("[DEBUG enemy type]", {
-                ctor: enemy?.constructor?.name,
-                hasStateRef: !!enemy?.state,
-                hasOwnerRef: !!enemy?.owner,
-                keys: enemy ? Object.keys(enemy) : null
-            });
+            console.log("[lootEnemy FLAGS]", { isDead: enemy?.isDead, lootReady: enemy?.lootReady });
             if (!enemy) {
                 console.warn("[lootEnemy] enemy not found", data.enemyId);
                 return;
@@ -1022,10 +929,24 @@ class MyRoom extends Room {
                 console.warn("[lootEnemy] loot denied");
                 return;
             }
-            console.log("[lootEnemy] giving quest loot");
-            //this.giveQuestLoot(playerId, enemy);
+
+            // ─── WORLD EVENT: report siege kill (usa cache in memoria, no Firestore) ───
+            if (this.worldEventManager && enemy.questId === -1) {
+                const playerCity = (player.dungeonId === "" || player.dungeonId == null)
+                    ? String(player.localMap ?? "")
+                    : null;
+                if (playerCity) {
+                    const events = [...this.worldEventManager.activeEvents.values()];
+                    for (const evt of events) {
+                        if (evt.type === "siege" && String(evt.targetCity) === playerCity) {
+                            this.worldEventManager.reportEnemyKill(playerId, evt.eventId, 1)
+                                .catch(e => console.error("[MyRoom] reportEnemyKill failed:", e));
+                        }
+                    }
+                }
+            }
+
             console.log("[lootEnemy] deleting enemy from state", enemy.id);
-            // rimuove il nemico dallo stato server
             this.state.enemies.delete(enemy.id);
             this.enemyInstances.delete(enemy.id);
             const loaderClient = [...this.clients].find(
@@ -1051,7 +972,6 @@ class MyRoom extends Room {
             this.spawnQuestEnemy(playerId, questId, questConfig);
         });
         
-        // --- equipItem ---
         this.onMessage("equipItem", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             const player = this.state.players.get(playerId);
@@ -1067,11 +987,35 @@ class MyRoom extends Room {
             item.twohand = !!data.twohand;
         });
 
+        // ─── WORLD EVENT MESSAGES ───
+        this.onMessage("world:event:joinFaction", (client, data) => {
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            if (!playerId || !this.worldEventManager) return;
+            this.worldEventManager.joinFaction(playerId, data.eventId, data.faction)
+                .then(r => client.send("world:event:joined", r))
+                .catch(e => client.send("world:event:error", { error: e.message }));
+        });
+
+        this.onMessage("world:event:questDone", (client, data) => {
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            if (!playerId || !this.worldEventManager) return;
+            this.worldEventManager.reportQuestComplete(playerId, data.eventId, data.faction)
+                .then(r => client.send("world:event:questConfirmed", r))
+                .catch(e => client.send("world:event:error", { error: e.message }));
+        });
+
+        this.onMessage("world:event:enemyKill", (client, data) => {
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            if (!playerId || !this.worldEventManager) return;
+            this.worldEventManager.reportEnemyKill(playerId, data.eventId, data.count || 1)
+                .then(r => client.send("world:event:killConfirmed", r))
+                .catch(e => client.send("world:event:error", { error: e.message }));
+        });
+
         this.setSimulationInterval((deltaTime) => {
             const playersMap = {};
             this.state.players.forEach((player, id) => { playersMap[id] = player; });
         
-            // --- ENEMY AI UPDATE ---
             this.enemyInstances.forEach((logic, id) => {
                 const schemaEnemy = this.state.enemies.get(id);
                 if (!schemaEnemy) return;
@@ -1086,7 +1030,6 @@ class MyRoom extends Room {
                 if (!hasNearbyPlayer) return;
                 const result = logic.update(playersMap, deltaTime / 1000, this);
                 if (!result) return;
-                // aggiorna destinazione
                 if (logic.destination) {
                     schemaEnemy.destX = logic.destination.x;
                     schemaEnemy.destZ = logic.destination.z;
@@ -1095,8 +1038,6 @@ class MyRoom extends Room {
                 schemaEnemy.currentAnim = result.anim || schemaEnemy.currentAnim;
             });
         
-            // --- COMBAT DISTANCE CHECKS ---
-            // Check distances for all active combats every ~500ms (20 ticks/sec = 50ms per tick, check every 10 ticks)
             this.combatDistanceCheckCounter = (this.combatDistanceCheckCounter || 0) + 1;
             if (this.combatDistanceCheckCounter >= 10) {
                 this.combatDistanceCheckCounter = 0;
@@ -1104,7 +1045,7 @@ class MyRoom extends Room {
                     combat.checkDistances();
                 }
             }
-        }, 1000 / 20); // 20 tick al secondo
+        }, 1000 / 20);
         
         setInterval(() => {
             const world = this.state.world;
@@ -1117,9 +1058,8 @@ class MyRoom extends Room {
             if (nowDay !== world.isDay) {
                 world.isDay = nowDay;
             }
-            // WEATHER (ogni 10 min)
-            if (Date.now() - this.lastWeatherChange > this.weatherInterval || this.start===true) {
-                this.start=false;
+            if (Date.now() - this.lastWeatherChange > this.weatherInterval || this.start === true) {
+                this.start = false;
                 this.lastWeatherChange = Date.now();
                 const roll = Math.floor(Math.random() * 10) + 1;
                 if (roll <= 5) {
@@ -1138,11 +1078,13 @@ class MyRoom extends Room {
                 });
             }
         }, 10000);
+
         this.onMessage("enemyTarget", (client, data) => {
             const enemy = this.enemyInstances.get(data.enemyId);
             if (!enemy) return;
             enemy.setTarget(data.playerId, data.pos);
         });
+
         this.onMessage("enemyAggro", (client, data) => {
             const schemaEnemy = this.state.enemies.get(data.enemyId);
             const logic = this.enemyInstances.get(data.enemyId);
@@ -1166,7 +1108,7 @@ class MyRoom extends Room {
                 }
             );
         });
-        // --- playerInput ---
+
         this.onMessage("playerInput", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             console.log("📥 SERVER RECV playerInput from", playerId, "pos=", data.playerPos, "rot=", data.rotation);
@@ -1186,54 +1128,35 @@ class MyRoom extends Room {
             const quantize = (v) => Math.round(v * 10) / 10;
             const newX = quantize(pos.x);
             const newZ = quantize(pos.z);
-            // aggiorna solo se cambia davvero (soglia 0.1)
-            if (Math.abs(player.playerPos.x - newX) > 0.1) {
-                player.playerPos.x = newX;
-            }
-            if (Math.abs(player.playerPos.z - newZ) > 0.1) {
-                player.playerPos.z = newZ;
-            }
-            if (Math.abs(player.playerPos.y - pos.y) > 0.1) player.playerPos.y = pos.y;  // ✅ AGGIUNGI QUESTO
-            // opzionale: fissa Y se non ti serve
+            if (Math.abs(player.playerPos.x - newX) > 0.1) player.playerPos.x = newX;
+            if (Math.abs(player.playerPos.z - newZ) > 0.1) player.playerPos.z = newZ;
+            if (Math.abs(player.playerPos.y - pos.y) > 0.1) player.playerPos.y = pos.y;
             player.playerPos.y = player.playerPos.y ?? 0;
             console.log("💾 SERVER SAVE playerInput: playerId=" + playerId, "savedPos=" + player.playerPos.x + "," + player.playerPos.y + "," + player.playerPos.z);
             const newRotY = quantize(rot.y);
-            // aggiorna solo se cambia davvero
             if (Math.abs(player.rotation.y - newRotY) > 0.1) {
-                player.rotation.x = rot.x; // opzionale, spesso non serve
+                player.rotation.x = rot.x;
                 player.rotation.y = newRotY;
-                player.rotation.z = rot.z; // opzionale
-                player.rotation.w = rot.w; // opzionale
+                player.rotation.z = rot.z;
+                player.rotation.w = rot.w;
             }
             player.texTure = data.texTure ?? player.texTure;
             player.activeWeapon = data.activeWeapon ?? player.activeWeapon;
             if (typeof data.anim === "string") player.anim = data.anim;
             if (typeof data.speed === "number") player.speed = data.speed;
-            // aggiorna localMap/depth/dungeonId quando il client cambia area
-            // SENZA questo il server tiene il valore Firestore stale e gli altri
-            // client filtrano il player fuori dalla propria mappa → invisibile.
-            if (typeof data.localMap === "number" && data.localMap !== player.localMap) {
-                player.localMap = data.localMap;
-            }
-            if (typeof data.depth === "number" && data.depth !== player.depth) {
-                player.depth = data.depth;
-            }
-            if (typeof data.dungeonId === "string" && data.dungeonId !== player.dungeonId) {
-                player.dungeonId = data.dungeonId;
-            }
+            if (typeof data.localMap === "number" && data.localMap !== player.localMap) player.localMap = data.localMap;
+            if (typeof data.depth === "number" && data.depth !== player.depth) player.depth = data.depth;
+            if (typeof data.dungeonId === "string" && data.dungeonId !== player.dungeonId) player.dungeonId = data.dungeonId;
         });
 
-        // --- anim ---
         this.onMessage("anim", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             const player = this.state.players.get(playerId);
             if (!player) return;
-
             if (typeof data.anim === "string") player.anim = data.anim;
             if (typeof data.speed === "number") player.speed = data.speed;
         });
 
-        // --- checkCharacter ---
         this.onMessage("checkCharacter", async (client, data) => {
             try {
                 const doc = await db.collection("characters").doc(data.playerId).get();
@@ -1246,7 +1169,7 @@ class MyRoom extends Room {
                 client.send("characterExistence", { exists: false, character: null });
             }
         });
-        // --- saveCharacter ---
+
         this.onMessage("saveCharacter", async (client, data) => {
             try {
                 await db.collection("characters").doc(data.playerId).set(data.character);
@@ -1256,26 +1179,22 @@ class MyRoom extends Room {
                 client.send("characterSaved", { ok: false, playerId: data.playerId });
             }
         });
-        // --- deleteCharacter ---
+
         this.onMessage("deleteCharacter", async (client, message) => {
             const charId = message.id;
             let success = false;
             try {
-                // Cancella dal DB Firestore
                 await db.collection("characters").doc(charId).delete();
                 success = true;
-                // Cancella anche dallo stato della stanza
                 if (this.state.players.has(charId)) {
                     this.state.players.delete(charId);
                 }
-                //console.log(`❌ Character ${charId} deleted successfully`);
             } catch (err) {
                 console.error(`❌ Error deleting character ${charId}:`, err);
             }
-            // Conferma al client
             client.send("characterDeleted", { id: charId, success });
         });
-        // --- playerInfo ---
+
         this.onMessage("playerInfo", (client, data) => {
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             const player = this.state.players.get(playerId);
@@ -1286,20 +1205,15 @@ class MyRoom extends Room {
             player.id = data.id ?? player.id;
         });
 
-        // --- CHAT ---
         this.onMessage("sendMessage", (client, message) => {
             if (typeof message !== "string" || message.trim() === "") return;
-        
             const playerId = this.sessionToPlayerId.get(client.sessionId);
             if (!playerId) return;
-        
             const player = this.state.players.get(playerId);
             const name = player?.name || "Anon";
             const msg = new ChatMessage(playerId, name, message.trim(), Date.now());
-            // memorizza max 50
             this.state.chat.push(msg);
             if (this.state.chat.length > 50) this.state.chat.shift();
-            // broadcast a tutti
             this.broadcast("chatMessage", msg);
         });
     }
@@ -1307,14 +1221,12 @@ class MyRoom extends Room {
     createDungeon(dungeonId) {
         const config = dungeonConfig.Dungeons.find(d => d.id === dungeonId);
         if (!config) return null;
-    
         const dungeon = {
             id: config.id,
             name: config.Name,
-            levels: {},           // ogni livello verrà creato quando serve
+            levels: {},
             config: config
         };
-    
         this.state.dungeons.set(dungeonId, dungeon);
         return dungeon;
     }
@@ -1337,7 +1249,6 @@ class MyRoom extends Room {
             entrance: null,
             exit: null
         };
-        // Entrance
         const entrance = this.placeEntrance(newLevel);
         if (entrance) {
             entrance.dungeonId = dungeonId;
@@ -1345,16 +1256,13 @@ class MyRoom extends Room {
             newLevel.entrance = entrance;
             occupied.add(`${entrance.x},${entrance.y}`);
         }
-        
-        // Exit
         const exit = this.placeExit(newLevel, level, config, entrance); 
         if (exit) {
-            exit.dungeonId = dungeonId;       // linked
+            exit.dungeonId = dungeonId;
             exit.depth = depth;
             newLevel.exit = exit;
             occupied.add(`${exit.x},${exit.y}`);
         }
-        // Doors
         if (config.Doors) {
             const generatedDoors = this.generateDoors(newLevel, config);
             newLevel.doors = {};
@@ -1365,15 +1273,13 @@ class MyRoom extends Room {
                 doorState.y = d.y;
                 doorState.closed = d.closed;
                 doorState.orientation = d.orientation;
-                doorState.lockType = d.lockType;    // ← add this
-                doorState.keyNumber = d.keyNumber;  // ← add this
+                doorState.lockType = d.lockType;
+                doorState.keyNumber = d.keyNumber;
                 newLevel.doors[key] = doorState;
                 occupied.add(key);
             }
         }
-        // Furnitures — use config.furniture (not furnitureCount)
         newLevel.furnitures = this.generateFurnitures(newLevel, config, occupied);
-        // Loot — use config.loot (not lootCount)
         newLevel.loot = this.generateLoot(newLevel, config, occupied);
 
         if (entrance && newLevel.rooms) {
@@ -1386,7 +1292,6 @@ class MyRoom extends Room {
                 }
             }
         }
-        // Enemies — spawn using config.Enemy and config.enemies count
         if (config.enemies > 0) {
             const eligibleTypes = this.getEligibleEnemyTypes(depth);
             for (let i = 0; i < config.enemies; i++) {
@@ -1467,7 +1372,6 @@ class MyRoom extends Room {
                 if (data.rotation) {
                     const quantize = (v) => Math.round(v * 10) / 10;
                     const y = quantize(data.rotation.y);
-                
                     if (Math.abs(player.rotation.y - y) > 0.1) {
                         player.rotation.y = y;
                     }
@@ -1510,7 +1414,6 @@ class MyRoom extends Room {
                         player.equipped.slots.set(slotKey, item);
                     });
                 }
-
             }
         } catch (err) {
             console.error("Firestore load error:", err);
@@ -1521,13 +1424,24 @@ class MyRoom extends Room {
             equippedData[slot] = { ...item };
         });
         client.send("fullEquip", { equipped: equippedData });
-        // invia messaggi chat già presenti
         client.send("chatInit", this.state.chat.map(msg => ({
             id: msg.id,
             name: msg.name,
             text: msg.text,
             timestamp: msg.timestamp
         })));
+
+        // ─── WORLD EVENT: invia eventi attivi al player che si connette ───
+        if (this.worldEventManager) {
+            this.worldEventManager.getActiveEvents()
+                .then(events => {
+                    if (events.length > 0) {
+                        client.send("world:activeEvents", events);
+                    }
+                })
+                .catch(err => console.error("[MyRoom] getActiveEvents failed:", err));
+        }
+
         console.log("PLAYER JOIN:", client.sessionId, options);
     }
 
@@ -1549,9 +1463,13 @@ class MyRoom extends Room {
         console.log("Player left:", playerId);
     }
 
+    // ─── WORLD EVENT: rimuovi la room quando viene distrutta, non al leave ───
+    onDispose() {
+        if (this.worldEventManager) {
+            this.worldEventManager.removeRoom(this);
+            console.log("[MyRoom] Room rimossa dal WorldEventManager");
+        }
+    }
 }
-// definisci la tua room
-
-module.exports = MyRoom;
 
 module.exports = MyRoom;
