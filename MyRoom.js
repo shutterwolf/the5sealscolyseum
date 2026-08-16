@@ -15,7 +15,7 @@ const {
 const { SPECIAL } = require("./specials");
 const PUZZLE_TEMPLATES = require("./puzzleTemplates");
 const { PuzzleRoomInjector } = require("./puzzleInjector");
-
+const loreTexts = require("./loreTexts.json");
 const dungeonConfig = JSON.parse(fs.readFileSync("Dungeons.json"));
 
 const COMBAT_TRACE = true;
@@ -565,14 +565,27 @@ class MyRoom extends Room {
           const ent = level.puzzle.entities[data.key];
           if (!ent) return;
         
-          // ─── LEGGIO ───
-          if (ent.type === SPECIAL.LECTERN) {
-            client.send("showText", {
-              textId: ent.textId,
-              title: ent.title || "Pergamena"
-            });
+         // ─── LEGGIO ───
+        if (ent.type === SPECIAL.LECTERN) {
+            const lang = player.lang || "en";
+            const entry = loreTexts[ent.textId]?.[lang];
+            
+            if (entry) {
+                client.send("showText", {
+                    title: entry.title,
+                    text: entry.text,
+                    lang: lang
+                });
+            } else {
+                // Fallback se manca la traduzione
+                client.send("showText", {
+                    title: ent.title || "Note",
+                    text: ent.textId,
+                    lang: "en"
+                });
+            }
             return;
-          }
+        }
         
           // ─── PIEDISTALLO ───
           if (ent.type === SPECIAL.PEDESTAL) {
