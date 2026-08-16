@@ -1,5 +1,4 @@
-// specials.js
-module.exports = {
+const SPECIAL = {
   // Enigmi
   LEVER:          10,
   BUTTON:         11,
@@ -40,11 +39,13 @@ module.exports = {
   COBWEB:         44,
   HANGING_CHAIN:  45,
   FOUNTAIN:       46,
-  LECTERN:        47,   // Leggio: apre testo
-  PEDESTAL:       48,   // Piedistallo: appoggia oggetto
+  LECTERN:        47,
+  PEDESTAL:       48,
 
   // Ricompense
   CHEST:          50,
   SHRINE:         51,
   LOOT_CORPSE:    52
 };
+
+module.exports = { SPECIAL };
