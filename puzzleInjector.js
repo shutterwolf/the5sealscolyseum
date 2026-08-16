@@ -1,6 +1,10 @@
 const { SPECIAL } = require("./specials");
 
 class PuzzleRoomInjector {
+  constructor(rot) {
+    this.rng = rot;
+  }
+
   inject(levelData, templates) {
     const candidates = levelData.rooms.filter(r => {
       const w = r.getRight() - r.getLeft() + 1;
@@ -10,8 +14,8 @@ class PuzzleRoomInjector {
 
     if (candidates.length === 0) return null;
 
-    const room = candidates[Math.floor(ROT.RNG.getUniform() * candidates.length)];
-    const tpl = templates[Math.floor(ROT.RNG.getUniform() * templates.length)];
+    const room = candidates[Math.floor(this.rng.getUniform() * candidates.length)];
+    const tpl = templates[Math.floor(this.rng.getUniform() * templates.length)];
 
     const roomW = room.getRight() - room.getLeft() + 1;
     const roomH = room.getBottom() - room.getTop() + 1;
