@@ -79,22 +79,27 @@ class WorldEventManager extends EventEmitter {
 
   async _checkScheduledEvents() {
     try {
-      const now = new Date();
-      const snap = await this.db.collection('world_events')
-        .where('status', '==', 'scheduled')
-        .where('startsAt', '<=', now)
-        .get();
+        const now = new Date();
+        // Query semplice: solo where status (non richiede indice composito)
+        const snap = await this.db.collection('world_events')
+            .where('status', '==', 'scheduled')
+            .get();
 
-      for (const doc of snap.docs) {
-        const event = doc.data();
-        const eventId = String(event.eventId);
-        console.log(`[WEM] Auto-starting scheduled event ${eventId}`);
-        await this.startEvent(eventId);
-      }
+        for (const doc of snap.docs) {
+            const event = doc.data();
+            const startsAt = this._toDate(event.startsAt);
+            
+            // Filtra in memoria
+            if (startsAt > now) continue;
+            
+            const eventId = String(event.eventId);
+            console.log(`[WEM] Auto-starting scheduled event ${eventId}`);
+            await this.startEvent(eventId);
+        }
     } catch (err) {
-      console.error("[WEM] _checkScheduledEvents failed:", err.message);
+        console.error("[WEM] _checkScheduledEvents failed:", err.message);
     }
-  }
+}
 
   _toDate(val) {
     if (val?.toDate) return val.toDate();
