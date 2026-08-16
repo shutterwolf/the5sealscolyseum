@@ -1,0 +1,30 @@
+{
+  "indizio_leve_sewer": {
+    "en": {
+      "title": "Dusty Scroll",
+      "text": "Four levers guard the way. Only the second sings high; the rest must bow. Touch them in order, and the gate shall yield."
+    },
+    "it": {
+      "title": "Pergamena polverosa",
+      "text": "Quattro leve custodiscono il passaggio. Solo la seconda canta alto; le altre devono chinarsi. Toccale nell'ordine giusto, e il varco cederà."
+    },
+    "es": {
+      "title": "Pergamino polvoriento",
+      "text": "Cuatro palancas guardan el camino. Solo la segunda canta alto; las demás deben inclinarse. Tócalas en orden, y la puerta cederá."
+    }
+  },
+  "specchio_altare": {
+    "en": {
+      "title": "Ancient Tablet",
+      "text": "The blind eye sees only when the mirror reflects truth. Place it upon the pedestal, and light shall remember its name."
+    },
+    "it": {
+      "title": "Tavoletta antica",
+      "text": "L'occhio cieco vede solo quando lo specchio riflette la verità. Appoggialo sul piedistallo, e la luce ricorderà il suo nome."
+    },
+    "es": {
+      "title": "Tablilla antigua",
+      "text": "El ojo ciego solo ve cuando el espejo refleja la verdad. Colócalo en el pedestal, y la luz recordará su nombre."
+    }
+  }
+}
