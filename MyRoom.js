@@ -1358,7 +1358,7 @@ class MyRoom extends Room {
           };
         
           // ========== INIEZIONE STANZA ENIGMA ==========
-          const injector = new PuzzleRoomInjector();
+          const injector = new PuzzleRoomInjector(ROT);
           const puzzleResult = injector.inject(newLevel, PUZZLE_TEMPLATES);
           if (puzzleResult) {
             newLevel.puzzle = puzzleResult.puzzleState;
