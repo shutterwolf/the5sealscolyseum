@@ -12,6 +12,9 @@ const {
     PlayerState, ChatMessage,
     EnemySchema, MyRoomState
 } = require("./schemas");
+const { SPECIAL } = require("./specials");
+const PUZZLE_TEMPLATES = require("./puzzleTemplates");
+const { PuzzleRoomInjector } = require("./puzzleInjector");
 
 const dungeonConfig = JSON.parse(fs.readFileSync("Dungeons.json"));
 
@@ -42,6 +45,35 @@ class MyRoom extends Room {
             }
         }
         return null;
+    }
+
+    checkPuzzleSolution(level) {
+      const p = level.puzzle;
+      if (!p || p.solved) return;
+      const sol = p.solution;
+      if (!sol) return;
+    
+      if (sol.type === "lever_sequence") {
+        const allCorrect = sol.required.every(pid => {
+          const e = Object.values(p.entities).find(x => x.puzzleId === pid);
+          return e?.active === true;
+        });
+    
+        if (allCorrect) {
+          p.solved = true;
+          // Apri tutte le porte puzzle
+          for (const key in level.doors) {
+            const d = level.doors[key];
+            if (d.lockType === "puzzle") {
+              d.closed = false;
+              d.state = "open";
+            }
+          }
+          this.broadcastToLevel(level.dungeonId, String(level.depth), "puzzleSolved", {
+            templateId: p.templateId
+          });
+        }
+      }
     }
     
     getEligibleEnemyTypes(depth) {
@@ -519,6 +551,66 @@ class MyRoom extends Room {
             fs.readFileSync(__dirname + '/commonRoomNpcs.json', 'utf8')
         ).commonRoomNpcs;
 
+        this.onMessage("interactSpecial", (client, data) => {
+          const playerId = this.sessionToPlayerId.get(client.sessionId);
+          if (!playerId) return;
+          const player = this.state.players.get(playerId);
+          if (!player) return;
+        
+          const dungeon = this.dungeons.get(player.dungeonId) ?? this.dungeons.get(Number(player.dungeonId));
+          if (!dungeon) return;
+          const level = dungeon.levels[String(player.depth)];
+          if (!level?.puzzle) return;
+        
+          const ent = level.puzzle.entities[data.key];
+          if (!ent) return;
+        
+          // ─── LEGGIO ───
+          if (ent.type === SPECIAL.LECTERN) {
+            client.send("showText", {
+              textId: ent.textId,
+              title: ent.title || "Pergamena"
+            });
+            return;
+          }
+        
+          // ─── PIEDISTALLO ───
+          if (ent.type === SPECIAL.PEDESTAL) {
+            if (ent.active) {
+              client.send("pedestalReject", { message: "C'è già un oggetto qui." });
+              return;
+            }
+            const item = data.item; // oggetto selezionato dal client
+            if (item === ent.requiredItem) {
+              ent.active = true;
+              ent.placedItem = item;
+              ent.state = "active";
+              this.broadcastToLevel(player.dungeonId, String(player.depth), "specialUpdate", {
+                key: data.key,
+                state: "active",
+                placedItem: item
+              });
+              this.checkPuzzleSolution(level);
+            } else {
+              client.send("pedestalReject", { required: ent.requiredItem });
+            }
+            return;
+          }
+        
+          // ─── LEVA ───
+          if (ent.type === SPECIAL.LEVER) {
+            ent.state = (ent.state === "down") ? "up" : "down";
+            ent.active = (ent.state === "up");
+            this.broadcastToLevel(player.dungeonId, String(player.depth), "specialUpdate", {
+              key: data.key,
+              state: ent.state,
+              active: ent.active
+            });
+            this.checkPuzzleSolution(level);
+            return;
+          }
+        });
+        
         this.onMessage("getCommonRoomNpcs", (client, data) => {
             const townId = Number(data.townId);
             const now = Date.now();
@@ -690,7 +782,8 @@ class MyRoom extends Room {
                 loot: levelData.loot,
                 entrance: levelData.entrance,
                 exit: levelData.exit,
-                enemies: enemySnapshot
+                enemies: enemySnapshot,
+                puzzle: levelData.puzzle
             });
         });
 
@@ -1232,10 +1325,10 @@ class MyRoom extends Room {
     }
     
     createLevel(config, level, dungeonId, depth, seed) {
-        ROT.RNG.setSeed(seed);
-        const generated = this.generateUniformMap(config, seed);
-        const occupied = new Set();
-        const newLevel = {
+          ROT.RNG.setSeed(seed);
+          const generated = this.generateUniformMap(config, seed);
+          const occupied = new Set();
+          const newLevel = {
             dungeonId,
             depth: depth,
             seed: seed,
@@ -1247,9 +1340,25 @@ class MyRoom extends Room {
             loot: {},
             furnitures: {},
             entrance: null,
-            exit: null
-        };
-        const entrance = this.placeEntrance(newLevel);
+            exit: null,
+            puzzle: null   // ← NUOVO
+          };
+        
+          // ========== INIEZIONE STANZA ENIGMA ==========
+          const injector = new PuzzleRoomInjector();
+          const puzzleResult = injector.inject(newLevel, PUZZLE_TEMPLATES);
+          if (puzzleResult) {
+            newLevel.puzzle = puzzleResult.puzzleState;
+            // Marchia la stanza come occupata per evitare entrance/exit qui dentro
+            for (let rx = puzzleResult.room.getLeft(); rx <= puzzleResult.room.getRight(); rx++) {
+              for (let ry = puzzleResult.room.getTop(); ry <= puzzleResult.room.getBottom(); ry++) {
+                occupied.add(`${rx},${ry}`);
+              }
+            }
+          }
+          // =============================================
+        
+          const entrance = this.placeEntrance(newLevel);
         if (entrance) {
             entrance.dungeonId = dungeonId;
             entrance.depth = depth;
