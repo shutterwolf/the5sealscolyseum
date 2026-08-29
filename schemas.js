@@ -10,9 +10,54 @@ class Vec3 extends Schema {
         this.z = z;
     }
 }
-type("number")(Vec3.prototype, "x");
-type("number")(Vec3.prototype, "y");
-type("number")(Vec3.prototype, "z");
+
+class PreySchema extends Schema {
+    constructor() {
+        super();
+        this.id = "";
+        this.type = "deer";
+        this.x = 0;
+        this.z = 0;
+        this.destX = 0;
+        this.destZ = 0;
+        this.health = 15;
+        this.maxHealth = 15;
+        this.aiState = "idle";
+        this.currentAnim = "deer-idle.json";
+        this.isDead = false;
+        this.lootReady = false;
+        this.deathTime = 0;
+        this.localMap = 0;
+        this.dungeonId = "";
+        this.depth = 0;
+        this.speed = 2.5;
+        this.radius = 6;
+        this.wanderRange = 5;
+        this.originX = 0;
+        this.originZ = 0;
+    }
+}
+type("string") (PreySchema.prototype, "id");
+type("string") (PreySchema.prototype, "type");
+type("number") (PreySchema.prototype, "x");
+type("number") (PreySchema.prototype, "z");
+type("number") (PreySchema.prototype, "destX");
+type("number") (PreySchema.prototype, "destZ");
+type("number") (PreySchema.prototype, "health");
+type("number") (PreySchema.prototype, "maxHealth");
+type("string") (PreySchema.prototype, "aiState");
+type("string") (PreySchema.prototype, "currentAnim");
+type("boolean")(PreySchema.prototype, "isDead");
+type("boolean")(PreySchema.prototype, "lootReady");
+type("number") (PreySchema.prototype, "deathTime");
+type("number") (PreySchema.prototype, "localMap");
+type("string") (PreySchema.prototype, "dungeonId");
+type("number") (PreySchema.prototype, "depth");
+type("number") (PreySchema.prototype, "speed");
+type("number") (PreySchema.prototype, "radius");
+type("number") (PreySchema.prototype, "wanderRange");
+type("number") (PreySchema.prototype, "originX");
+type("number") (PreySchema.prototype, "originZ");
 
 class Quat extends Schema {
     constructor(x = 0, y = 0, z = 0, w = 1) {
@@ -113,32 +158,6 @@ class Equipped extends Schema {
     }
 }
 type({ map: EquippedItem })(Equipped.prototype, "slots");
-
-class PreySchema extends Schema {
-    type("string") id = "";
-    type("string") type = "deer";
-    type("number") x = 0;
-    type("number") y = 0;
-    type("number") z = 0;
-    type("number") destX = 0;
-    type("number") destZ = 0;
-    type("number") health = 15;
-    type("number") maxHealth = 15;
-    type("string") aiState = "idle";      // idle | walking | dead | corpse
-    type("string") currentAnim = "deer-idle.json";
-    type("boolean") isDead = false;
-    type("boolean") lootReady = false;     // true dopo morte, false dopo harvest
-    type("number") deathTime = 0;          // timestamp
-    type("number") localMap = 0;
-    type("string") dungeonId = "";
-    type("number") depth = 0;
-    type("number") speed = 2.5;
-    type("number") radius = 6;             // raggio fuga
-    type("number") wanderRange = 5;
-    type("number") originX = 0;
-    type("number") originZ = 0;
-}
-exports.PreySchema = PreySchema;
 
 class PlayerState extends Schema {
     constructor() {
