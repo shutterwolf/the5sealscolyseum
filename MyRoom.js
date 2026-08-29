@@ -142,6 +142,32 @@ class MyRoom extends Room {
         return { x, y };
     }
 
+    spawnPrey(type = "deer", x, z, config = {}) {
+        const id = "P" + this.preyIdCounter++;
+        const prey = new PreySchema();
+        prey.id        = id;
+        prey.type      = type;
+        prey.x         = x;
+        prey.z         = z;
+        prey.originX   = x;
+        prey.originZ   = z;
+        prey.localMap  = config.localMap ?? 0;
+        prey.dungeonId = config.dungeonId ?? "";
+        prey.depth     = config.depth ?? 0;
+        prey.health    = prey.maxHealth;
+        prey.aiState   = "idle";
+        prey.isDead    = false;
+        prey.lootReady = false;
+        this.state.preys.set(id, prey);
+        // stato interno AI (non sincronizzato)
+        this.preyInstances.set(id, {
+            destX: x, destZ: z,
+            idleTimer: 0,
+            originX: x, originZ: z
+        });
+        return id;
+    }
+
     generateDoors(levelData, config) {
         const doors = {};
         if (!config.Doors) return doors;
@@ -460,7 +486,8 @@ class MyRoom extends Room {
         this.activeQuestSpawns = new Map();
         this.dungeons = new Map();
         this.commonRoomCache = new Map();
-
+        this.preyIdCounter = 1;
+        this.preyInstances = new Map();
         // ─── WORLD EVENT MANAGER ───
         this.worldEventManager = options.worldEventManager || global.worldEventManager;
         if (this.worldEventManager) {
@@ -468,6 +495,65 @@ class MyRoom extends Room {
             console.log("[MyRoom] WorldEventManager collegato");
         }
 
+        // ── Il client comunica un colpo alla preda ──
+        this.onMessage("preyHit", (client, data) => {
+            const prey = this.state.preys.get(data.preyId);
+            if (!prey || prey.isDead) return;
+        
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            const player   = this.state.players.get(playerId);
+            if (!player) return;
+        
+            // Calcolo danno (adatta ai tuoi valori)
+            const weaponDmg = data.damage ?? 1;
+            prey.health = Math.max(0, prey.health - weaponDmg);
+        
+            if (prey.health <= 0 && !prey.isDead) {
+                prey.isDead    = true;
+                prey.aiState   = "dead";
+                prey.currentAnim = "doe.json";
+                prey.deathTime = Date.now();
+                // Dopo 3s diventa lootabile
+                setTimeout(() => {
+                    if (this.state.preys.has(prey.id)) {
+                        prey.lootReady = true;
+                        prey.aiState   = "corpse";
+                    }
+                }, 3000);
+            }
+        
+            // Notifica tutti i client nella stessa mappa
+            this.state.players.forEach((p, pid) => {
+                if (p.localMap !== prey.localMap) return;
+                const c = this.clients.find(cl =>
+                    this.sessionToPlayerId.get(cl.sessionId) === pid
+                );
+                if (c) c.send("preyUpdate", {
+                    id: prey.id,
+                    health: prey.health,
+                    isDead: prey.isDead,
+                    aiState: prey.aiState,
+                    currentAnim: prey.currentAnim
+                });
+            });
+        });
+        
+        // ── Il client chiede il loot della preda ──
+        this.onMessage("lootPrey", (client, data) => {
+            const prey = this.state.preys.get(data.preyId);
+            if (!prey || !prey.isDead || !prey.lootReady) return;
+        
+            prey.lootReady = false;
+            this.state.preys.delete(data.preyId);
+            this.preyInstances.delete(data.preyId);
+        
+            client.send("preyLootSuccess", {
+                preyId: data.preyId,
+                type:   prey.type
+                // aggiungi qui drop table se vuoi
+            });
+        });
+        
         // --- IDLE LOGIC ---
         setInterval(() => {
             this.dungeons.forEach((dungeon, dungeonId) => {
@@ -1119,6 +1205,72 @@ class MyRoom extends Room {
         });
 
         this.setSimulationInterval((deltaTime) => {
+            // ─── Prey AI tick ───
+            this.state.preys.forEach((prey, id) => {
+                if (prey.isDead) return;
+            
+                const inst = this.preyInstances.get(id);
+                if (!inst) return;
+            
+                // Cerca il player più vicino nella stessa mappa
+                let nearest = null;
+                let nearestDist = Infinity;
+                this.state.players.forEach((p) => {
+                    if (p.localMap !== prey.localMap) return;
+                    const dx = p.playerPos.x - prey.x;
+                    const dz = p.playerPos.z - prey.z;
+                    const d  = Math.sqrt(dx*dx + dz*dz);
+                    if (d < nearestDist) { nearestDist = d; nearest = p; }
+                });
+            
+                const FLEE_RADIUS   = prey.radius;   // 6
+                const WANDER_RANGE  = prey.wanderRange; // 5
+                const SPEED         = prey.speed;    // 2.5
+                const dt            = 1 / 20;        // il tuo tick è 20Hz
+            
+                if (nearest && nearestDist < FLEE_RADIUS) {
+                    // ── FUGA ──
+                    const dx = prey.x - nearest.playerPos.x;
+                    const dz = prey.z - nearest.playerPos.z;
+                    const len = Math.sqrt(dx*dx + dz*dz) || 1;
+                    inst.destX = prey.x + (dx/len) * FLEE_RADIUS;
+                    inst.destZ = prey.z + (dz/len) * FLEE_RADIUS;
+                    prey.aiState = "walking";
+                    prey.currentAnim = "deer-run.json";
+                } else {
+                    // ── WANDER ──
+                    inst.idleTimer -= dt;
+                    if (inst.idleTimer <= 0) {
+                        inst.idleTimer = 3 + Math.random() * 4; // 3-7s
+                        if (Math.random() < 0.4) {
+                            inst.destX = prey.originX + (Math.random() * WANDER_RANGE*2 - WANDER_RANGE);
+                            inst.destZ = prey.originZ + (Math.random() * WANDER_RANGE*2 - WANDER_RANGE);
+                            prey.aiState = "walking";
+                            prey.currentAnim = "deer-run.json";
+                        } else {
+                            prey.aiState = "idle";
+                            prey.currentAnim = "deer-idle.json";
+                        }
+                    }
+                }
+            
+                // ── Movimento verso destinazione ──
+                if (prey.aiState === "walking") {
+                    const dx = inst.destX - prey.x;
+                    const dz = inst.destZ - prey.z;
+                    const dist = Math.sqrt(dx*dx + dz*dz);
+                    if (dist < 0.3) {
+                        prey.aiState = "idle";
+                        prey.currentAnim = "deer-idle.json";
+                    } else {
+                        prey.x += (dx/dist) * SPEED * dt;
+                        prey.z += (dz/dist) * SPEED * dt;
+                    }
+                }
+            
+                prey.destX = inst.destX;
+                prey.destZ = inst.destZ;
+            });
             const playersMap = {};
             this.state.players.forEach((player, id) => { playersMap[id] = player; });
         
