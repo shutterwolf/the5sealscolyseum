@@ -286,6 +286,7 @@ type({ map: EnemySchema })(MyRoomState.prototype, "enemies"); // 👈
 type(WorldState)(MyRoomState.prototype, "world");
 type([ChatMessage])(MyRoomState.prototype, "chat");
 type({ map: DoorState })(MyRoomState.prototype, "doors");
+type({ map: PreySchema }) preys = new MapSchema();
 
 module.exports = {
     Vec3, Quat, DoorState, WorldState,
