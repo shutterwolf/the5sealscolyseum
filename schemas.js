@@ -114,6 +114,31 @@ class Equipped extends Schema {
 }
 type({ map: EquippedItem })(Equipped.prototype, "slots");
 
+class PreySchema extends Schema {
+    @type("string") id = "";
+    @type("string") type = "deer";
+    @type("number") x = 0;
+    @type("number") y = 0;
+    @type("number") z = 0;
+    @type("number") destX = 0;
+    @type("number") destZ = 0;
+    @type("number") health = 15;
+    @type("number") maxHealth = 15;
+    @type("string") aiState = "idle";      // idle | walking | dead | corpse
+    @type("string") currentAnim = "deer-idle.json";
+    @type("boolean") isDead = false;
+    @type("boolean") lootReady = false;     // true dopo morte, false dopo harvest
+    @type("number") deathTime = 0;          // timestamp
+    @type("number") localMap = 0;
+    @type("string") dungeonId = "";
+    @type("number") depth = 0;
+    @type("number") speed = 2.5;
+    @type("number") radius = 6;             // raggio fuga
+    @type("number") wanderRange = 5;
+    @type("number") originX = 0;
+    @type("number") originZ = 0;
+}
+exports.PreySchema = PreySchema;
 
 class PlayerState extends Schema {
     constructor() {
