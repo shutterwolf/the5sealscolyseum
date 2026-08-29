@@ -553,6 +553,51 @@ class MyRoom extends Room {
                 // aggiungi qui drop table se vuoi
             });
         });
+
+        // ─── Prey respawn check (ogni 30s) ───
+        setInterval(() => {
+            const NOW = Date.now();
+            const RESPAWN_DELAY = 5 * 60 * 1000; // 5 minuti
+        
+            this.state.preys.forEach((prey, id) => {
+                if (!prey.isDead) return;
+                if (NOW - prey.deathTime < RESPAWN_DELAY) return;
+        
+                // Respawn nella posizione originale
+                prey.x         = prey.originX;
+                prey.z         = prey.originZ;
+                prey.health    = prey.maxHealth;
+                prey.isDead    = false;
+                prey.lootReady = false;
+                prey.aiState   = "idle";
+                prey.currentAnim = "deer-idle.json";
+                prey.deathTime = 0;
+        
+                // Reset stato AI interno
+                const inst = this.preyInstances.get(id);
+                if (inst) {
+                    inst.destX     = prey.originX;
+                    inst.destZ     = prey.originZ;
+                    inst.idleTimer = 0;
+                }
+        
+                // Notifica i client nella stessa mappa
+                this.state.players.forEach((p, pid) => {
+                    if (p.localMap !== prey.localMap) return;
+                    const c = this.clients.find(cl =>
+                        this.sessionToPlayerId.get(cl.sessionId) === pid
+                    );
+                    if (c) c.send("preyRespawn", {
+                        id:       prey.id,
+                        type:     prey.type,
+                        x:        prey.x,
+                        z:        prey.z,
+                        health:   prey.health,
+                        maxHealth: prey.maxHealth
+                    });
+                });
+            });
+        }, 30 * 1000);
         
         // --- IDLE LOGIC ---
         setInterval(() => {
