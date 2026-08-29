@@ -293,5 +293,6 @@ module.exports = {
     Vec3, Quat, DoorState, WorldState,
     EquippedItem, Equipped,
     PlayerState, ChatMessage,
-    EnemySchema, MyRoomState
+    EnemySchema, MyRoomState,
+    PreySchema 
 };
