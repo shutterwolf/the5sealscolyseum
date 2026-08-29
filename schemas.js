@@ -275,6 +275,7 @@ class MyRoomState extends Schema {
         super();
         this.players = new MapSchema();
         this.enemies = new MapSchema(); // 👈
+        this.preys    = new MapSchema(); 
         this.world = new WorldState();
         this.chat = new ArraySchema();
         this.doors = new MapSchema();
@@ -283,10 +284,10 @@ class MyRoomState extends Schema {
 
 type({ map: PlayerState })(MyRoomState.prototype, "players");
 type({ map: EnemySchema })(MyRoomState.prototype, "enemies"); // 👈
+type({ map: PreySchema  })(MyRoomState.prototype, "preys");
 type(WorldState)(MyRoomState.prototype, "world");
 type([ChatMessage])(MyRoomState.prototype, "chat");
 type({ map: DoorState })(MyRoomState.prototype, "doors");
-type({ map: PreySchema }) preys = new MapSchema();
 
 module.exports = {
     Vec3, Quat, DoorState, WorldState,
