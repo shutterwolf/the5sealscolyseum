@@ -627,29 +627,35 @@ class MyRoom extends Room {
                 if (NOW - prey.deathTime < RESPAWN_DELAY) return;
         
                 // Respawn nella posizione originale
-                prey.x         = prey.originX;
-                prey.z         = prey.originZ;
-                prey.health    = prey.maxHealth;
-                prey.isDead    = false;
+                prey.x = prey.originX;
+                prey.z = prey.originZ;
+                prey.health = prey.maxHealth;
+                prey.isDead = false;
                 prey.lootReady = false;
-                prey.aiState   = "idle";
+                prey.aiState = "idle";
                 prey.currentAnim = getPreyConfig(prey.type).idleAnim;
                 prey.deathTime = 0;
         
-                // Reset stato AI interno
+                // Reset dello stato AI interno
                 const inst = this.preyInstances.get(id);
+        
                 if (inst) {
-                    inst.destX     = prey.originX;
-                    inst.destZ     = prey.originZ;
+                    inst.destX = prey.originX;
+                    inst.destZ = prey.originZ;
                     inst.idleTimer = 0;
+                    inst.nextAttackAt = 0;
                 }
         
                 // Notifica i client nella stessa mappa
                 this.state.players.forEach((p, pid) => {
                     if (p.localMap !== prey.localMap) return;
+        
                     const c = this.clients.find(cl =>
                         this.sessionToPlayerId.get(cl.sessionId) === pid
                     );
+        
+                    if (!c) return;
+        
                     c.send("preyRespawn", {
                         id: prey.id,
                         townId: prey.townId,
