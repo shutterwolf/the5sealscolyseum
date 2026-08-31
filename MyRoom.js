@@ -12,6 +12,12 @@ const {
     PlayerState, ChatMessage,
     EnemySchema, MyRoomState
 } = require("./schemas");
+const {
+    Vec3, Quat, DoorState,
+    EquippedItem, Equipped,
+    PlayerState, ChatMessage,
+    EnemySchema, PreySchema, MyRoomState
+} = require("./schemas");
 const { SPECIAL } = require("./specials");
 const PUZZLE_TEMPLATES = require("./puzzleTemplates");
 const { PuzzleRoomInjector } = require("./puzzleInjector");
@@ -24,6 +30,32 @@ function combatTrace(stage, data = {}) {
     console.log(`[COMBAT][${new Date().toISOString()}][${stage}]`, data);
 }
 
+const PREY_CONFIG = {
+    deer: {
+        speed: 2.5,
+        radius: 6,
+        wanderRange: 5,
+        maxHealth: 15,
+        idleAnim: "deer-idle.json",
+        walkAnim: "deer-run.json",
+        deathAnim: "doe.json"
+    },
+
+    chicken: {
+        speed: 3.5,
+        radius: 4,
+        wanderRange: 7,
+        maxHealth: 8,
+        idleAnim: "chicken-idle.json",
+        walkAnim: "chicken-run.json",
+        deathAnim: "chicken-death.json"
+    }
+};
+
+function getPreyConfig(type) {
+    return PREY_CONFIG[String(type || "deer").toLowerCase()] ||
+           PREY_CONFIG.deer;
+}
 // --- Room ---
 class MyRoom extends Room {
     maxClients = 40;
@@ -142,29 +174,49 @@ class MyRoom extends Room {
         return { x, y };
     }
 
-    spawnPrey(type = "deer", x, z, config = {}) {
-        const id = "P" + this.preyIdCounter++;
+    spawnPrey(type = "deer", x = 0, z = 0, config = {}) {
+        const preyType = String(type || "deer").toLowerCase();
+        const cfg = getPreyConfig(preyType);
+        const townId = Number(config.townId ?? config.localMap ?? 0);
+        const id = `prey_town_${townId}`;
+    
+        const existingId = this.activePreyByTown.get(townId);
+        if (existingId && this.state.preys.has(existingId)) {
+            return existingId;
+        }
+    
         const prey = new PreySchema();
-        prey.id        = id;
-        prey.type      = type;
-        prey.x         = x;
-        prey.z         = z;
-        prey.originX   = x;
-        prey.originZ   = z;
-        prey.localMap  = config.localMap ?? 0;
+        prey.id = id;
+        prey.townId = townId;
+        prey.type = preyType;
+        prey.x = Number(x) || 0;
+        prey.z = Number(z) || 0;
+        prey.originX = prey.x;
+        prey.originZ = prey.z;
+        prey.localMap = config.localMap ?? townId;
         prey.dungeonId = config.dungeonId ?? "";
-        prey.depth     = config.depth ?? 0;
-        prey.health    = prey.maxHealth;
-        prey.aiState   = "idle";
-        prey.isDead    = false;
+        prey.depth = config.depth ?? 0;
+        prey.speed = config.speed ?? cfg.speed;
+        prey.radius = config.radius ?? cfg.radius;
+        prey.wanderRange = config.wanderRange ?? cfg.wanderRange;
+        prey.maxHealth = config.maxHealth ?? cfg.maxHealth;
+        prey.health = prey.maxHealth;
+        prey.aiState = "idle";
+        prey.currentAnim = cfg.idleAnim;
+        prey.isDead = false;
         prey.lootReady = false;
         this.state.preys.set(id, prey);
-        // stato interno AI (non sincronizzato)
+        this.activePreyByTown.set(townId, id);
+    
         this.preyInstances.set(id, {
-            destX: x, destZ: z,
+            destX: prey.x,
+            destZ: prey.z,
             idleTimer: 0,
-            originX: x, originZ: z
+            nextAttackAt: 0,
+            originX: prey.x,
+            originZ: prey.z
         });
+    
         return id;
     }
 
@@ -486,7 +538,7 @@ class MyRoom extends Room {
         this.activeQuestSpawns = new Map();
         this.dungeons = new Map();
         this.commonRoomCache = new Map();
-        this.preyIdCounter = 1;
+        this.activePreyByTown = new Map();
         this.preyInstances = new Map();
         // ─── WORLD EVENT MANAGER ───
         this.worldEventManager = options.worldEventManager || global.worldEventManager;
@@ -496,61 +548,72 @@ class MyRoom extends Room {
         }
 
         // ── Il client comunica un colpo alla preda ──
-        this.onMessage("preyHit", (client, data) => {
-            const prey = this.state.preys.get(data.preyId);
+        this.onMessage("preyHit", (client, data = {}) => {
+            const preyId = String(data.preyId || "");
+            const prey = this.state.preys.get(preyId);
             if (!prey || prey.isDead) return;
         
             const playerId = this.sessionToPlayerId.get(client.sessionId);
-            const player   = this.state.players.get(playerId);
+            const player = this.state.players.get(playerId);
             if (!player) return;
         
-            // Calcolo danno (adatta ai tuoi valori)
-            const weaponDmg = data.damage ?? 1;
-            prey.health = Math.max(0, prey.health - weaponDmg);
+            const rawDamage = Number(data.damage);
+            if (!Number.isFinite(rawDamage) || rawDamage <= 0) return;
         
-            if (prey.health <= 0 && !prey.isDead) {
-                prey.isDead    = true;
-                prey.aiState   = "dead";
-                prey.currentAnim = "doe.json";
+            // Il danno è calcolato dal client, ma il server ne limita l'applicazione.
+            const MAX_PREY_HIT_DAMAGE = 20;
+            const damage = Math.min(Math.floor(rawDamage), MAX_PREY_HIT_DAMAGE);
+            if (damage <= 0) return;
+        
+            // Il colpo deve appartenere alla stessa mappa/area del player.
+            if (String(player.dungeonId) !== String(prey.dungeonId)) return;
+            if (Number(player.depth) !== Number(prey.depth)) return;
+            if (Number(player.localMap) !== Number(prey.localMap)) return;
+        
+            prey.health = Math.max(0, prey.health - damage);
+        
+            if (prey.health <= 0) {
+                prey.health = 0;
+                prey.isDead = true;
+                prey.lootReady = false;
+                prey.aiState = "dead";
+                prey.currentAnim = getPreyConfig(prey.type).deathAnim;
                 prey.deathTime = Date.now();
-                // Dopo 3s diventa lootabile
+        
                 setTimeout(() => {
-                    if (this.state.preys.has(prey.id)) {
-                        prey.lootReady = true;
-                        prey.aiState   = "corpse";
-                    }
+                    const current = this.state.preys.get(prey.id);
+                    if (!current || !current.isDead) return;
+        
+                    current.lootReady = true;
+                    current.aiState = "corpse";
                 }, 3000);
             }
-        
-            // Notifica tutti i client nella stessa mappa
-            this.state.players.forEach((p, pid) => {
-                if (p.localMap !== prey.localMap) return;
-                const c = this.clients.find(cl =>
-                    this.sessionToPlayerId.get(cl.sessionId) === pid
-                );
-                if (c) c.send("preyUpdate", {
-                    id: prey.id,
-                    health: prey.health,
-                    isDead: prey.isDead,
-                    aiState: prey.aiState,
-                    currentAnim: prey.currentAnim
-                });
-            });
         });
         
         // ── Il client chiede il loot della preda ──
-        this.onMessage("lootPrey", (client, data) => {
-            const prey = this.state.preys.get(data.preyId);
+        this.onMessage("lootPrey", (client, data = {}) => {
+            const prey = this.state.preys.get(String(data.preyId || ""));
             if (!prey || !prey.isDead || !prey.lootReady) return;
         
+            const playerId = this.sessionToPlayerId.get(client.sessionId);
+            const player = this.state.players.get(playerId);
+            if (!player) return;
+        
+            if (String(player.dungeonId) !== String(prey.dungeonId)) return;
+            if (Number(player.depth) !== Number(prey.depth)) return;
+            if (Number(player.localMap) !== Number(prey.localMap)) return;
+        
+            const dx = Number(player.playerPos.x) - prey.x;
+            const dz = Number(player.playerPos.z) - prey.z;
+            if (Math.sqrt(dx * dx + dz * dz) > 4) return;
+        
+            // La preda resta nello schema per il respawn.
             prey.lootReady = false;
-            this.state.preys.delete(data.preyId);
-            this.preyInstances.delete(data.preyId);
         
             client.send("preyLootSuccess", {
-                preyId: data.preyId,
-                type:   prey.type
-                // aggiungi qui drop table se vuoi
+                preyId: prey.id,
+                townId: prey.townId,
+                type: prey.type
             });
         });
 
