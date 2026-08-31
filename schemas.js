@@ -15,6 +15,7 @@ class PreySchema extends Schema {
     constructor() {
         super();
         this.id = "";
+        this.townId = 0;
         this.type = "deer";
         this.x = 0;
         this.z = 0;
@@ -38,6 +39,7 @@ class PreySchema extends Schema {
     }
 }
 type("string") (PreySchema.prototype, "id");
+type("number")(PreySchema.prototype, "townId");
 type("string") (PreySchema.prototype, "type");
 type("number") (PreySchema.prototype, "x");
 type("number") (PreySchema.prototype, "z");
