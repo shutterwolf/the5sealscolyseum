@@ -10,12 +10,6 @@ const {
     Vec3, Quat, DoorState,
     EquippedItem, Equipped,
     PlayerState, ChatMessage,
-    EnemySchema, MyRoomState
-} = require("./schemas");
-const {
-    Vec3, Quat, DoorState,
-    EquippedItem, Equipped,
-    PlayerState, ChatMessage,
     EnemySchema, PreySchema, MyRoomState
 } = require("./schemas");
 const { SPECIAL } = require("./specials");
