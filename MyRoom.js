@@ -633,7 +633,7 @@ class MyRoom extends Room {
                 prey.isDead    = false;
                 prey.lootReady = false;
                 prey.aiState   = "idle";
-                prey.currentAnim = "deer-idle.json";
+                prey.currentAnim = getPreyConfig(prey.type).idleAnim;
                 prey.deathTime = 0;
         
                 // Reset stato AI interno
@@ -650,13 +650,15 @@ class MyRoom extends Room {
                     const c = this.clients.find(cl =>
                         this.sessionToPlayerId.get(cl.sessionId) === pid
                     );
-                    if (c) c.send("preyRespawn", {
-                        id:       prey.id,
-                        type:     prey.type,
-                        x:        prey.x,
-                        z:        prey.z,
-                        health:   prey.health,
-                        maxHealth: prey.maxHealth
+                    c.send("preyRespawn", {
+                        id: prey.id,
+                        townId: prey.townId,
+                        type: prey.type,
+                        x: prey.x,
+                        z: prey.z,
+                        health: prey.health,
+                        maxHealth: prey.maxHealth,
+                        currentAnim: prey.currentAnim
                     });
                 });
             });
