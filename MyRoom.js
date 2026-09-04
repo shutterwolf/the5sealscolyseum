@@ -1326,6 +1326,11 @@ class MyRoom extends Room {
         });
 
         this.setSimulationInterval((deltaTime) => {
+            // ─── DEBUG: Verifica che il tick parta
+            if (this.state.preys.size > 0) {
+                console.log(`[SERVER DEBUG] Tick prede attivo. Totale prede: ${this.state.preys.size}`);
+            }
+
             // ─── Prey AI tick ───
             this.state.preys.forEach((prey, id) => {
                 if (prey.isDead) return;
@@ -1336,12 +1341,21 @@ class MyRoom extends Room {
                 // Cerca il player più vicino nella stessa mappa
                 let nearest = null;
                 let nearestDist = Infinity;
+                
                 this.state.players.forEach((p) => {
-                    if (p.localMap !== prey.localMap) return;
+                    // DEBUG: Verifica se le mappe corrispondono
+                    if (p.localMap !== prey.localMap) {
+                        // console.log(`[SERVER DEBUG] Player ${p.id} (map ${p.localMap}) non corrisponde a Prey ${id} (map ${prey.localMap})`);
+                        return;
+                    }
+                    
                     const dx = p.playerPos.x - prey.x;
                     const dz = p.playerPos.z - prey.z;
                     const d  = Math.sqrt(dx*dx + dz*dz);
-                    if (d < nearestDist) { nearestDist = d; nearest = p; }
+                    if (d < nearestDist) { 
+                        nearestDist = d; 
+                        nearest = p; 
+                    }
                 });
             
                 const FLEE_RADIUS   = prey.radius;   // 6
@@ -1351,6 +1365,7 @@ class MyRoom extends Room {
             
                 if (nearest && nearestDist < FLEE_RADIUS) {
                     // ── FUGA ──
+                    console.log(`[SERVER DEBUG] PREY ${id} IN FUGA! Distanza dal player: ${nearestDist.toFixed(2)}`);
                     const dx = prey.x - nearest.playerPos.x;
                     const dz = prey.z - nearest.playerPos.z;
                     const len = Math.sqrt(dx*dx + dz*dz) || 1;
@@ -1364,6 +1379,7 @@ class MyRoom extends Room {
                     if (inst.idleTimer <= 0) {
                         inst.idleTimer = 3 + Math.random() * 4; // 3-7s
                         if (Math.random() < 0.4) {
+                            console.log(`[SERVER DEBUG] PREY ${id} INIZIA WANDER casuale`);
                             inst.destX = prey.originX + (Math.random() * WANDER_RANGE*2 - WANDER_RANGE);
                             inst.destZ = prey.originZ + (Math.random() * WANDER_RANGE*2 - WANDER_RANGE);
                             prey.aiState = "walking";
@@ -1392,6 +1408,8 @@ class MyRoom extends Room {
                 prey.destX = inst.destX;
                 prey.destZ = inst.destZ;
             });
+            
+            // ... (il resto del tuo codice per i nemici rimane invariato) ...
             const playersMap = {};
             this.state.players.forEach((player, id) => { playersMap[id] = player; });
         
