@@ -1831,7 +1831,14 @@ class MyRoom extends Room {
         } catch (err) {
             console.error("Firestore load error:", err);
         }
-
+        const currentMap = player.localMap ?? 0;
+        if (currentMap === 0 || currentMap === 11) {
+            console.log(`[SERVER DEBUG] Tentativo spawn preda per mappa ${currentMap} (Player: ${playerId})`);
+            this.spawnPrey("deer", 10, 10, { 
+                localMap: currentMap,
+                townId: currentMap 
+            });
+        }
         const equippedData = {};
         player.equipped.slots.forEach((item, slot) => {
             equippedData[slot] = { ...item };
