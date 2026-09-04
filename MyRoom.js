@@ -551,19 +551,32 @@ class MyRoom extends Room {
             const player = this.state.players.get(playerId);
             if (!player) return;
         
-            const rawDamage = Number(data.damage);
-            if (!Number.isFinite(rawDamage) || rawDamage <= 0) return;
+            // 1. VALIDAZIONE DISTANZA (Anti-Cheat)
+            const dx = Number(player.playerPos.x) - prey.x;
+            const dz = Number(player.playerPos.z) - prey.z;
+            const distSq = dx * dx + dz * dz;
+            if (distSq > 16.0) { // Distanza massima 4 unità al quadrato
+                console.warn(`[ANTI-CHEAT] Player ${playerId} tried to hit prey ${preyId} from too far away.`);
+                return;
+            }
         
-            // Il danno è calcolato dal client, ma il server ne limita l'applicazione.
+            // 2. VALIDAZIONE COOLDOWN (Anti-Spam)
+            const now = Date.now();
+            if (!player.lastPreyHitTime) player.lastPreyHitTime = 0;
+            if (now - player.lastPreyHitTime < 500) { // Minimo 500ms tra i colpi
+                return; 
+            }
+            player.lastPreyHitTime = now;
+        
+            // 3. CALCOLO DANNO LATO SERVER (Opzionale ma consigliato)
+            // Per ora usiamo il danno del client ma con un hard cap severo, 
+            // in futuro qui leggerai il danno dall'arma equipaggiata in player.equipped
+            const rawDamage = Number(data.damage) || 1;
             const MAX_PREY_HIT_DAMAGE = 20;
             const damage = Math.min(Math.floor(rawDamage), MAX_PREY_HIT_DAMAGE);
             if (damage <= 0) return;
         
-            // Il colpo deve appartenere alla stessa mappa/area del player.
-            if (String(player.dungeonId) !== String(prey.dungeonId)) return;
-            if (Number(player.depth) !== Number(prey.depth)) return;
-            if (Number(player.localMap) !== Number(prey.localMap)) return;
-        
+            // 4. APPLICA DANNO
             prey.health = Math.max(0, prey.health - damage);
         
             if (prey.health <= 0) {
@@ -571,13 +584,11 @@ class MyRoom extends Room {
                 prey.isDead = true;
                 prey.lootReady = false;
                 prey.aiState = "dead";
-                prey.currentAnim = getPreyConfig(prey.type).deathAnim;
-                prey.deathTime = Date.now();
-        
+                // L'animazione di morte verrà gestita dal client ascoltando il cambio di stato
+                
                 setTimeout(() => {
                     const current = this.state.preys.get(prey.id);
                     if (!current || !current.isDead) return;
-        
                     current.lootReady = true;
                     current.aiState = "corpse";
                 }, 3000);
