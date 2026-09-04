@@ -519,6 +519,13 @@ class MyRoom extends Room {
         console.log("Room created");
         this.sessionToPlayerId = new Map();
         this.setState(new MyRoomState());
+        console.log("[SERVER SCHEMA CHECK]", {
+            hasPlayers: !!this.state.players,
+            hasEnemies: !!this.state.enemies,
+            hasPreys: !!this.state.preys,
+            enemiesType: this.state.enemies?.constructor?.name,
+            preysType: this.state.preys?.constructor?.name
+        });
         this.dayDuration = 30 * 60 * 1000;
         this.nightDuration = 15 * 60 * 1000;
         this.weatherInterval = 10 * 60 * 1000;
