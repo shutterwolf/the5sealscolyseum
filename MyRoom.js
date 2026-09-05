@@ -169,39 +169,8 @@ class MyRoom extends Room {
     }
 
     spawnPrey(type = "deer", x = 0, z = 0, config = {}) {
-        const preyType = String(type || "deer").toLowerCase();
-        const cfg = getPreyConfig(preyType);
-        const townId = Number(config.townId ?? config.localMap ?? 0);
-        const id = `prey_town_${townId}`;
-    
-        const existingId = this.activePreyByTown.get(townId);
-        if (existingId && this.state.preys.has(existingId)) {
-            return existingId;
-        }
-    
-        const prey = new PreySchema();
-        prey.id = id;
-        prey.townId = townId;
-        prey.type = preyType;
-        prey.x = Number(x) || 0;
-        prey.z = Number(z) || 0;
-        prey.originX = prey.x;
-        prey.originZ = prey.z;
-        prey.localMap = config.localMap ?? townId;
-        prey.dungeonId = config.dungeonId ?? "";
-        prey.depth = config.depth ?? 0;
-        prey.speed = config.speed ?? cfg.speed;
-        prey.radius = config.radius ?? cfg.radius;
-        prey.wanderRange = config.wanderRange ?? cfg.wanderRange;
-        prey.maxHealth = config.maxHealth ?? cfg.maxHealth;
-        prey.health = prey.maxHealth;
-        prey.aiState = "idle";
-        prey.currentAnim = cfg.idleAnim;
-        prey.isDead = false;
-        prey.lootReady = false;
-        this.state.preys.set(id, prey);
-        this.activePreyByTown.set(townId, id);
-    
+        // ... (tutto il tuo codice esistente fino a preyInstances.set) ...
+        
         this.preyInstances.set(id, {
             destX: prey.x,
             destZ: prey.z,
@@ -209,6 +178,19 @@ class MyRoom extends Room {
             nextAttackAt: 0,
             originX: prey.x,
             originZ: prey.z
+        });
+
+        // 🚀 NUOVO: Invia un messaggio ai client per spawnare la preda (come per i nemici)
+        this.broadcast("preySpawn", {
+            id: id,
+            type: preyType,
+            x: prey.x,
+            z: prey.z,
+            localMap: prey.localMap,
+            speed: prey.speed,
+            maxHealth: prey.maxHealth,
+            aiState: prey.aiState,
+            currentAnim: prey.currentAnim
         });
     
         return id;
@@ -1414,6 +1396,13 @@ class MyRoom extends Room {
             
                 prey.destX = inst.destX;
                 prey.destZ = inst.destZ;
+                this.broadcast("preyMove", {
+                    id: id,
+                    x: prey.x,
+                    z: prey.z,
+                    aiState: prey.aiState,
+                    currentAnim: prey.currentAnim
+                });
             });
             
             // ... (il resto del tuo codice per i nemici rimane invariato) ...
